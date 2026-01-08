@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import generateRouter from './routes/generate.js';
+import highriseRouter from './routes/highrise.js';
 
 // Load environment variables
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '../../.env') });
@@ -27,6 +28,7 @@ app.use(express.json());
 
 // API routes
 app.use('/api', generateRouter);
+app.use('/api/highrise', highriseRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

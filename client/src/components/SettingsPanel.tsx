@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, ChevronDown, ChevronUp, ImagePlus, X, Palette } from 'lucide-react'
+import { Settings, ChevronDown, ChevronUp, ImagePlus, X, Palette, Sparkles } from 'lucide-react'
 import type { GenerationSettings } from '../App'
+import HighriseItemPicker from './HighriseItemPicker'
 
 interface SettingsPanelProps {
   settings: GenerationSettings
@@ -28,6 +29,7 @@ const aspectRatios = [
 
 export default function SettingsPanel({ settings, onChange, disabled }: SettingsPanelProps) {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+  const [isHighrisePickerOpen, setIsHighrisePickerOpen] = useState(false)
   const styleImageInput = useRef<HTMLInputElement>(null)
   const referenceInput = useRef<HTMLInputElement>(null)
 
@@ -87,6 +89,13 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
   const removeReference = (index: number) => {
     const current = settings.references || []
     updateSetting('references', current.filter((_, i) => i !== index))
+  }
+
+  const handleHighriseSelect = (items: { url: string; strength: number }[]) => {
+    const current = settings.styleImages || []
+    const newItems = items.filter(item => !current.some(c => c.url === item.url))
+    const combined = [...current, ...newItems].slice(0, 15)
+    updateSetting('styleImages', combined)
   }
 
   return (
@@ -222,8 +231,18 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
                   Style Reference (up to 15)
                 </label>
                 <p className="text-xs text-forge-text-muted/70">
-                  Upload images to influence the style of your generation
+                  Upload images or browse Highrise items to influence the style
                 </p>
+                
+                {/* Highrise Browser Button */}
+                <button
+                  onClick={() => setIsHighrisePickerOpen(true)}
+                  disabled={disabled}
+                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/30 rounded-lg text-sm text-violet-300 hover:from-violet-500/20 hover:to-fuchsia-500/20 transition-all disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Browse Highrise Items
+                </button>
                 <div className="flex flex-wrap gap-2">
                   {(settings.styleImages || []).map((img, i) => (
                     <div key={i} className="relative group">
@@ -344,6 +363,15 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Highrise Item Picker Modal */}
+      <HighriseItemPicker
+        isOpen={isHighrisePickerOpen}
+        onClose={() => setIsHighrisePickerOpen(false)}
+        onSelect={handleHighriseSelect}
+        selectedUrls={(settings.styleImages || []).map(s => s.url)}
+        maxItems={15}
+      />
     </div>
   )
 }
