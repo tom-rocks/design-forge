@@ -54,7 +54,7 @@ export default function HighriseSearch({
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   // Fetch items from API
   const fetchItems = useCallback(async (searchQuery: string, cat: string) => {
