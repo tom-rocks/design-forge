@@ -6,6 +6,7 @@ import ImageDisplay from './components/ImageDisplay'
 import GenerateButton from './components/GenerateButton'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
+import HighriseSearch from './components/HighriseSearch'
 import { API_URL } from './config'
 
 export interface StyleImage {
@@ -152,10 +153,24 @@ function App() {
             />
           </motion.div>
 
+          {/* Highrise Item Search */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <HighriseSearch
+              selectedItems={settings.styleImages || []}
+              onSelectionChange={(items) => setSettings({ ...settings, styleImages: items })}
+              disabled={isGenerating}
+              maxItems={15}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
             className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between"
           >
             <SettingsPanel

@@ -1,8 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, ChevronDown, ChevronUp, ImagePlus, X, Palette, Sparkles } from 'lucide-react'
+import { Settings, ChevronDown, ChevronUp } from 'lucide-react'
 import type { GenerationSettings } from '../App'
-import HighriseItemPicker from './HighriseItemPicker'
 
 interface SettingsPanelProps {
   settings: GenerationSettings
@@ -29,73 +28,12 @@ const aspectRatios = [
 
 export default function SettingsPanel({ settings, onChange, disabled }: SettingsPanelProps) {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
-  const [isHighrisePickerOpen, setIsHighrisePickerOpen] = useState(false)
-  const styleImageInput = useRef<HTMLInputElement>(null)
-  const referenceInput = useRef<HTMLInputElement>(null)
 
   const updateSetting = <K extends keyof GenerationSettings>(
     key: K,
     value: GenerationSettings[K]
   ) => {
     onChange({ ...settings, [key]: value })
-  }
-
-  const handleStyleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    // Convert to base64 data URL for preview and sending
-    const reader = new FileReader()
-    reader.onload = () => {
-      const url = reader.result as string
-      const current = settings.styleImages || []
-      if (current.length < 15) {
-        updateSetting('styleImages', [...current, { url, strength: 1 }])
-      }
-    }
-    reader.readAsDataURL(file)
-    e.target.value = ''
-  }
-
-  const handleReferenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    const reader = new FileReader()
-    reader.onload = () => {
-      const url = reader.result as string
-      const current = settings.references || []
-      updateSetting('references', [...current, { 
-        name: `reference-${current.length + 1}`, 
-        images: [{ url }] 
-      }])
-    }
-    reader.readAsDataURL(file)
-    e.target.value = ''
-  }
-
-  const removeStyleImage = (index: number) => {
-    const current = settings.styleImages || []
-    updateSetting('styleImages', current.filter((_, i) => i !== index))
-  }
-
-  const updateStyleStrength = (index: number, strength: number) => {
-    const current = settings.styleImages || []
-    const updated = [...current]
-    updated[index] = { ...updated[index], strength }
-    updateSetting('styleImages', updated)
-  }
-
-  const removeReference = (index: number) => {
-    const current = settings.references || []
-    updateSetting('references', current.filter((_, i) => i !== index))
-  }
-
-  const handleHighriseSelect = (items: { url: string; strength: number }[]) => {
-    const current = settings.styleImages || []
-    const newItems = items.filter(item => !current.some(c => c.url === item.url))
-    const combined = [...current, ...newItems].slice(0, 15)
-    updateSetting('styleImages', combined)
   }
 
   return (
@@ -185,7 +123,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
         className="flex items-center gap-2 text-xs text-forge-text-muted hover:text-forge-text transition-colors"
       >
         <Settings className="w-3 h-3" />
-        <span>Advanced Settings</span>
+        <span>Advanced</span>
         {isAdvancedOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
       </button>
 
@@ -199,7 +137,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="space-y-5 pt-2 pb-2">
+            <div className="space-y-4 pt-2">
               {/* More Aspect Ratios */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider">
@@ -221,112 +159,6 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
                       {ar.label}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              {/* Style Reference Images */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider flex items-center gap-2">
-                  <Palette className="w-3 h-3" />
-                  Style Reference (up to 15)
-                </label>
-                <p className="text-xs text-forge-text-muted/70">
-                  Upload images or browse Highrise items to influence the style
-                </p>
-                
-                {/* Highrise Browser Button */}
-                <button
-                  onClick={() => setIsHighrisePickerOpen(true)}
-                  disabled={disabled}
-                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/30 rounded-lg text-sm text-violet-300 hover:from-violet-500/20 hover:to-fuchsia-500/20 transition-all disabled:opacity-50"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Browse Highrise Items
-                </button>
-                <div className="flex flex-wrap gap-2">
-                  {(settings.styleImages || []).map((img, i) => (
-                    <div key={i} className="relative group">
-                      <img 
-                        src={img.url} 
-                        alt={`Style ${i + 1}`}
-                        className="w-16 h-16 object-cover rounded-lg border border-forge-border"
-                      />
-                      <button
-                        onClick={() => removeStyleImage(i)}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3 text-white" />
-                      </button>
-                      <input
-                        type="range"
-                        min="-2"
-                        max="2"
-                        step="0.5"
-                        value={img.strength}
-                        onChange={(e) => updateStyleStrength(i, parseFloat(e.target.value))}
-                        className="absolute -bottom-3 left-0 w-16 h-1 accent-violet-500"
-                        title={`Strength: ${img.strength}`}
-                      />
-                    </div>
-                  ))}
-                  {(settings.styleImages || []).length < 15 && (
-                    <button
-                      onClick={() => styleImageInput.current?.click()}
-                      disabled={disabled}
-                      className="w-16 h-16 rounded-lg border border-dashed border-forge-border hover:border-violet-500/50 flex items-center justify-center text-forge-text-muted hover:text-violet-400 transition-colors disabled:opacity-50"
-                    >
-                      <ImagePlus className="w-5 h-5" />
-                    </button>
-                  )}
-                  <input
-                    ref={styleImageInput}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleStyleImageUpload}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              {/* Reference Images */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider flex items-center gap-2">
-                  <ImagePlus className="w-3 h-3" />
-                  Reference Images (no documented limit)
-                </label>
-                <p className="text-xs text-forge-text-muted/70">
-                  Named reference sets for context during generation
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(settings.references || []).map((ref, i) => (
-                    <div key={i} className="relative group">
-                      <img 
-                        src={ref.images[0]?.url} 
-                        alt={ref.name}
-                        className="w-16 h-16 object-cover rounded-lg border border-forge-border"
-                      />
-                      <button
-                        onClick={() => removeReference(i)}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3 text-white" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => referenceInput.current?.click()}
-                    disabled={disabled}
-                    className="w-16 h-16 rounded-lg border border-dashed border-forge-border hover:border-violet-500/50 flex items-center justify-center text-forge-text-muted hover:text-violet-400 transition-colors disabled:opacity-50"
-                  >
-                    <ImagePlus className="w-5 h-5" />
-                  </button>
-                  <input
-                    ref={referenceInput}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleReferenceUpload}
-                    className="hidden"
-                  />
                 </div>
               </div>
 
@@ -355,7 +187,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
                   value={settings.seed}
                   onChange={(e) => updateSetting('seed', e.target.value.replace(/\D/g, ''))}
                   disabled={disabled}
-                  placeholder="Random seed for reproducibility"
+                  placeholder="For reproducibility"
                   className="w-full max-w-[200px] px-3 py-2 bg-forge-surface border border-forge-border rounded-lg text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-forge-muted font-mono disabled:opacity-50"
                 />
               </div>
@@ -363,15 +195,6 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Highrise Item Picker Modal */}
-      <HighriseItemPicker
-        isOpen={isHighrisePickerOpen}
-        onClose={() => setIsHighrisePickerOpen(false)}
-        onSelect={handleHighriseSelect}
-        selectedUrls={(settings.styleImages || []).map(s => s.url)}
-        maxItems={15}
-      />
     </div>
   )
 }
