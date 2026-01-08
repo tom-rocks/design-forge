@@ -74,8 +74,10 @@ router.post('/debug/test-api', async (_req: Request, res: Response) => {
         headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: 'test cat', width: 512, height: 512 }),
       });
-      const isJson = r.headers.get('content-type')?.includes('json');
-      const body = isJson ? await r.json() : (await r.text()).slice(0, 200);
+      const text = await r.text();
+      let body: unknown = text.slice(0, 300);
+      let isJson = false;
+      try { body = JSON.parse(text); isJson = true; } catch {}
       results[endpoint] = { status: r.status, isJson, body, working: isJson && r.status < 500 };
     } catch (e) {
       results[endpoint] = { error: String(e) };
@@ -111,9 +113,10 @@ router.post('/generate', async (req: Request, res: Response) => {
         body: JSON.stringify(payload),
       });
       
-      if (!r.headers.get('content-type')?.includes('json')) continue;
+      const text = await r.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { continue; }
       
-      const data = await r.json();
       addLog('response', { id, endpoint, status: r.status, data });
       
       if (r.status === 401 || r.status === 403) {
