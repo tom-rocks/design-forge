@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, Loader2, ChevronDown } from 'lucide-react'
+import { Search, X, Loader2, Plus, ExternalLink } from 'lucide-react'
 import { API_URL } from '../config'
 
 interface HighriseItem {
@@ -24,23 +24,7 @@ interface HighriseSearchProps {
   maxItems?: number
 }
 
-const CATEGORIES = [
-  { id: '', label: 'All Categories' },
-  { id: 'shirt', label: 'Shirts' },
-  { id: 'dress', label: 'Dresses' },
-  { id: 'pants', label: 'Pants' },
-  { id: 'shorts', label: 'Shorts' },
-  { id: 'skirt', label: 'Skirts' },
-  { id: 'jacket', label: 'Jackets' },
-  { id: 'fullsuit', label: 'Fullsuits' },
-  { id: 'hat', label: 'Hats' },
-  { id: 'shoes', label: 'Shoes' },
-  { id: 'hair_front', label: 'Hair' },
-  { id: 'glasses', label: 'Glasses' },
-  { id: 'bag', label: 'Bags' },
-  { id: 'necklace', label: 'Necklaces' },
-  { id: 'earrings', label: 'Earrings' },
-]
+const HIGHRISE_CDN = 'https://cdn.highrisegame.com/avatar'
 
 export default function HighriseSearch({ 
   selectedItems, 
@@ -48,84 +32,49 @@ export default function HighriseSearch({
   disabled,
   maxItems = 15 
 }: HighriseSearchProps) {
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('')
-  const [items, setItems] = useState<HighriseItem[]>([])
+  const [itemId, setItemId] = useState('')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewError, setPreviewError] = useState(false)
+  const [recentItems, setRecentItems] = useState<HighriseItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [isOpen, setIsOpen] = useState(false)
-  const [searchNote, setSearchNote] = useState<string | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const [showBrowse, setShowBrowse] = useState(false)
 
-  // Check if query looks like an item ID and add directly
-  const isItemId = (text: string) => {
-    return text.includes('-') && text.includes('_') && !text.includes(' ')
-  }
-
-  const addItemById = (itemId: string) => {
-    const url = `https://cdn.highrisegame.com/avatar/${itemId}.png`
-    if (!selectedItems.some(s => s.url === url) && selectedItems.length < maxItems) {
-      onSelectionChange([...selectedItems, { url, strength: 1, name: itemId }])
-      setQuery('')
-    }
-  }
-
-  // Fetch items from API (backend handles both name and ID search)
-  const fetchItems = useCallback(async (searchQuery: string, cat: string) => {
-    setLoading(true)
-    setSearchNote(null)
-    try {
-      const params = new URLSearchParams()
-      if (searchQuery) params.set('q', searchQuery)
-      if (cat) params.set('category', cat)
-      params.set('limit', '60')
-
-      const res = await fetch(`${API_URL}/api/highrise/items?${params}`)
-      const data = await res.json()
-      setItems(data.items || [])
-      if (data.searchNote) setSearchNote(data.searchNote)
-    } catch (e) {
-      console.error('Failed to fetch items:', e)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  // Debounced search
+  // Load some recent items for browsing
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      fetchItems(query, category)
-    }, 300)
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [query, category, fetchItems])
-
-  // Initial load
-  useEffect(() => {
-    fetchItems('', '')
-  }, [])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
+    const fetchRecent = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`${API_URL}/api/highrise/items?limit=30`)
+        const data = await res.json()
+        setRecentItems(data.items || [])
+      } catch (e) {
+        console.error('Failed to fetch items:', e)
+      } finally {
+        setLoading(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    fetchRecent()
   }, [])
 
-  const isSelected = (item: HighriseItem) => 
-    selectedItems.some(s => s.url === item.imageUrl)
+  // Preview item when ID changes
+  useEffect(() => {
+    if (!itemId.trim()) {
+      setPreviewUrl(null)
+      setPreviewError(false)
+      return
+    }
+    
+    const url = `${HIGHRISE_CDN}/${itemId.trim()}.png`
+    setPreviewUrl(url)
+    setPreviewError(false)
+  }, [itemId])
 
-  const toggleItem = (item: HighriseItem) => {
-    if (isSelected(item)) {
-      onSelectionChange(selectedItems.filter(s => s.url !== item.imageUrl))
-    } else if (selectedItems.length < maxItems) {
-      onSelectionChange([...selectedItems, { url: item.imageUrl, strength: 1, name: item.name }])
+  const addItem = (id: string, name?: string) => {
+    const url = `${HIGHRISE_CDN}/${id}.png`
+    if (!selectedItems.some(s => s.url === url) && selectedItems.length < maxItems) {
+      onSelectionChange([...selectedItems, { url, strength: 1, name: name || id }])
+      setItemId('')
+      setPreviewUrl(null)
     }
   }
 
@@ -139,149 +88,148 @@ export default function HighriseSearch({
     onSelectionChange(selectedItems.filter(s => s.url !== url))
   }
 
-  const getRarityBorder = (r: string) => {
-    switch (r) {
-      case 'legendary': return 'border-yellow-500/60'
-      case 'epic': return 'border-purple-500/60'
-      case 'rare': return 'border-blue-500/60'
-      default: return 'border-forge-border'
-    }
-  }
-
-  const getRarityBg = (r: string) => {
-    switch (r) {
-      case 'legendary': return 'bg-yellow-500/10'
-      case 'epic': return 'bg-purple-500/10'
-      case 'rare': return 'bg-blue-500/10'
-      default: return 'bg-forge-bg'
-    }
+  const isSelected = (id: string) => {
+    const url = `${HIGHRISE_CDN}/${id}.png`
+    return selectedItems.some(s => s.url === url)
   }
 
   return (
     <div className="space-y-3">
-      {/* Search Bar */}
-      <div ref={containerRef} className="relative">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted" />
-            <input
-              type="text"
-              placeholder={category ? `Search ${category} items...` : "Select a category, then search..."}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onFocus={() => setIsOpen(true)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && query && isItemId(query)) {
-                  e.preventDefault()
-                  addItemById(query.trim())
-                }
-              }}
-              disabled={disabled}
-              className="w-full pl-10 pr-4 py-2.5 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-violet-500/50 disabled:opacity-50"
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-medium text-forge-text">Style References</h3>
+          <p className="text-xs text-forge-text-muted">
+            Add Highrise items as style context ({selectedItems.length}/{maxItems})
+          </p>
+        </div>
+        <a
+          href="https://highrise.game/en/catalog"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300"
+        >
+          Browse Catalog <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+
+      {/* Item ID Input */}
+      <div className="flex gap-2">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted" />
+          <input
+            type="text"
+            placeholder="Paste item ID (e.g. shirt-n_coolhoodie2024)"
+            value={itemId}
+            onChange={e => setItemId(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && itemId.trim()) {
+                e.preventDefault()
+                addItem(itemId.trim())
+              }
+            }}
+            disabled={disabled}
+            className="w-full pl-10 pr-4 py-2.5 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-violet-500/50 disabled:opacity-50 font-mono"
+          />
+        </div>
+        <button
+          onClick={() => itemId.trim() && addItem(itemId.trim())}
+          disabled={disabled || !itemId.trim() || selectedItems.length >= maxItems}
+          className="px-4 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-forge-surface disabled:text-forge-text-muted text-white rounded-xl transition-colors disabled:cursor-not-allowed"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Preview */}
+      {previewUrl && (
+        <div className="flex items-center gap-3 p-3 bg-forge-surface border border-forge-border rounded-xl">
+          <div className="w-16 h-16 bg-forge-bg rounded-lg overflow-hidden flex-shrink-0">
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="w-full h-full object-contain"
+              onError={() => setPreviewError(true)}
             />
-            {loading && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-400 animate-spin" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-forge-text-muted truncate font-mono">{itemId}</p>
+            {previewError ? (
+              <p className="text-xs text-red-400">Item not found - check the ID</p>
+            ) : (
+              <p className="text-xs text-green-400">✓ Valid item</p>
             )}
           </div>
-          
-          <div className="relative">
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              disabled={disabled}
-              className="appearance-none h-full px-3 pr-8 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text focus:outline-none focus:border-violet-500/50 disabled:opacity-50"
-            >
-              {CATEGORIES.map(c => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Direct Item ID Add */}
-        {query && isItemId(query) && (
-          <div className="mt-2 p-2 bg-violet-500/10 border border-violet-500/30 rounded-lg flex items-center justify-between">
-            <span className="text-xs text-violet-300">Add item ID directly?</span>
+          {!previewError && (
             <button
-              onClick={() => addItemById(query.trim())}
-              className="px-3 py-1 bg-violet-500 hover:bg-violet-600 text-white text-xs rounded-lg"
+              onClick={() => addItem(itemId.trim())}
+              disabled={isSelected(itemId.trim())}
+              className="px-3 py-1.5 bg-violet-500 hover:bg-violet-600 disabled:bg-forge-muted text-white text-xs rounded-lg"
             >
-              Add "{query.slice(0, 20)}..."
+              {isSelected(itemId.trim()) ? 'Added' : 'Add'}
             </button>
-          </div>
-        )}
-
-        {/* Search Note */}
-        {searchNote && !loading && (
-          <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-            <span className="text-xs text-amber-300">{searchNote}</span>
-          </div>
-        )}
-
-        {/* Dropdown Results */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute z-20 left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-forge-surface border border-forge-border rounded-xl shadow-xl"
-            >
-              {loading ? (
-                <div className="p-8 text-center">
-                  <Loader2 className="w-6 h-6 text-violet-400 animate-spin mx-auto" />
-                  <p className="text-xs text-forge-text-muted mt-2">Searching...</p>
-                </div>
-              ) : items.length === 0 ? (
-                <div className="p-8 text-center text-forge-text-muted text-sm">
-                  {query ? `No items found for "${query}"` : 'Type to search items'}
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-3">
-                  {items.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => toggleItem(item)}
-                      disabled={!isSelected(item) && selectedItems.length >= maxItems}
-                      className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${
-                        isSelected(item)
-                          ? 'border-violet-500 ring-2 ring-violet-500/30'
-                          : `${getRarityBorder(item.rarity)} hover:border-violet-500/30`
-                      } disabled:opacity-30 disabled:cursor-not-allowed`}
-                    >
-                      <div className={`aspect-square ${getRarityBg(item.rarity)}`}>
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                      {isSelected(item) && (
-                        <div className="absolute top-1 right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
-                        </div>
-                      )}
-                      <div className="px-1.5 py-1 bg-forge-bg/90 border-t border-forge-border">
-                        <p className="text-[10px] text-forge-text truncate font-medium">{item.name}</p>
-                        <p className="text-[9px] text-forge-text-muted truncate">{item.id}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
           )}
-        </AnimatePresence>
-      </div>
+        </div>
+      )}
+
+      {/* Browse Recent Toggle */}
+      <button
+        onClick={() => setShowBrowse(!showBrowse)}
+        className="text-xs text-forge-text-muted hover:text-forge-text"
+      >
+        {showBrowse ? '▼ Hide recent items' : '▶ Browse recent items'}
+      </button>
+
+      {/* Recent Items Grid */}
+      <AnimatePresence>
+        {showBrowse && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            {loading ? (
+              <div className="py-4 text-center">
+                <Loader2 className="w-5 h-5 animate-spin mx-auto text-violet-400" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5 py-2">
+                {recentItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => addItem(item.id, item.name)}
+                    disabled={isSelected(item.id) || selectedItems.length >= maxItems}
+                    className={`relative aspect-square rounded-lg overflow-hidden border transition-all ${
+                      isSelected(item.id)
+                        ? 'border-violet-500 opacity-50'
+                        : 'border-forge-border hover:border-violet-500/50'
+                    } disabled:cursor-not-allowed`}
+                    title={`${item.name}\n${item.id}`}
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-contain bg-forge-bg"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-forge-text-muted text-center">
+              Note: Public API only shows limited items. Use the catalog link above to find items and paste their IDs.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Selected Items with Strength Sliders */}
       {selectedItems.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 pt-2 border-t border-forge-border">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-forge-text-muted">
-              {selectedItems.length}/{maxItems} style references
+            <span className="text-xs text-forge-text-muted font-medium">
+              Selected ({selectedItems.length}/{maxItems})
             </span>
             <button
               onClick={() => onSelectionChange([])}
@@ -296,7 +244,7 @@ export default function HighriseSearch({
               <div 
                 key={item.url} 
                 className="relative group bg-forge-surface border border-forge-border rounded-lg overflow-hidden"
-                style={{ width: '80px' }}
+                style={{ width: '90px' }}
               >
                 <img
                   src={item.url}
@@ -312,13 +260,13 @@ export default function HighriseSearch({
                 
                 {/* Name */}
                 {item.name && (
-                  <div className="px-1 py-0.5 border-t border-forge-border">
-                    <p className="text-[9px] text-forge-text truncate">{item.name}</p>
+                  <div className="px-1 py-0.5 border-t border-forge-border bg-forge-bg/50">
+                    <p className="text-[8px] text-forge-text truncate">{item.name}</p>
                   </div>
                 )}
                 
                 {/* Strength slider */}
-                <div className="px-1 pb-1">
+                <div className="px-1.5 pb-1">
                   <input
                     type="range"
                     min="-2"
