@@ -1,0 +1,222 @@
+# AI Configuration for PocketWorlds Item Viewer
+
+## Project Overview
+This is a single-spa microfrontend application for viewing and managing items. The application uses a simplified modular architecture with API-related files organized in a dedicated `api` folder and components in a `components` folder. The application should be built as a SystemJS module that can be loaded into a single-spa root application.
+
+## API Configuration
+- **Base URL**: `/api`
+- **Request Method**: Always POST
+- **Request Format**: All requests must include `_type` in the payload
+- **Response Format**: JSON responses with standardized structure
+
+## Technology Stack
+
+### Core Technologies
+- **React 19** - Latest React version with hooks and functional components
+- **Single-SPA** - Microfrontend architecture for modular applications
+
+### State Management & Data Fetching
+- **React Query (TanStack Query)** - For server state management, caching, and data fetching
+- **React Hook Form** - For form handling and validation
+
+### UI Framework
+- **Mantine** - Modern React UI library for components and styling
+- **Mantine Hooks** - Additional hooks for enhanced functionality
+
+### Validation & Type Safety
+- **Zod** - Schema validation and runtime type checking
+
+### Build Tools
+- **Webpack** - Module bundling with SystemJS output
+- **Babel** - JavaScript transpilation
+- **ESLint** - Code linting and formatting
+
+## Coding Standards
+
+### React Patterns
+- Use functional components with hooks
+- Implement proper error boundaries
+- Use React.memo for performance optimization when needed
+- Follow React best practices for state management
+
+### Component Structure
+```javascript
+// Example component structure
+export const ItemComponent = ({ prop1, prop2 }) => {
+  // Component logic here
+  return (
+    // JSX with Mantine components
+  );
+};
+```
+
+### API Organization
+- All API-related files (models, services, queries, schemas) should be in the `api/` folder
+- Use clear naming conventions: `.model.ts`, `.service.ts`, `.query.ts`, `.schema.ts`
+- Keep API logic separate from UI components
+- Use React Query for data fetching and caching
+
+### API Integration
+- Use React Query for all API calls
+- Implement proper error handling
+- Use optimistic updates where appropriate
+- Implement proper loading states
+
+### Form Handling
+- Use React Hook Form for all forms
+- Use Zod schemas for validation
+- Implement proper error display
+- Use Mantine form components
+
+## File Structure
+```
+src/
+├── api/                # API-related files (models, services, queries, schemas)
+│   ├── items.model.js  # Item definitions
+│   ├── items.service.js # Item API services
+│   ├── items.query.js  # Item React Query hooks
+│   └── items.schema.js # Item validation schemas
+├── components/         # React components
+│   ├── ItemViewer.jsx  # Item viewer component
+│   └── root.component.jsx # Root application component
+├── utils/              # Utility functions
+├── constants/          # Application constants
+└── styles/             # Global styles and themes
+```
+
+## API Models
+
+### GetItemRequest
+```javascript
+{
+  _type: "GetItemRequest",
+  disp_id: string
+}
+```
+
+### GetItemResponse
+```javascript
+{
+  item: object,
+  metadata: object,
+  users: object,
+  read_only: boolean
+}
+```
+
+## API Integration Rules
+
+### React Query Setup
+```javascript
+// Example query setup in api/items.query.js
+const useItemQuery = (itemId) => {
+  return useQuery({
+    queryKey: ['item', itemId],
+    queryFn: () => fetchItem(itemId),
+    enabled: !!itemId,
+  });
+};
+```
+
+### API Services
+- All API services should be in the `api/` folder
+- Use `.service.ts` naming convention
+- Keep services focused on API communication
+- Import models and schemas from the same folder
+
+### Error Handling
+- Implement proper error boundaries
+- Use React Query error states
+- Display user-friendly error messages
+- Log errors for debugging
+
+## UI/UX Guidelines
+
+### Mantine Usage
+- Use Mantine components consistently
+- Follow Mantine design patterns
+- Implement responsive design
+- Use Mantine theme customization
+
+### Form Patterns
+```javascript
+// Example form with React Hook Form and Zod
+const schema = z.object({
+  itemId: z.string().min(1, 'Item ID is required'),
+});
+
+const form = useForm({
+  resolver: zodResolver(schema),
+});
+
+return (
+  <form onSubmit={form.handleSubmit(onSubmit)}>
+    <TextInput
+      {...form.register('itemId')}
+      error={form.formState.errors.itemId?.message}
+    />
+  </form>
+);
+```
+
+## Performance Guidelines
+- Implement proper memoization
+- Use React Query caching effectively
+- Optimize bundle size
+- Implement code splitting where appropriate
+
+## Security Considerations
+- Validate all user inputs with Zod
+- Sanitize data before display
+- Implement proper CORS handling
+- Use secure API communication
+
+## Accessibility
+- Follow WCAG guidelines
+- Use semantic HTML
+- Implement proper ARIA labels
+- Ensure keyboard navigation
+
+## Build Configuration
+- Maintain SystemJS compatibility
+- Optimize for single-spa integration
+- Ensure proper JavaScript compilation
+- Bundle all dependencies
+
+## Development Workflow
+1. Create API models in `api/[feature].model.js`
+2. Implement Zod schemas for validation in `api/[feature].schema.js`
+3. Build API services in `api/[feature].service.js`
+4. Create React Query hooks in `api/[feature].query.js`
+5. Build UI components in `components/` folder
+6. Add forms with React Hook Form and Zod validation
+7. Test thoroughly
+8. Optimize performance and bundle size
+
+## Code Quality
+- Use ESLint for code linting
+- Follow consistent naming conventions
+- Write self-documenting code
+- Add proper JSDoc comments
+- Keep components focused and single-purpose
+
+## Dependencies to Include
+```json
+{
+  "@tanstack/react-query": "^5.0.0",
+  "@mantine/core": "^7.0.0",
+  "@mantine/hooks": "^7.0.0",
+  "@mantine/form": "^7.0.0",
+  "react-hook-form": "^7.0.0",
+  "zod": "^3.0.0",
+  "@hookform/resolvers": "^3.0.0"
+}
+```
+
+## Migration Notes
+- Replace current fetch logic with React Query
+- Replace basic styling with Mantine components
+- Add Zod validation to all forms
+- Implement proper error handling throughout
+
+This configuration ensures a modern and maintainable codebase that follows best practices for React development with the specified technology stack. 

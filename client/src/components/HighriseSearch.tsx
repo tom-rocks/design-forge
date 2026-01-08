@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, Loader2, Plus, ExternalLink } from 'lucide-react'
+import { Search, X, Loader2, Plus, Wifi, WifiOff } from 'lucide-react'
 import { API_URL } from '../config'
 
 interface HighriseItem {
@@ -26,55 +26,92 @@ interface HighriseSearchProps {
 
 const HIGHRISE_CDN = 'https://cdn.highrisegame.com/avatar'
 
+const ITEM_TYPES = [
+  { id: 'all', label: 'All' },
+  { id: 'clothing', label: 'Clothing' },
+  { id: 'furniture', label: 'Furniture' },
+]
+
 export default function HighriseSearch({ 
   selectedItems, 
   onSelectionChange, 
   disabled,
   maxItems = 15 
 }: HighriseSearchProps) {
-  const [itemId, setItemId] = useState('')
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [previewError, setPreviewError] = useState(false)
-  const [recentItems, setRecentItems] = useState<HighriseItem[]>([])
+  const [query, setQuery] = useState('')
+  const [itemType, setItemType] = useState('clothing')
+  const [items, setItems] = useState<HighriseItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [showBrowse, setShowBrowse] = useState(false)
+  const [bridgeConnected, setBridgeConnected] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [source, setSource] = useState<string | null>(null)
 
-  // Load some recent items for browsing
+  // Check bridge status
   useEffect(() => {
-    const fetchRecent = async () => {
-      setLoading(true)
+    const checkBridge = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/highrise/items?limit=30`)
+        const res = await fetch(`${API_URL}/api/bridge/status`)
         const data = await res.json()
-        setRecentItems(data.items || [])
-      } catch (e) {
-        console.error('Failed to fetch items:', e)
-      } finally {
-        setLoading(false)
+        setBridgeConnected(data.connected)
+      } catch {
+        setBridgeConnected(false)
       }
     }
-    fetchRecent()
+    checkBridge()
+    const interval = setInterval(checkBridge, 5000)
+    return () => clearInterval(interval)
   }, [])
 
-  // Preview item when ID changes
-  useEffect(() => {
-    if (!itemId.trim()) {
-      setPreviewUrl(null)
-      setPreviewError(false)
-      return
-    }
+  // Search items
+  const searchItems = useCallback(async () => {
+    if (!query.trim() && !itemType) return
     
-    const url = `${HIGHRISE_CDN}/${itemId.trim()}.png`
-    setPreviewUrl(url)
-    setPreviewError(false)
-  }, [itemId])
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (query.trim()) params.set('q', query.trim())
+      params.set('type', itemType)
+      params.set('limit', '40')
 
-  const addItem = (id: string, name?: string) => {
+      const res = await fetch(`${API_URL}/api/highrise/items?${params}`)
+      const data = await res.json()
+      setItems(data.items || [])
+      setSource(data.source || null)
+    } catch (e) {
+      console.error('Search failed:', e)
+    } finally {
+      setLoading(false)
+    }
+  }, [query, itemType])
+
+  // Debounced search
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (query.trim() || bridgeConnected) {
+        searchItems()
+      }
+    }, 300)
+    return () => clearTimeout(timeout)
+  }, [query, itemType, searchItems, bridgeConnected])
+
+  // Initial load when bridge connects
+  useEffect(() => {
+    if (bridgeConnected && items.length === 0) {
+      searchItems()
+    }
+  }, [bridgeConnected])
+
+  const addItem = (item: HighriseItem) => {
+    if (!selectedItems.some(s => s.url === item.imageUrl) && selectedItems.length < maxItems) {
+      onSelectionChange([...selectedItems, { url: item.imageUrl, strength: 1, name: item.name }])
+    }
+  }
+
+  const addItemById = (id: string) => {
     const url = `${HIGHRISE_CDN}/${id}.png`
     if (!selectedItems.some(s => s.url === url) && selectedItems.length < maxItems) {
-      onSelectionChange([...selectedItems, { url, strength: 1, name: name || id }])
-      setItemId('')
-      setPreviewUrl(null)
+      onSelectionChange([...selectedItems, { url, strength: 1, name: id }])
+      setQuery('')
     }
   }
 
@@ -88,147 +125,142 @@ export default function HighriseSearch({
     onSelectionChange(selectedItems.filter(s => s.url !== url))
   }
 
-  const isSelected = (id: string) => {
-    const url = `${HIGHRISE_CDN}/${id}.png`
-    return selectedItems.some(s => s.url === url)
+  const isSelected = (item: HighriseItem) => {
+    return selectedItems.some(s => s.url === item.imageUrl)
+  }
+
+  const isItemId = (text: string) => text.includes('-') && !text.includes(' ')
+
+  const getRarityColor = (r: string) => {
+    switch (r?.toLowerCase()) {
+      case 'legendary': return 'border-yellow-500/60'
+      case 'epic': return 'border-purple-500/60'
+      case 'rare': return 'border-blue-500/60'
+      default: return 'border-forge-border'
+    }
   }
 
   return (
     <div className="space-y-3">
-      {/* Header */}
+      {/* Header with Bridge Status */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium text-forge-text">Style References</h3>
           <p className="text-xs text-forge-text-muted">
-            Add Highrise items as style context ({selectedItems.length}/{maxItems})
+            Search Highrise items ({selectedItems.length}/{maxItems})
           </p>
         </div>
-        <a
-          href="https://highrise.game/en/catalog"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300"
-        >
-          Browse Catalog <ExternalLink className="w-3 h-3" />
-        </a>
+        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
+          bridgeConnected 
+            ? 'bg-green-500/10 text-green-400' 
+            : 'bg-amber-500/10 text-amber-400'
+        }`}>
+          {bridgeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+          {bridgeConnected ? 'Full Search' : 'Limited'}
+        </div>
       </div>
 
-      {/* Item ID Input */}
+      {/* Search Bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted" />
           <input
             type="text"
-            placeholder="Paste item ID (e.g. shirt-n_coolhoodie2024)"
-            value={itemId}
-            onChange={e => setItemId(e.target.value)}
+            placeholder={bridgeConnected ? "Search any item..." : "Paste item ID or search..."}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onFocus={() => setIsOpen(true)}
             onKeyDown={e => {
-              if (e.key === 'Enter' && itemId.trim()) {
+              if (e.key === 'Enter' && query.trim() && isItemId(query.trim())) {
                 e.preventDefault()
-                addItem(itemId.trim())
+                addItemById(query.trim())
               }
             }}
             disabled={disabled}
-            className="w-full pl-10 pr-4 py-2.5 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-violet-500/50 disabled:opacity-50 font-mono"
+            className="w-full pl-10 pr-4 py-2.5 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-violet-500/50 disabled:opacity-50"
           />
-        </div>
-        <button
-          onClick={() => itemId.trim() && addItem(itemId.trim())}
-          disabled={disabled || !itemId.trim() || selectedItems.length >= maxItems}
-          className="px-4 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-forge-surface disabled:text-forge-text-muted text-white rounded-xl transition-colors disabled:cursor-not-allowed"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Preview */}
-      {previewUrl && (
-        <div className="flex items-center gap-3 p-3 bg-forge-surface border border-forge-border rounded-xl">
-          <div className="w-16 h-16 bg-forge-bg rounded-lg overflow-hidden flex-shrink-0">
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="w-full h-full object-contain"
-              onError={() => setPreviewError(true)}
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-forge-text-muted truncate font-mono">{itemId}</p>
-            {previewError ? (
-              <p className="text-xs text-red-400">Item not found - check the ID</p>
-            ) : (
-              <p className="text-xs text-green-400">✓ Valid item</p>
-            )}
-          </div>
-          {!previewError && (
-            <button
-              onClick={() => addItem(itemId.trim())}
-              disabled={isSelected(itemId.trim())}
-              className="px-3 py-1.5 bg-violet-500 hover:bg-violet-600 disabled:bg-forge-muted text-white text-xs rounded-lg"
-            >
-              {isSelected(itemId.trim()) ? 'Added' : 'Add'}
-            </button>
+          {loading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-400 animate-spin" />
           )}
         </div>
-      )}
 
-      {/* Browse Recent Toggle */}
-      <button
-        onClick={() => setShowBrowse(!showBrowse)}
-        className="text-xs text-forge-text-muted hover:text-forge-text"
-      >
-        {showBrowse ? '▼ Hide recent items' : '▶ Browse recent items'}
-      </button>
-
-      {/* Recent Items Grid */}
-      <AnimatePresence>
-        {showBrowse && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+        {bridgeConnected && (
+          <select
+            value={itemType}
+            onChange={e => setItemType(e.target.value)}
+            disabled={disabled}
+            className="px-3 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text focus:outline-none focus:border-violet-500/50"
           >
-            {loading ? (
-              <div className="py-4 text-center">
-                <Loader2 className="w-5 h-5 animate-spin mx-auto text-violet-400" />
-              </div>
-            ) : (
-              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5 py-2">
-                {recentItems.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => addItem(item.id, item.name)}
-                    disabled={isSelected(item.id) || selectedItems.length >= maxItems}
-                    className={`relative aspect-square rounded-lg overflow-hidden border transition-all ${
-                      isSelected(item.id)
-                        ? 'border-violet-500 opacity-50'
-                        : 'border-forge-border hover:border-violet-500/50'
-                    } disabled:cursor-not-allowed`}
-                    title={`${item.name}\n${item.id}`}
-                  >
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-full object-contain bg-forge-bg"
-                      loading="lazy"
-                    />
-                  </button>
-                ))}
+            {ITEM_TYPES.map(t => (
+              <option key={t.id} value={t.id}>{t.label}</option>
+            ))}
+          </select>
+        )}
+
+        {query.trim() && isItemId(query.trim()) && (
+          <button
+            onClick={() => addItemById(query.trim())}
+            disabled={disabled || selectedItems.length >= maxItems}
+            className="px-4 bg-violet-500 hover:bg-violet-600 text-white rounded-xl disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Results Dropdown */}
+      <AnimatePresence>
+        {isOpen && items.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-forge-surface border border-forge-border rounded-xl shadow-xl max-h-64 overflow-y-auto"
+          >
+            {source && (
+              <div className="px-3 py-1.5 border-b border-forge-border text-[10px] text-forge-text-muted">
+                Source: {source === 'bridge' ? '✓ Full catalog' : '⚠️ Limited public API'}
               </div>
             )}
-            <p className="text-[10px] text-forge-text-muted text-center">
-              Note: Public API only shows limited items. Use the catalog link above to find items and paste their IDs.
-            </p>
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 p-2">
+              {items.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => addItem(item)}
+                  disabled={isSelected(item) || selectedItems.length >= maxItems}
+                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                    isSelected(item)
+                      ? 'border-violet-500 opacity-50'
+                      : `${getRarityColor(item.rarity)} hover:border-violet-500/50`
+                  } disabled:cursor-not-allowed`}
+                  title={`${item.name}\n${item.id}`}
+                >
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="w-full h-full object-contain bg-forge-bg"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Selected Items with Strength Sliders */}
+      {/* No Bridge Warning */}
+      {!bridgeConnected && query && items.length === 0 && !loading && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300">
+          <strong>Limited mode:</strong> Connect the AP bridge for full search.
+          You can paste item IDs directly (e.g., <code className="bg-black/20 px-1 rounded">shirt-n_coolhoodie2024</code>)
+        </div>
+      )}
+
+      {/* Selected Items */}
       {selectedItems.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-forge-border">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-forge-text-muted font-medium">
+            <span className="text-xs text-forge-text-muted">
               Selected ({selectedItems.length}/{maxItems})
             </span>
             <button
@@ -244,12 +276,12 @@ export default function HighriseSearch({
               <div 
                 key={item.url} 
                 className="relative group bg-forge-surface border border-forge-border rounded-lg overflow-hidden"
-                style={{ width: '90px' }}
+                style={{ width: '85px' }}
               >
                 <img
                   src={item.url}
                   alt={item.name || 'Reference'}
-                  className="w-full h-16 object-contain bg-forge-bg"
+                  className="w-full h-14 object-contain bg-forge-bg"
                 />
                 <button
                   onClick={() => removeItem(item.url)}
@@ -258,14 +290,12 @@ export default function HighriseSearch({
                   <X className="w-2.5 h-2.5 text-white" />
                 </button>
                 
-                {/* Name */}
                 {item.name && (
                   <div className="px-1 py-0.5 border-t border-forge-border bg-forge-bg/50">
                     <p className="text-[8px] text-forge-text truncate">{item.name}</p>
                   </div>
                 )}
                 
-                {/* Strength slider */}
                 <div className="px-1.5 pb-1">
                   <input
                     type="range"

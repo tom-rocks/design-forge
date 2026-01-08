@@ -1,25 +1,33 @@
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import generateRouter from './routes/generate.js';
 import highriseRouter from './routes/highrise.js';
+import { initBridgeServer, isBridgeConnected } from './bridge.js';
 
 // Load environment variables
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '../../.env') });
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// CORS - allow Railway frontend and local dev
+// Initialize WebSocket bridge for AP connection
+initBridgeServer(server);
+
+// CORS - allow Railway frontend, local dev, and Highrise AP
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:3000',
     /\.railway\.app$/,
     /design-forge.*\.railway\.app$/,
+    /\.highrise\.game$/,
+    /highrise\.game$/,
   ],
   credentials: true,
 }));
@@ -30,12 +38,21 @@ app.use(express.json());
 app.use('/api', generateRouter);
 app.use('/api/highrise', highriseRouter);
 
-// Health check
+// Health check with bridge status
 app.get('/api/health', (_req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
     hasApiKey: !!process.env.KREA_API_KEY,
+    bridgeConnected: isBridgeConnected(),
+  });
+});
+
+// Bridge status endpoint
+app.get('/api/bridge/status', (_req, res) => {
+  res.json({
+    connected: isBridgeConnected(),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -51,6 +68,7 @@ if (existsSync(clientPath)) {
   console.log('⚡ API-only mode (no static files)');
 }
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🔥 Design Forge server running on http://localhost:${PORT}`);
+  console.log(`🌉 WebSocket bridge available at ws://localhost:${PORT}/ws/bridge`);
 });
