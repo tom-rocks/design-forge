@@ -6,7 +6,7 @@ const KREA_API_BASE = 'https://api.krea.ai';
 
 interface GenerateRequest {
   prompt: string;
-  resolution: '1024' | '2048' | '4096';
+  resolution: '1K' | '2K' | '4K';
   aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
   negativePrompt?: string;
   seed?: number;
@@ -26,32 +26,11 @@ function addLog(type: DebugLog['type'], data: unknown) {
   console.log(`[${type}]`, JSON.stringify(data, null, 2));
 }
 
-function getDimensions(resolution: string, aspectRatio: string) {
-  const base = parseInt(resolution);
-  const ratios: Record<string, [number, number]> = {
-    '1:1': [1, 1], '16:9': [16, 9], '9:16': [9, 16], '4:3': [4, 3], '3:4': [3, 4],
-  };
-  const [w, h] = ratios[aspectRatio] || [1, 1];
-  return w >= h 
-    ? { width: base, height: Math.round(base * (h / w)) }
-    : { width: Math.round(base * (w / h)), height: base };
-}
-
-// Google models available in Krea (from their docs)
-const GOOGLE_ENDPOINTS = [
-  '/generate/image/google/imagen-3',
-  '/generate/image/google/imagen-4',
-  '/generate/image/google/imagen-4-fast',
-  '/generate/image/google/imagen-4-ultra',
-  '/generate/image/google/nano-banana',
-  '/generate/image/google/nano-banana-pro',
-];
-
+// Debug endpoint - get logs
 router.get('/debug/logs', (_req: Request, res: Response) => {
   res.json({
     logs: debugLogs,
     apiKey: process.env.KREA_API_KEY ? `${process.env.KREA_API_KEY.slice(0, 8)}...` : 'NOT SET',
-    endpoints: GOOGLE_ENDPOINTS,
   });
 });
 
@@ -64,120 +43,154 @@ router.post('/debug/test-api', async (_req: Request, res: Response) => {
   const apiKey = process.env.KREA_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'No API key' }); return; }
 
-  const results: Record<string, unknown> = {};
-  
-  for (const endpoint of GOOGLE_ENDPOINTS) {
-    const url = `${KREA_API_BASE}${endpoint}`;
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: 'test cat', width: 512, height: 512 }),
-      });
-      const text = await r.text();
-      let body: unknown = text.slice(0, 300);
-      let isJson = false;
-      try { body = JSON.parse(text); isJson = true; } catch {}
-      results[endpoint] = { status: r.status, isJson, body, working: isJson && r.status < 500 };
-    } catch (e) {
-      results[endpoint] = { error: String(e) };
-    }
+  const url = `${KREA_API_BASE}/generate/image/google/nano-banana-pro`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'test cat', resolution: '1K', aspectRatio: '1:1' }),
+    });
+    const text = await r.text();
+    let body: unknown = text;
+    try { body = JSON.parse(text); } catch {}
+    res.json({ status: r.status, body });
+  } catch (e) {
+    res.json({ error: String(e) });
   }
-  
-  res.json({ results });
 });
 
+// Main generation endpoint
 router.post('/generate', async (req: Request, res: Response) => {
   const id = `gen-${Date.now().toString(36)}`;
-  const { prompt, resolution, aspectRatio, negativePrompt, seed } = req.body as GenerateRequest;
+  const { prompt, resolution, aspectRatio } = req.body as GenerateRequest;
   
   addLog('request', { id, prompt: prompt?.slice(0, 50), resolution, aspectRatio });
   
   const apiKey = process.env.KREA_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'KREA_API_KEY not set', id }); return; }
-  if (!prompt) { res.status(400).json({ error: 'Prompt required', id }); return; }
+  if (!prompt || prompt.length < 3) { res.status(400).json({ error: 'Prompt must be at least 3 characters', id }); return; }
   
-  const { width, height } = getDimensions(resolution || '1024', aspectRatio || '1:1');
+  // Map resolution from frontend format to Krea format
+  const resolutionMap: Record<string, string> = {
+    '1024': '1K',
+    '2048': '2K', 
+    '4096': '4K',
+  };
+  const kreaResolution = resolutionMap[resolution] || resolution || '1K';
   
-  // Try each Google endpoint
-  for (const endpoint of GOOGLE_ENDPOINTS) {
-    const url = `${KREA_API_BASE}${endpoint}`;
-    const payload = { prompt, width, height, negative_prompt: negativePrompt, seed };
+  const url = `${KREA_API_BASE}/generate/image/google/nano-banana-pro`;
+  const payload = {
+    prompt,
+    resolution: kreaResolution,
+    aspectRatio: aspectRatio || '1:1',
+  };
+  
+  addLog('info', { id, url, payload });
+  
+  try {
+    // Submit job
+    const submitRes = await fetch(url, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${apiKey}`, 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(payload),
+    });
     
-    addLog('info', { id, trying: endpoint });
-    
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      
-      const text = await r.text();
-      let data: any;
-      try { data = JSON.parse(text); } catch { continue; }
-      
-      addLog('response', { id, endpoint, status: r.status, data });
-      
-      if (r.status === 401 || r.status === 403) {
-        res.status(r.status).json({ error: 'API auth failed', id });
-        return;
-      }
-      
-      if (!r.ok) continue;
-      
-      // Check for job-based response (async)
-      const jobId = data.id || data.job_id;
-      if (jobId) {
-        const result = await pollJob(apiKey, jobId, id);
-        if (result.imageUrl) {
-          res.json({ success: true, imageUrl: result.imageUrl, width, height, model: endpoint, id });
-          return;
-        }
-        continue;
-      }
-      
-      // Direct image URL
-      const imageUrl = data.images?.[0]?.url || data.images?.[0] || data.url || data.image_url || data.result?.url;
-      if (imageUrl) {
-        res.json({ success: true, imageUrl, width, height, model: endpoint, id });
-        return;
-      }
-    } catch (e) {
-      addLog('error', { id, endpoint, error: String(e) });
+    const submitText = await submitRes.text();
+    let submitData: any;
+    try { submitData = JSON.parse(submitText); } catch {
+      addLog('error', { id, error: 'Invalid JSON response', body: submitText.slice(0, 500) });
+      res.status(500).json({ error: 'Invalid response from Krea API', id });
+      return;
     }
-  }
-  
-  res.status(500).json({ error: 'All Google endpoints failed', id, tried: GOOGLE_ENDPOINTS.length });
-});
-
-async function pollJob(apiKey: string, jobId: string, reqId: string): Promise<{ imageUrl?: string }> {
-  for (let i = 0; i < 60; i++) {
-    await new Promise(r => setTimeout(r, 2000));
-    try {
-      const r = await fetch(`${KREA_API_BASE}/jobs/${jobId}`, {
+    
+    addLog('response', { id, status: submitRes.status, data: submitData });
+    
+    if (!submitRes.ok) {
+      res.status(submitRes.status).json({ 
+        error: submitData.error || `Krea API error: ${submitRes.status}`, 
+        id 
+      });
+      return;
+    }
+    
+    const jobId = submitData.job_id;
+    if (!jobId) {
+      res.status(500).json({ error: 'No job_id in response', id, data: submitData });
+      return;
+    }
+    
+    addLog('info', { id, jobId, status: submitData.status });
+    
+    // Poll for completion
+    const maxAttempts = 60; // 2 minutes max
+    const pollInterval = 2000; // 2 seconds
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await new Promise(r => setTimeout(r, pollInterval));
+      
+      const pollRes = await fetch(`${KREA_API_BASE}/jobs/${jobId}`, {
         headers: { 'Authorization': `Bearer ${apiKey}` },
       });
-      if (!r.ok) continue;
-      const job = await r.json();
-      addLog('info', { reqId, jobId, attempt: i, status: job.status });
       
-      if (job.status === 'completed' || job.status === 'succeeded') {
-        return { imageUrl: job.result?.images?.[0]?.url || job.images?.[0]?.url || job.images?.[0] };
+      const pollText = await pollRes.text();
+      let pollData: any;
+      try { pollData = JSON.parse(pollText); } catch { continue; }
+      
+      addLog('info', { id, jobId, attempt, status: pollData.status });
+      
+      if (pollData.status === 'completed') {
+        const imageUrl = pollData.result?.images?.[0]?.url || pollData.result?.url;
+        if (imageUrl) {
+          addLog('info', { id, completed: true, imageUrl });
+          res.json({ 
+            success: true, 
+            imageUrl, 
+            id,
+            jobId,
+          });
+          return;
+        }
       }
-      if (job.status === 'failed') return {};
-    } catch {}
+      
+      if (pollData.status === 'failed' || pollData.status === 'cancelled') {
+        addLog('error', { id, jobId, status: pollData.status, error: pollData.error });
+        res.status(500).json({ 
+          error: `Job ${pollData.status}: ${pollData.error || 'Unknown error'}`, 
+          id 
+        });
+        return;
+      }
+    }
+    
+    res.status(504).json({ error: 'Job timed out', id, jobId });
+    
+  } catch (e) {
+    addLog('error', { id, error: String(e) });
+    res.status(500).json({ error: String(e), id });
   }
-  return {};
-}
+});
 
 router.get('/models', (_req: Request, res: Response) => {
   res.json({
-    model: { id: 'google-imagen', name: 'Google Imagen', description: 'Google image generation via Krea' },
-    resolutions: [{ id: '1024', name: '1K' }, { id: '2048', name: '2K' }, { id: '4096', name: '4K' }],
+    model: { 
+      id: 'nano-banana-pro', 
+      name: 'Gemini Pro 3', 
+      description: 'Native 4K image generation via Krea (Nano Banana Pro)' 
+    },
+    resolutions: [
+      { id: '1024', name: '1K', krea: '1K' }, 
+      { id: '2048', name: '2K', krea: '2K' }, 
+      { id: '4096', name: '4K', krea: '4K' }
+    ],
     aspectRatios: [
-      { id: '1:1', name: 'Square' }, { id: '16:9', name: 'Landscape' }, { id: '9:16', name: 'Portrait' },
-      { id: '4:3', name: 'Standard' }, { id: '3:4', name: 'Portrait Standard' },
+      { id: '1:1', name: 'Square' }, 
+      { id: '16:9', name: 'Landscape' }, 
+      { id: '9:16', name: 'Portrait' },
+      { id: '4:3', name: 'Standard' }, 
+      { id: '3:4', name: 'Portrait Standard' },
     ],
   });
 });

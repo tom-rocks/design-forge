@@ -38,7 +38,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
       {/* Model Badge */}
       <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20 rounded-full">
         <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-        <span className="text-xs font-medium text-blue-300">Google Imagen</span>
+        <span className="text-xs font-medium text-blue-300">Gemini Pro 3</span>
       </div>
 
       {/* Quick Settings */}
