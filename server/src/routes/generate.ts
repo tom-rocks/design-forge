@@ -142,7 +142,8 @@ router.post('/generate', async (req: Request, res: Response) => {
       addLog('info', { id, jobId, attempt, status: pollData.status });
       
       if (pollData.status === 'completed') {
-        const imageUrl = pollData.result?.images?.[0]?.url || pollData.result?.url;
+        // Krea returns URLs at result.urls array
+        const imageUrl = pollData.result?.urls?.[0] || pollData.result?.images?.[0]?.url || pollData.result?.url;
         if (imageUrl) {
           addLog('info', { id, completed: true, imageUrl });
           res.json({ 
@@ -153,6 +154,8 @@ router.post('/generate', async (req: Request, res: Response) => {
           });
           return;
         }
+        // Log if completed but no URL found
+        addLog('error', { id, jobId, error: 'Completed but no image URL', result: pollData.result });
       }
       
       if (pollData.status === 'failed' || pollData.status === 'cancelled') {
