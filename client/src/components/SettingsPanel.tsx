@@ -24,11 +24,15 @@ const aspectRatios = [
 ] as const
 
 const models = [
-  { id: 'flux-1-dev', label: 'Flux Dev', desc: 'High quality' },
-  { id: 'flux-1-schnell', label: 'Flux Schnell', desc: 'Fast' },
-  { id: 'flux-1-pro', label: 'Flux Pro', desc: 'Best quality' },
-  { id: 'krea-1', label: 'Krea 1', desc: 'Native' },
-  { id: 'ideogram', label: 'Ideogram', desc: 'Text rendering' },
+  // Google models (the main focus!)
+  { id: 'nano-banana-pro', label: 'Nano Banana Pro', desc: 'Google 4K (~30s)' },
+  { id: 'imagen-4-ultra', label: 'Imagen 4 Ultra', desc: 'Google best (~30s)' },
+  { id: 'imagen-4', label: 'Imagen 4', desc: 'Google (~32s)' },
+  { id: 'imagen-4-fast', label: 'Imagen 4 Fast', desc: 'Google fast (~17s)' },
+  // Others
+  { id: 'flux-1-dev', label: 'Flux Dev', desc: 'Fast & cheap (~5s)' },
+  { id: 'ideogram-3', label: 'Ideogram 3', desc: 'Aesthetic (~18s)' },
+  { id: 'gpt-image', label: 'ChatGPT', desc: 'Best for text (~60s)' },
 ] as const
 
 export default function SettingsPanel({ settings, onChange, disabled }: SettingsPanelProps) {

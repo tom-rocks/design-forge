@@ -29,7 +29,7 @@ function App() {
     aspectRatio: '1:1',
     negativePrompt: '',
     seed: '',
-    model: 'flux-1-dev', // Default to Flux which is most reliable
+    model: 'nano-banana-pro', // Default to Google's 4K model
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
