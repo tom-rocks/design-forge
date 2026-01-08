@@ -23,6 +23,14 @@ const aspectRatios = [
   { id: '3:4', label: '3:4', icon: '▯' },
 ] as const
 
+const models = [
+  { id: 'flux-1-dev', label: 'Flux Dev', desc: 'High quality' },
+  { id: 'flux-1-schnell', label: 'Flux Schnell', desc: 'Fast' },
+  { id: 'flux-1-pro', label: 'Flux Pro', desc: 'Best quality' },
+  { id: 'krea-1', label: 'Krea 1', desc: 'Native' },
+  { id: 'ideogram', label: 'Ideogram', desc: 'Text rendering' },
+] as const
+
 export default function SettingsPanel({ settings, onChange, disabled }: SettingsPanelProps) {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
@@ -37,6 +45,30 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
     <div className="flex-1 space-y-4">
       {/* Quick Settings */}
       <div className="flex flex-wrap gap-6">
+        {/* Model Selection */}
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider">
+            Model
+          </label>
+          <div className="flex flex-wrap gap-1">
+            {models.map((model) => (
+              <button
+                key={model.id}
+                onClick={() => updateSetting('model', model.id)}
+                disabled={disabled}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  settings.model === model.id
+                    ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                    : 'bg-forge-surface border border-forge-border text-forge-text-muted hover:text-forge-text hover:border-forge-muted'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                title={model.desc}
+              >
+                {model.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Resolution */}
         <div className="space-y-2">
           <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider">

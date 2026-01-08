@@ -12,6 +12,7 @@ export interface GenerationSettings {
   aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
   negativePrompt: string
   seed: string
+  model: string
 }
 
 interface GenerationResult {
@@ -28,6 +29,7 @@ function App() {
     aspectRatio: '1:1',
     negativePrompt: '',
     seed: '',
+    model: 'flux-1-dev', // Default to Flux which is most reliable
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
@@ -49,6 +51,7 @@ function App() {
           aspectRatio: settings.aspectRatio,
           negativePrompt: settings.negativePrompt || undefined,
           seed: settings.seed ? parseInt(settings.seed) : undefined,
+          model: settings.model,
         }),
       })
 

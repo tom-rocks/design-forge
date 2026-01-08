@@ -2,12 +2,16 @@ import { Router, Request, Response } from 'express';
 
 const router = Router();
 
+// Krea API base URL (confirmed from docs)
+const KREA_API_BASE = 'https://api.krea.ai';
+
 interface GenerateRequest {
   prompt: string;
   resolution: '1024' | '2048' | '4096';
   aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
   negativePrompt?: string;
   seed?: number;
+  model?: string;
 }
 
 interface DebugLog {
@@ -21,12 +25,11 @@ const debugLogs: DebugLog[] = [];
 const MAX_DEBUG_LOGS = 100;
 
 function addDebugLog(type: DebugLog['type'], data: unknown) {
-  const entry = {
+  debugLogs.unshift({
     timestamp: new Date().toISOString(),
     type,
     data,
-  };
-  debugLogs.unshift(entry);
+  });
   if (debugLogs.length > MAX_DEBUG_LOGS) {
     debugLogs.pop();
   }
@@ -55,6 +58,22 @@ function getDimensions(resolution: string, aspectRatio: string): { width: number
   }
 }
 
+// Known Krea API endpoints based on documentation
+// Format: /generate/image/{provider}/{model}
+const KREA_MODELS = [
+  // Flux models (confirmed working)
+  { id: 'flux-1-dev', path: '/generate/image/bfl/flux-1-dev', name: 'Flux 1 Dev' },
+  { id: 'flux-1-schnell', path: '/generate/image/bfl/flux-1-schnell', name: 'Flux 1 Schnell' },
+  { id: 'flux-1-pro', path: '/generate/image/bfl/flux-1-pro', name: 'Flux 1 Pro' },
+  // Try Gemini paths
+  { id: 'gemini-image', path: '/generate/image/google/gemini-3-pro-image-preview', name: 'Gemini Pro 3' },
+  { id: 'gemini-image-2', path: '/generate/image/google/gemini-pro-image', name: 'Gemini Pro' },
+  // Ideogram
+  { id: 'ideogram', path: '/generate/image/ideogram/ideogram-v2', name: 'Ideogram v2' },
+  // Krea native
+  { id: 'krea-1', path: '/generate/image/krea/krea-1', name: 'Krea 1' },
+];
+
 // Debug endpoint - get logs
 router.get('/debug/logs', (_req: Request, res: Response) => {
   res.json({
@@ -65,8 +84,9 @@ router.get('/debug/logs', (_req: Request, res: Response) => {
       apiKeyPreview: process.env.KREA_API_KEY 
         ? `${process.env.KREA_API_KEY.slice(0, 8)}...${process.env.KREA_API_KEY.slice(-4)}`
         : 'NOT SET',
-      nodeEnv: process.env.NODE_ENV || 'not set',
+      nodeEnv: process.env.NODE_ENV || 'development',
     },
+    availableModels: KREA_MODELS,
   });
 });
 
@@ -75,23 +95,6 @@ router.delete('/debug/logs', (_req: Request, res: Response) => {
   debugLogs.length = 0;
   res.json({ message: 'Logs cleared' });
 });
-
-// All possible Krea API endpoint combinations to try
-const API_ENDPOINTS = [
-  // Most likely based on Krea documentation patterns
-  'https://external.api.krea.ai/v1/images/generations',
-  'https://external.api.krea.ai/v2/images/generations',
-  'https://external.api.krea.ai/generations',
-  'https://external.api.krea.ai/v1/generate',
-  'https://external.api.krea.ai/generate',
-  // Alternative base URLs
-  'https://api.krea.ai/v1/images/generations',
-  'https://api.krea.ai/v2/images/generations',
-  'https://api.krea.ai/v1/generate',
-  // Direct API
-  'https://krea.ai/api/v1/images/generations',
-  'https://krea.ai/api/generate',
-];
 
 // Debug endpoint - test all API endpoints
 router.post('/debug/test-api', async (req: Request, res: Response) => {
@@ -102,73 +105,94 @@ router.post('/debug/test-api', async (req: Request, res: Response) => {
     return;
   }
 
-  addDebugLog('info', { action: 'test-api-start', keyLength: apiKey.length });
-  
+  addDebugLog('info', { action: 'test-api-start', apiKeyLength: apiKey.length });
+
   const results: Record<string, unknown> = {};
   
-  for (const endpoint of API_ENDPOINTS) {
+  // Test each model endpoint
+  for (const model of KREA_MODELS) {
+    const url = `${KREA_API_BASE}${model.path}`;
+    
     try {
-      // Test with a minimal POST request
-      const response = await fetch(endpoint, {
-        method: 'POST',
+      // Test with GET first to see if endpoint exists
+      const getResponse = await fetch(url, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          prompt: 'test',
-          model: 'flux',
-          width: 512,
-          height: 512,
-        }),
       });
       
-      const contentType = response.headers.get('content-type') || '';
-      const isJson = contentType.includes('application/json');
+      const getContentType = getResponse.headers.get('content-type') || '';
       
-      let body: unknown;
-      try {
-        body = isJson ? await response.json() : (await response.text()).slice(0, 300);
-      } catch {
-        body = 'Could not parse body';
-      }
-      
-      results[endpoint] = {
-        status: response.status,
-        statusText: response.statusText,
-        contentType,
-        isJson,
-        body,
+      results[model.id] = {
+        url,
+        getStatus: getResponse.status,
+        getStatusText: getResponse.statusText,
+        getContentType,
+        isJsonGet: getContentType.includes('application/json'),
       };
       
-      // If we got JSON back (even if error), this might be the right endpoint
-      if (isJson) {
-        addDebugLog('info', { endpoint, status: response.status, message: 'Got JSON response!', body });
+      // If not 404, try POST with minimal payload
+      if (getResponse.status !== 404) {
+        const postResponse = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt: 'test' }),
+        });
+        
+        const postContentType = postResponse.headers.get('content-type') || '';
+        const isJsonPost = postContentType.includes('application/json');
+        let postBody: unknown;
+        
+        try {
+          postBody = isJsonPost 
+            ? await postResponse.json() 
+            : (await postResponse.text()).slice(0, 300);
+        } catch {
+          postBody = 'Failed to parse body';
+        }
+        
+        (results[model.id] as Record<string, unknown>).postStatus = postResponse.status;
+        (results[model.id] as Record<string, unknown>).postContentType = postContentType;
+        (results[model.id] as Record<string, unknown>).isJsonPost = isJsonPost;
+        (results[model.id] as Record<string, unknown>).postBodyPreview = postBody;
       }
     } catch (e) {
-      results[endpoint] = { error: String(e) };
+      results[model.id] = { url, error: String(e) };
     }
   }
   
+  // Also test the base URL
+  try {
+    const baseResponse = await fetch(`${KREA_API_BASE}/`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+    results['base'] = {
+      url: KREA_API_BASE,
+      status: baseResponse.status,
+      contentType: baseResponse.headers.get('content-type'),
+    };
+  } catch (e) {
+    results['base'] = { error: String(e) };
+  }
+  
   addDebugLog('response', { action: 'test-api-complete', results });
-  res.json({ results, hint: 'Look for endpoints that return JSON (even errors) - those are likely correct' });
+  res.json({ results, testedAt: new Date().toISOString() });
 });
 
-// Main generate endpoint
+// Generate image endpoint
 router.post('/generate', async (req: Request, res: Response) => {
-  const requestId = `req_${Date.now().toString(36)}`;
+  const requestId = `gen-${Date.now().toString(36)}`;
   
   try {
-    const { prompt, resolution, aspectRatio, negativePrompt, seed } = req.body as GenerateRequest;
+    const { prompt, resolution, aspectRatio, negativePrompt, seed, model } = req.body as GenerateRequest;
     
     addDebugLog('request', {
       requestId,
-      prompt: prompt?.slice(0, 100),
-      resolution,
-      aspectRatio,
-      hasNegativePrompt: !!negativePrompt,
-      hasSeed: !!seed,
+      body: { prompt: prompt?.slice(0, 100), resolution, aspectRatio, model },
     });
     
     const apiKey = process.env.KREA_API_KEY;
@@ -188,148 +212,132 @@ router.post('/generate', async (req: Request, res: Response) => {
     
     const { width, height } = getDimensions(resolution || '1024', aspectRatio || '1:1');
     
-    // Try each endpoint until one works
-    let lastError = '';
-    let successResult = null;
+    // Select model - default to flux-1-dev which is confirmed working
+    const selectedModel = KREA_MODELS.find(m => m.id === model) || KREA_MODELS[0];
+    const apiUrl = `${KREA_API_BASE}${selectedModel.path}`;
     
-    for (const endpoint of API_ENDPOINTS) {
-      // Build request body - try different formats
-      const bodies = [
-        // Format 1: Standard with model
-        {
-          prompt,
-          model: 'flux', // Try flux model first as it's commonly available
-          width,
-          height,
-          negative_prompt: negativePrompt || undefined,
-          seed: seed || undefined,
-        },
-        // Format 2: Gemini specific
-        {
-          prompt,
-          model: 'gemini-3-pro-image-preview',
-          width,
-          height,
-          negative_prompt: negativePrompt || undefined,
-          seed: seed || undefined,
-        },
-        // Format 3: Simple
-        {
-          prompt,
-          width,
-          height,
-        },
-      ];
-      
-      for (const body of bodies) {
-        try {
-          addDebugLog('request', { requestId, endpoint, body });
-          
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify(body),
-          });
-          
-          const contentType = response.headers.get('content-type') || '';
-          const isJson = contentType.includes('application/json');
-          
-          addDebugLog('response', {
-            requestId,
-            endpoint,
-            status: response.status,
-            contentType,
-            isJson,
-          });
-          
-          if (!isJson) {
-            const htmlPreview = (await response.text()).slice(0, 200);
-            lastError = `${endpoint}: HTML response (status ${response.status})`;
-            addDebugLog('error', { requestId, endpoint, error: 'HTML response', preview: htmlPreview });
-            continue;
-          }
-          
-          const data = await response.json();
-          addDebugLog('response', { requestId, endpoint, data });
-          
-          if (!response.ok) {
-            lastError = `${endpoint}: ${data.error || data.message || response.statusText}`;
-            continue;
-          }
-          
-          // Try to extract image URL from various response formats
-          const imageUrl = 
-            data.data?.[0]?.url ||
-            data.images?.[0]?.url ||
-            data.images?.[0] ||
-            data.result?.url ||
-            data.result?.images?.[0]?.url ||
-            data.output?.url ||
-            data.output?.images?.[0] ||
-            data.url ||
-            data.image ||
-            data.generation?.images?.[0]?.url;
-          
-          if (imageUrl) {
-            successResult = {
-              success: true,
-              imageUrl,
-              width,
-              height,
-              debug: { requestId, endpoint, model: body.model },
-            };
-            break;
-          }
-          
-          // Check for job-based response (async generation)
-          if (data.id || data.jobId || data.generation_id) {
-            successResult = {
-              success: true,
-              jobId: data.id || data.jobId || data.generation_id,
-              status: data.status || 'pending',
-              message: 'Generation started. Job-based API - polling not yet implemented.',
-              width,
-              height,
-              debug: { requestId, endpoint, response: data },
-            };
-            break;
-          }
-          
-          lastError = `${endpoint}: Unexpected response format`;
-          addDebugLog('error', { requestId, endpoint, error: 'Unexpected format', data });
-          
-        } catch (e) {
-          lastError = `${endpoint}: ${e instanceof Error ? e.message : String(e)}`;
-          addDebugLog('error', { requestId, endpoint, error: lastError });
-        }
-      }
-      
-      if (successResult) break;
-    }
+    // Build request payload based on Krea API format
+    const payload = {
+      prompt,
+      negative_prompt: negativePrompt || undefined,
+      width,
+      height,
+      seed: seed || undefined,
+      num_images: 1,
+    };
     
-    if (successResult) {
-      res.json(successResult);
+    addDebugLog('request', {
+      requestId,
+      url: apiUrl,
+      model: selectedModel.id,
+      payload: { ...payload, prompt: payload.prompt.slice(0, 50) + '...' },
+    });
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
+    addDebugLog('response', {
+      requestId,
+      status: response.status,
+      statusText: response.statusText,
+      contentType,
+      isJson,
+    });
+    
+    if (!isJson) {
+      const htmlBody = await response.text();
+      const error = {
+        requestId,
+        error: `API returned HTML instead of JSON (status ${response.status})`,
+        htmlPreview: htmlBody.slice(0, 500),
+        hint: 'The API endpoint may be incorrect. Try using the "Test API Endpoints" button in the debug panel to find working endpoints.',
+        triedUrl: apiUrl,
+        triedModel: selectedModel.id,
+      };
+      addDebugLog('error', error);
+      res.status(response.status).json(error);
       return;
     }
     
-    // All attempts failed
-    const errorResponse = {
-      error: `All API endpoints failed. Last error: ${lastError}`,
+    const data = await response.json();
+    addDebugLog('response', { requestId, data });
+    
+    if (!response.ok) {
+      const error = {
+        requestId,
+        error: data.error || data.message || `API error: ${response.status}`,
+        details: data,
+      };
+      addDebugLog('error', error);
+      res.status(response.status).json(error);
+      return;
+    }
+    
+    // Extract image URL from response (Krea returns various formats)
+    const imageUrl = 
+      data.data?.[0]?.url ||
+      data.images?.[0]?.url ||
+      data.images?.[0] ||
+      data.result?.url ||
+      data.result?.images?.[0] ||
+      data.output?.url ||
+      data.url ||
+      data.image ||
+      data.image_url;
+    
+    if (imageUrl) {
+      res.json({
+        success: true,
+        imageUrl,
+        width,
+        height,
+        model: selectedModel.id,
+        requestId,
+      });
+      return;
+    }
+    
+    // If job-based response
+    if (data.id || data.job_id || data.task_id) {
+      const jobId = data.id || data.job_id || data.task_id;
+      addDebugLog('info', { requestId, jobId, status: 'Job created, polling not implemented yet' });
+      
+      res.json({
+        success: true,
+        jobId,
+        status: data.status || 'pending',
+        message: 'Generation started. Job-based polling not yet implemented.',
+        width,
+        height,
+        requestId,
+      });
+      return;
+    }
+    
+    // Unknown response format
+    const error = {
       requestId,
-      hint: 'Use the debug panel (bug icon) → "Test API Endpoints" to find working endpoints. Check if your API key is correct.',
-      testedEndpoints: API_ENDPOINTS.length,
+      error: 'Unexpected response format from API',
+      responseData: data,
     };
-    addDebugLog('error', errorResponse);
-    res.status(500).json(errorResponse);
+    addDebugLog('error', error);
+    res.status(500).json(error);
     
   } catch (error) {
     const errorResponse = {
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
       requestId,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      stack: error instanceof Error ? error.stack : undefined,
     };
     addDebugLog('error', errorResponse);
     res.status(500).json(errorResponse);
@@ -339,14 +347,15 @@ router.post('/generate', async (req: Request, res: Response) => {
 // Get available models
 router.get('/models', (_req: Request, res: Response) => {
   res.json({
-    models: [
-      { id: 'flux', name: 'Flux', description: 'Fast, high-quality generation' },
-      { id: 'gemini-3-pro-image-preview', name: 'Gemini Pro 3', description: 'Google Gemini image generation' },
-    ],
+    models: KREA_MODELS.map(m => ({
+      id: m.id,
+      name: m.name,
+      endpoint: m.path,
+    })),
     resolutions: [
-      { id: '1024', name: '1K', description: '1024x1024' },
-      { id: '2048', name: '2K', description: '2048x2048' },
-      { id: '4096', name: '4K', description: '4096x4096' },
+      { id: '1024', name: '1K', description: '1024px' },
+      { id: '2048', name: '2K', description: '2048px' },
+      { id: '4096', name: '4K', description: '4096px' },
     ],
     aspectRatios: [
       { id: '1:1', name: 'Square' },
