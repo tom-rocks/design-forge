@@ -8,11 +8,24 @@ import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import { API_URL } from './config'
 
+export interface StyleImage {
+  url: string
+  strength: number
+}
+
+export interface Reference {
+  name: string
+  images: { url: string }[]
+}
+
 export interface GenerationSettings {
   resolution: '1024' | '2048' | '4096'
-  aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
+  aspectRatio: string
   negativePrompt: string
   seed: string
+  numImages: number
+  styleImages?: StyleImage[]
+  references?: Reference[]
 }
 
 export interface GenerationProgress {
@@ -24,6 +37,7 @@ export interface GenerationProgress {
 
 interface GenerationResult {
   imageUrl: string
+  imageUrls?: string[]
   prompt: string
 }
 
@@ -34,6 +48,9 @@ function App() {
     aspectRatio: '1:1',
     negativePrompt: '',
     seed: '',
+    numImages: 1,
+    styleImages: [],
+    references: [],
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
@@ -55,6 +72,9 @@ function App() {
           prompt: prompt.trim(),
           resolution: settings.resolution,
           aspectRatio: settings.aspectRatio,
+          numImages: settings.numImages > 1 ? settings.numImages : undefined,
+          styleImages: settings.styleImages?.length ? settings.styleImages : undefined,
+          references: settings.references?.length ? settings.references : undefined,
         }),
       })
 
@@ -87,7 +107,11 @@ function App() {
                   elapsed: data.elapsed,
                 })
               } else if (event === 'complete') {
-                setResult({ imageUrl: data.imageUrl, prompt: prompt.trim() })
+                setResult({ 
+                  imageUrl: data.imageUrl, 
+                  imageUrls: data.imageUrls,
+                  prompt: prompt.trim() 
+                })
                 setProgress(null)
                 setIsGenerating(false)
                 return
