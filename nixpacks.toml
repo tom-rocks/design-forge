@@ -1,3 +1,4 @@
+# Backend-only build for faster deploys
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 

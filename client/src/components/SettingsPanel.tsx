@@ -23,18 +23,6 @@ const aspectRatios = [
   { id: '3:4', label: '3:4', icon: '▯' },
 ] as const
 
-const models = [
-  // Google models (the main focus!)
-  { id: 'nano-banana-pro', label: 'Nano Banana Pro', desc: 'Google 4K (~30s)' },
-  { id: 'imagen-4-ultra', label: 'Imagen 4 Ultra', desc: 'Google best (~30s)' },
-  { id: 'imagen-4', label: 'Imagen 4', desc: 'Google (~32s)' },
-  { id: 'imagen-4-fast', label: 'Imagen 4 Fast', desc: 'Google fast (~17s)' },
-  // Others
-  { id: 'flux-1-dev', label: 'Flux Dev', desc: 'Fast & cheap (~5s)' },
-  { id: 'ideogram-3', label: 'Ideogram 3', desc: 'Aesthetic (~18s)' },
-  { id: 'gpt-image', label: 'ChatGPT', desc: 'Best for text (~60s)' },
-] as const
-
 export default function SettingsPanel({ settings, onChange, disabled }: SettingsPanelProps) {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
@@ -47,32 +35,14 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
 
   return (
     <div className="flex-1 space-y-4">
+      {/* Model Badge */}
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20 rounded-full">
+        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+        <span className="text-xs font-medium text-blue-300">Gemini Pro 3</span>
+      </div>
+
       {/* Quick Settings */}
       <div className="flex flex-wrap gap-6">
-        {/* Model Selection */}
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider">
-            Model
-          </label>
-          <div className="flex flex-wrap gap-1">
-            {models.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => updateSetting('model', model.id)}
-                disabled={disabled}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  settings.model === model.id
-                    ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                    : 'bg-forge-surface border border-forge-border text-forge-text-muted hover:text-forge-text hover:border-forge-muted'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={model.desc}
-              >
-                {model.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Resolution */}
         <div className="space-y-2">
           <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider">
