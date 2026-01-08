@@ -1,12 +1,12 @@
-# Backend API only - fast builds
+# Full-stack: build both frontend and backend
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["cd server && npm install"]
+cmds = ["npm run install:all"]
 
 [phases.build]
-cmds = ["cd server && npm run build"]
+cmds = ["npm run build"]
 
 [start]
-cmd = "cd server && npm start"
+cmd = "npm start"
