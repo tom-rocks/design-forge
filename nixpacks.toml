@@ -1,4 +1,4 @@
-# Full stack - frontend + backend
+# Full stack build - frontend + backend served together
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 
