@@ -47,7 +47,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
     reader.onload = () => {
       const url = reader.result as string
       const current = settings.styleImages || []
-      if (current.length < 4) {
+      if (current.length < 15) {
         updateSetting('styleImages', [...current, { url, strength: 1 }])
       }
     }
@@ -219,7 +219,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
               <div className="space-y-2">
                 <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider flex items-center gap-2">
                   <Palette className="w-3 h-3" />
-                  Style Reference (up to 4)
+                  Style Reference (up to 15)
                 </label>
                 <p className="text-xs text-forge-text-muted/70">
                   Upload images to influence the style of your generation
@@ -250,7 +250,7 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
                       />
                     </div>
                   ))}
-                  {(settings.styleImages || []).length < 4 && (
+                  {(settings.styleImages || []).length < 15 && (
                     <button
                       onClick={() => styleImageInput.current?.click()}
                       disabled={disabled}
@@ -273,10 +273,10 @@ export default function SettingsPanel({ settings, onChange, disabled }: Settings
               <div className="space-y-2">
                 <label className="text-xs font-medium text-forge-text-muted uppercase tracking-wider flex items-center gap-2">
                   <ImagePlus className="w-3 h-3" />
-                  Reference Images
+                  Reference Images (no documented limit)
                 </label>
                 <p className="text-xs text-forge-text-muted/70">
-                  Add images for the AI to reference during generation
+                  Named reference sets for context during generation
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {(settings.references || []).map((ref, i) => (
