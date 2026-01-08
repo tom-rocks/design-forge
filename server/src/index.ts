@@ -12,13 +12,13 @@ config({ path: join(dirname(fileURLToPath(import.meta.url)), '../../.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS - allow Vercel frontend and local dev
+// CORS - allow Railway frontend and local dev
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:3000',
-    /\.vercel\.app$/,
-    /design-forge.*\.vercel\.app$/,
+    /\.railway\.app$/,
+    /design-forge.*\.railway\.app$/,
   ],
   credentials: true,
 }));

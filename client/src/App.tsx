@@ -6,6 +6,7 @@ import ImageDisplay from './components/ImageDisplay'
 import GenerateButton from './components/GenerateButton'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
+import { API_URL } from './config'
 
 export interface GenerationSettings {
   resolution: '1024' | '2048' | '4096'
@@ -40,7 +41,7 @@ function App() {
     setError(null)
 
     try {
-      const response = await fetch('/api/generate', {
+      const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

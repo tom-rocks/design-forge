@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bug, RefreshCw, Trash2, ChevronDown, ChevronUp, TestTube, AlertCircle, CheckCircle } from 'lucide-react'
+import { API_URL } from '../config'
 
 interface DebugLog {
   timestamp: string
@@ -25,7 +26,7 @@ export default function DebugPanel() {
   const fetchLogs = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/debug/logs')
+      const response = await fetch(`${API_URL}/api/debug/logs`)
       const data = await response.json()
       setLogs(data.logs || [])
       setEnvCheck(data.envCheck || null)
@@ -38,7 +39,7 @@ export default function DebugPanel() {
 
   const clearLogs = async () => {
     try {
-      await fetch('/api/debug/logs', { method: 'DELETE' })
+      await fetch(`${API_URL}/api/debug/logs`, { method: 'DELETE' })
       setLogs([])
     } catch (e) {
       console.error('Failed to clear logs:', e)
@@ -49,7 +50,7 @@ export default function DebugPanel() {
     setIsTesting(true)
     setTestResults(null)
     try {
-      const response = await fetch('/api/debug/test-api', { method: 'POST' })
+      const response = await fetch(`${API_URL}/api/debug/test-api`, { method: 'POST' })
       const data = await response.json()
       setTestResults(data.results)
       await fetchLogs() // Refresh logs after test
