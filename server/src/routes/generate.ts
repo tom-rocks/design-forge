@@ -2,14 +2,6 @@ import { Router, Request, Response } from 'express';
 
 const router = Router();
 
-// Possible Krea API endpoints to try
-const KREA_API_ENDPOINTS = {
-  v1: 'https://api.krea.ai/v1',
-  v2: 'https://api.krea.ai/v2', 
-  direct: 'https://krea.ai/api',
-  external: 'https://external.api.krea.ai',
-};
-
 interface GenerateRequest {
   prompt: string;
   resolution: '1024' | '2048' | '4096';
@@ -20,24 +12,25 @@ interface GenerateRequest {
 
 interface DebugLog {
   timestamp: string;
-  type: 'request' | 'response' | 'error';
+  type: 'request' | 'response' | 'error' | 'info';
   data: unknown;
 }
 
-// In-memory debug logs (last 50 entries)
+// In-memory debug logs (last 100 entries)
 const debugLogs: DebugLog[] = [];
-const MAX_DEBUG_LOGS = 50;
+const MAX_DEBUG_LOGS = 100;
 
 function addDebugLog(type: DebugLog['type'], data: unknown) {
-  debugLogs.unshift({
+  const entry = {
     timestamp: new Date().toISOString(),
     type,
     data,
-  });
+  };
+  debugLogs.unshift(entry);
   if (debugLogs.length > MAX_DEBUG_LOGS) {
     debugLogs.pop();
   }
-  console.log(`[DEBUG ${type}]`, JSON.stringify(data, null, 2));
+  console.log(`[${type.toUpperCase()}]`, JSON.stringify(data, null, 2));
 }
 
 // Helper to calculate dimensions based on resolution and aspect ratio
@@ -68,6 +61,7 @@ router.get('/debug/logs', (_req: Request, res: Response) => {
     logs: debugLogs,
     envCheck: {
       hasApiKey: !!process.env.KREA_API_KEY,
+      apiKeyLength: process.env.KREA_API_KEY?.length || 0,
       apiKeyPreview: process.env.KREA_API_KEY 
         ? `${process.env.KREA_API_KEY.slice(0, 8)}...${process.env.KREA_API_KEY.slice(-4)}`
         : 'NOT SET',
@@ -82,7 +76,24 @@ router.delete('/debug/logs', (_req: Request, res: Response) => {
   res.json({ message: 'Logs cleared' });
 });
 
-// Debug endpoint - test API connection
+// All possible Krea API endpoint combinations to try
+const API_ENDPOINTS = [
+  // Most likely based on Krea documentation patterns
+  'https://external.api.krea.ai/v1/images/generations',
+  'https://external.api.krea.ai/v2/images/generations',
+  'https://external.api.krea.ai/generations',
+  'https://external.api.krea.ai/v1/generate',
+  'https://external.api.krea.ai/generate',
+  // Alternative base URLs
+  'https://api.krea.ai/v1/images/generations',
+  'https://api.krea.ai/v2/images/generations',
+  'https://api.krea.ai/v1/generate',
+  // Direct API
+  'https://krea.ai/api/v1/images/generations',
+  'https://krea.ai/api/generate',
+];
+
+// Debug endpoint - test all API endpoints
 router.post('/debug/test-api', async (req: Request, res: Response) => {
   const apiKey = process.env.KREA_API_KEY;
   
@@ -91,71 +102,78 @@ router.post('/debug/test-api', async (req: Request, res: Response) => {
     return;
   }
 
+  addDebugLog('info', { action: 'test-api-start', keyLength: apiKey.length });
+  
   const results: Record<string, unknown> = {};
   
-  // Test each possible endpoint
-  for (const [name, baseUrl] of Object.entries(KREA_API_ENDPOINTS)) {
+  for (const endpoint of API_ENDPOINTS) {
     try {
-      const testUrls = [
-        `${baseUrl}/images/generations`,
-        `${baseUrl}/generate`,
-        `${baseUrl}/generation`,
-        `${baseUrl}/models`,
-      ];
+      // Test with a minimal POST request
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: 'test',
+          model: 'flux',
+          width: 512,
+          height: 512,
+        }),
+      });
       
-      for (const url of testUrls) {
-        try {
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          const contentType = response.headers.get('content-type') || '';
-          const isJson = contentType.includes('application/json');
-          const body = isJson ? await response.json() : await response.text();
-          
-          results[`${name}:${url}`] = {
-            status: response.status,
-            statusText: response.statusText,
-            contentType,
-            isJson,
-            bodyPreview: typeof body === 'string' ? body.slice(0, 200) : body,
-          };
-        } catch (e) {
-          results[`${name}:${url}`] = { error: String(e) };
-        }
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      
+      let body: unknown;
+      try {
+        body = isJson ? await response.json() : (await response.text()).slice(0, 300);
+      } catch {
+        body = 'Could not parse body';
+      }
+      
+      results[endpoint] = {
+        status: response.status,
+        statusText: response.statusText,
+        contentType,
+        isJson,
+        body,
+      };
+      
+      // If we got JSON back (even if error), this might be the right endpoint
+      if (isJson) {
+        addDebugLog('info', { endpoint, status: response.status, message: 'Got JSON response!', body });
       }
     } catch (e) {
-      results[name] = { error: String(e) };
+      results[endpoint] = { error: String(e) };
     }
   }
   
-  addDebugLog('response', { action: 'test-api', results });
-  res.json({ results });
+  addDebugLog('response', { action: 'test-api-complete', results });
+  res.json({ results, hint: 'Look for endpoints that return JSON (even errors) - those are likely correct' });
 });
 
-// Generate image endpoint with extensive debugging
+// Main generate endpoint
 router.post('/generate', async (req: Request, res: Response) => {
-  const requestId = Date.now().toString(36);
+  const requestId = `req_${Date.now().toString(36)}`;
   
   try {
     const { prompt, resolution, aspectRatio, negativePrompt, seed } = req.body as GenerateRequest;
     
     addDebugLog('request', {
       requestId,
-      body: req.body,
-      headers: {
-        contentType: req.headers['content-type'],
-        userAgent: req.headers['user-agent'],
-      },
+      prompt: prompt?.slice(0, 100),
+      resolution,
+      aspectRatio,
+      hasNegativePrompt: !!negativePrompt,
+      hasSeed: !!seed,
     });
     
     const apiKey = process.env.KREA_API_KEY;
     if (!apiKey) {
-      const error = { requestId, error: 'KREA_API_KEY not configured in environment variables' };
+      const error = { requestId, error: 'KREA_API_KEY not configured. Set it in Railway environment variables.' };
       addDebugLog('error', error);
       res.status(500).json(error);
       return;
@@ -170,141 +188,140 @@ router.post('/generate', async (req: Request, res: Response) => {
     
     const { width, height } = getDimensions(resolution || '1024', aspectRatio || '1:1');
     
-    // Try multiple API formats
-    const apiFormats = [
-      // Format 1: OpenAI-style
-      {
-        url: `${KREA_API_ENDPOINTS.v1}/images/generations`,
-        body: {
-          model: 'gemini-3-pro-image-preview',
-          prompt,
-          negative_prompt: negativePrompt || undefined,
-          width,
-          height,
-          seed: seed || undefined,
-          n: 1,
-        },
-      },
-      // Format 2: Simple generate
-      {
-        url: `${KREA_API_ENDPOINTS.v1}/generate`,
-        body: {
-          model: 'gemini-3-pro-image-preview',
-          prompt,
-          negativePrompt: negativePrompt || undefined,
-          width,
-          height,
-          seed: seed || undefined,
-        },
-      },
-      // Format 3: Krea specific
-      {
-        url: `${KREA_API_ENDPOINTS.direct}/generate`,
-        body: {
-          prompt,
-          model: 'gemini-3-pro-image-preview',
-          settings: {
-            width,
-            height,
-            negativePrompt: negativePrompt || undefined,
-            seed: seed || undefined,
-          },
-        },
-      },
-    ];
-
-    let lastError: string = '';
+    // Try each endpoint until one works
+    let lastError = '';
+    let successResult = null;
     
-    for (const format of apiFormats) {
-      addDebugLog('request', {
-        requestId,
-        attempt: format.url,
-        payload: format.body,
-      });
+    for (const endpoint of API_ENDPOINTS) {
+      // Build request body - try different formats
+      const bodies = [
+        // Format 1: Standard with model
+        {
+          prompt,
+          model: 'flux', // Try flux model first as it's commonly available
+          width,
+          height,
+          negative_prompt: negativePrompt || undefined,
+          seed: seed || undefined,
+        },
+        // Format 2: Gemini specific
+        {
+          prompt,
+          model: 'gemini-3-pro-image-preview',
+          width,
+          height,
+          negative_prompt: negativePrompt || undefined,
+          seed: seed || undefined,
+        },
+        // Format 3: Simple
+        {
+          prompt,
+          width,
+          height,
+        },
+      ];
       
-      try {
-        const response = await fetch(format.url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(format.body),
-        });
-        
-        const contentType = response.headers.get('content-type') || '';
-        const isJson = contentType.includes('application/json');
-        
-        addDebugLog('response', {
-          requestId,
-          url: format.url,
-          status: response.status,
-          statusText: response.statusText,
-          contentType,
-          isJson,
-        });
-        
-        if (!isJson) {
-          const htmlPreview = (await response.text()).slice(0, 500);
-          lastError = `API returned HTML instead of JSON (status ${response.status}). Preview: ${htmlPreview}`;
-          addDebugLog('error', { requestId, url: format.url, error: lastError });
-          continue;
-        }
-        
-        const data = await response.json();
-        addDebugLog('response', { requestId, url: format.url, data });
-        
-        if (!response.ok) {
-          lastError = data.error || data.message || `API error: ${response.status}`;
-          continue;
-        }
-        
-        // Try to extract image URL from various response formats
-        const imageUrl = 
-          data.data?.[0]?.url ||
-          data.images?.[0]?.url ||
-          data.result?.url ||
-          data.output?.url ||
-          data.url ||
-          data.image;
-        
-        if (imageUrl) {
-          res.json({
-            success: true,
-            imageUrl,
-            width,
-            height,
-            debug: { requestId, format: format.url },
+      for (const body of bodies) {
+        try {
+          addDebugLog('request', { requestId, endpoint, body });
+          
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(body),
           });
-          return;
-        }
-        
-        // If job-based, return job info for polling
-        if (data.id || data.jobId) {
-          res.json({
-            success: true,
-            jobId: data.id || data.jobId,
-            status: data.status || 'pending',
-            width,
-            height,
-            debug: { requestId, format: format.url, response: data },
+          
+          const contentType = response.headers.get('content-type') || '';
+          const isJson = contentType.includes('application/json');
+          
+          addDebugLog('response', {
+            requestId,
+            endpoint,
+            status: response.status,
+            contentType,
+            isJson,
           });
-          return;
+          
+          if (!isJson) {
+            const htmlPreview = (await response.text()).slice(0, 200);
+            lastError = `${endpoint}: HTML response (status ${response.status})`;
+            addDebugLog('error', { requestId, endpoint, error: 'HTML response', preview: htmlPreview });
+            continue;
+          }
+          
+          const data = await response.json();
+          addDebugLog('response', { requestId, endpoint, data });
+          
+          if (!response.ok) {
+            lastError = `${endpoint}: ${data.error || data.message || response.statusText}`;
+            continue;
+          }
+          
+          // Try to extract image URL from various response formats
+          const imageUrl = 
+            data.data?.[0]?.url ||
+            data.images?.[0]?.url ||
+            data.images?.[0] ||
+            data.result?.url ||
+            data.result?.images?.[0]?.url ||
+            data.output?.url ||
+            data.output?.images?.[0] ||
+            data.url ||
+            data.image ||
+            data.generation?.images?.[0]?.url;
+          
+          if (imageUrl) {
+            successResult = {
+              success: true,
+              imageUrl,
+              width,
+              height,
+              debug: { requestId, endpoint, model: body.model },
+            };
+            break;
+          }
+          
+          // Check for job-based response (async generation)
+          if (data.id || data.jobId || data.generation_id) {
+            successResult = {
+              success: true,
+              jobId: data.id || data.jobId || data.generation_id,
+              status: data.status || 'pending',
+              message: 'Generation started. Job-based API - polling not yet implemented.',
+              width,
+              height,
+              debug: { requestId, endpoint, response: data },
+            };
+            break;
+          }
+          
+          lastError = `${endpoint}: Unexpected response format`;
+          addDebugLog('error', { requestId, endpoint, error: 'Unexpected format', data });
+          
+        } catch (e) {
+          lastError = `${endpoint}: ${e instanceof Error ? e.message : String(e)}`;
+          addDebugLog('error', { requestId, endpoint, error: lastError });
         }
-        
-        lastError = `Unexpected response format: ${JSON.stringify(data)}`;
-      } catch (e) {
-        lastError = `Request failed: ${e instanceof Error ? e.message : String(e)}`;
-        addDebugLog('error', { requestId, url: format.url, error: lastError });
       }
+      
+      if (successResult) break;
+    }
+    
+    if (successResult) {
+      res.json(successResult);
+      return;
     }
     
     // All attempts failed
     const errorResponse = {
-      error: lastError || 'All API attempts failed',
+      error: `All API endpoints failed. Last error: ${lastError}`,
       requestId,
-      hint: 'Check /api/debug/logs for detailed information',
+      hint: 'Use the debug panel (bug icon) → "Test API Endpoints" to find working endpoints. Check if your API key is correct.',
+      testedEndpoints: API_ENDPOINTS.length,
     };
     addDebugLog('error', errorResponse);
     res.status(500).json(errorResponse);
@@ -319,11 +336,12 @@ router.post('/generate', async (req: Request, res: Response) => {
   }
 });
 
-// Get available models (for future use)
-router.get('/models', async (_req: Request, res: Response) => {
+// Get available models
+router.get('/models', (_req: Request, res: Response) => {
   res.json({
     models: [
-      { id: 'gemini-3-pro-image-preview', name: 'Gemini Pro 3', description: 'High-quality image generation up to 4K' },
+      { id: 'flux', name: 'Flux', description: 'Fast, high-quality generation' },
+      { id: 'gemini-3-pro-image-preview', name: 'Gemini Pro 3', description: 'Google Gemini image generation' },
     ],
     resolutions: [
       { id: '1024', name: '1K', description: '1024x1024' },
