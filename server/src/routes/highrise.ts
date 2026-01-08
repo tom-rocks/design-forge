@@ -29,7 +29,7 @@ interface SearchResult {
   imageUrl: string;
 }
 
-// Search items
+// Search items - fetches multiple pages when searching to filter client-side
 router.get('/items', async (req: Request, res: Response) => {
   try {
     const { 
@@ -43,29 +43,45 @@ router.get('/items', async (req: Request, res: Response) => {
     const searchQuery = q ? String(q).toLowerCase().trim() : '';
     const requestedLimit = Math.min(parseInt(String(limit)), 100);
     
-    // Fetch a large batch to filter client-side (Highrise API doesn't support partial search)
-    const params = new URLSearchParams();
-    if (category) params.set('category', String(category));
-    if (rarity) params.set('rarity', String(rarity));
-    if (starts_after && !searchQuery) params.set('starts_after', String(starts_after));
-    // Fetch more when searching to have data to filter
-    params.set('limit', searchQuery ? '500' : String(requestedLimit));
-    params.set('sort_order', 'desc');
+    let allItems: HighriseItem[] = [];
+    
+    // When searching, fetch multiple pages to have enough data to filter
+    const pagesToFetch = searchQuery ? 3 : 1; // Fetch 300 items max when searching
+    let cursor: string | undefined = starts_after && !searchQuery ? String(starts_after) : undefined;
+    
+    for (let page = 0; page < pagesToFetch; page++) {
+      const params = new URLSearchParams();
+      if (category) params.set('category', String(category));
+      if (rarity) params.set('rarity', String(rarity));
+      if (cursor) params.set('starts_after', cursor);
+      params.set('limit', '100'); // Max allowed by Highrise API
+      params.set('sort_order', 'desc');
 
-    const url = `${HIGHRISE_API}/items?${params.toString()}`;
-    console.log('[Highrise] Fetching:', url);
+      const url = `${HIGHRISE_API}/items?${params.toString()}`;
+      console.log('[Highrise] Fetching page', page + 1, ':', url);
 
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Highrise API error: ${response.status}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error('[Highrise] API error:', response.status);
+        break;
+      }
+
+      const data = await response.json();
+      const pageItems: HighriseItem[] = data.items || [];
+      
+      if (pageItems.length === 0) break;
+      
+      allItems = [...allItems, ...pageItems];
+      cursor = pageItems[pageItems.length - 1].item_id;
+      
+      // Stop early if not searching (we only need one page)
+      if (!searchQuery) break;
     }
 
-    const data = await response.json();
-    let items: HighriseItem[] = data.items || [];
-
     // Filter by search query (matches both name and ID)
+    let items = allItems;
     if (searchQuery) {
-      items = items.filter(item => 
+      items = allItems.filter(item => 
         item.item_id.toLowerCase().includes(searchQuery) ||
         item.item_name.toLowerCase().includes(searchQuery)
       );
