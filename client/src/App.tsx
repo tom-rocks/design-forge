@@ -15,10 +15,14 @@ export interface GenerationSettings {
   seed: string
 }
 
+export interface GenerationProgress {
+  status: string
+  message: string
+  elapsed?: number
+}
+
 interface GenerationResult {
   imageUrl: string
-  width: number
-  height: number
   prompt: string
 }
 
@@ -31,6 +35,7 @@ function App() {
     seed: '',
   })
   const [isGenerating, setIsGenerating] = useState(false)
+  const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,6 +44,7 @@ function App() {
 
     setIsGenerating(true)
     setError(null)
+    setProgress({ status: 'connecting', message: 'Connecting...' })
 
     try {
       const response = await fetch(`${API_URL}/api/generate`, {
@@ -48,25 +54,51 @@ function App() {
           prompt: prompt.trim(),
           resolution: settings.resolution,
           aspectRatio: settings.aspectRatio,
-          negativePrompt: settings.negativePrompt || undefined,
-          seed: settings.seed ? parseInt(settings.seed) : undefined,
         }),
       })
 
-      const data = await response.json()
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
+      if (!reader) throw new Error('No response stream')
+
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            const event = line.slice(7)
+            const dataLine = lines[lines.indexOf(line) + 1]
+            if (dataLine?.startsWith('data: ')) {
+              const data = JSON.parse(dataLine.slice(6))
+              
+              if (event === 'progress') {
+                setProgress({
+                  status: data.status,
+                  message: data.message,
+                  elapsed: data.elapsed,
+                })
+              } else if (event === 'complete') {
+                setResult({ imageUrl: data.imageUrl, prompt: prompt.trim() })
+                setProgress(null)
+                setIsGenerating(false)
+                return
+              } else if (event === 'error') {
+                throw new Error(data.error)
+              }
+            }
+          }
+        }
       }
-
-      setResult({
-        imageUrl: data.imageUrl,
-        width: data.width,
-        height: data.height,
-        prompt: prompt.trim(),
-      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
+      setProgress(null)
     } finally {
       setIsGenerating(false)
     }
@@ -74,7 +106,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-forge-bg">
-      {/* Subtle gradient background */}
       <div className="fixed inset-0 bg-gradient-to-br from-forge-bg via-forge-surface to-forge-bg opacity-50" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/10 via-transparent to-transparent" />
       
@@ -82,7 +113,6 @@ function App() {
         <Header />
         
         <main className="mt-12 space-y-8">
-          {/* Prompt Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -96,7 +126,6 @@ function App() {
             />
           </motion.div>
 
-          {/* Settings + Generate Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -116,6 +145,26 @@ function App() {
             />
           </motion.div>
 
+          {/* Progress indicator */}
+          <AnimatePresence>
+            {progress && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+                  <span className="text-violet-300 text-sm font-medium">{progress.message}</span>
+                  {progress.elapsed && (
+                    <span className="text-violet-400/60 text-xs ml-auto">{progress.elapsed}s</span>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Error Message */}
           <AnimatePresence>
             {error && (
@@ -127,14 +176,10 @@ function App() {
               >
                 <div className="font-medium mb-1">Generation Error</div>
                 <div className="text-red-300/80 text-xs font-mono break-all">{error}</div>
-                <div className="mt-2 text-xs text-red-300/60">
-                  Click the bug icon (bottom right) to open the debug panel for more details.
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Image Display */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -148,7 +193,6 @@ function App() {
         </main>
       </div>
       
-      {/* Debug Panel */}
       <DebugPanel />
     </div>
   )

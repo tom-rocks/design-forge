@@ -5,8 +5,6 @@ import { Download, ExternalLink, ImageIcon, ZoomIn, X } from 'lucide-react'
 interface ImageDisplayProps {
   result: {
     imageUrl: string
-    width: number
-    height: number
     prompt: string
   } | null
   isLoading: boolean
@@ -103,9 +101,6 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4">
                 <div className="text-white text-sm max-w-[70%]">
                   <p className="font-medium truncate">{result.prompt}</p>
-                  <p className="text-xs text-white/60 mt-1">
-                    {result.width} × {result.height}
-                  </p>
                 </div>
                 
                 <div className="flex gap-2">
