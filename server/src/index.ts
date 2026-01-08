@@ -24,13 +24,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  const clientPath = join(dirname(fileURLToPath(import.meta.url)), '../../client/dist');
-  app.use(express.static(clientPath));
-  app.get('*', (_req, res) => {
-    res.sendFile(join(clientPath, 'index.html'));
-  });
-}
+const clientPath = join(dirname(fileURLToPath(import.meta.url)), '../../client/dist');
+app.use(express.static(clientPath));
+app.get('*', (_req, res) => {
+  res.sendFile(join(clientPath, 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`🔥 Design Forge server running on http://localhost:${PORT}`);
