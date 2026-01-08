@@ -14,6 +14,7 @@ interface HighriseItem {
 interface StyleImage {
   url: string
   strength: number
+  name?: string
 }
 
 interface HighriseSearchProps {
@@ -50,20 +51,19 @@ export default function HighriseSearch({
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [items, setItems] = useState<HighriseItem[]>([])
-  const [filteredItems, setFilteredItems] = useState<HighriseItem[]>([])
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
-  // Fetch items from API
+  // Fetch items from API (backend handles both name and ID search)
   const fetchItems = useCallback(async (searchQuery: string, cat: string) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.set('q', searchQuery)
       if (cat) params.set('category', cat)
-      params.set('limit', '100') // Fetch more to filter client-side
+      params.set('limit', '60')
 
       const res = await fetch(`${API_URL}/api/highrise/items?${params}`)
       const data = await res.json()
@@ -74,21 +74,6 @@ export default function HighriseSearch({
       setLoading(false)
     }
   }, [])
-
-  // Filter items client-side to match both ID and name
-  useEffect(() => {
-    if (!query.trim()) {
-      setFilteredItems(items)
-      return
-    }
-    
-    const q = query.toLowerCase()
-    const filtered = items.filter(item => 
-      item.id.toLowerCase().includes(q) || 
-      item.name.toLowerCase().includes(q)
-    )
-    setFilteredItems(filtered)
-  }, [items, query])
 
   // Debounced search
   useEffect(() => {
@@ -124,7 +109,7 @@ export default function HighriseSearch({
     if (isSelected(item)) {
       onSelectionChange(selectedItems.filter(s => s.url !== item.imageUrl))
     } else if (selectedItems.length < maxItems) {
-      onSelectionChange([...selectedItems, { url: item.imageUrl, strength: 1 }])
+      onSelectionChange([...selectedItems, { url: item.imageUrl, strength: 1, name: item.name }])
     }
   }
 
@@ -138,12 +123,21 @@ export default function HighriseSearch({
     onSelectionChange(selectedItems.filter(s => s.url !== url))
   }
 
-  const getRarityColor = (r: string) => {
+  const getRarityBorder = (r: string) => {
     switch (r) {
-      case 'legendary': return 'border-yellow-500/50 bg-yellow-500/5'
-      case 'epic': return 'border-purple-500/50 bg-purple-500/5'
-      case 'rare': return 'border-blue-500/50 bg-blue-500/5'
+      case 'legendary': return 'border-yellow-500/60'
+      case 'epic': return 'border-purple-500/60'
+      case 'rare': return 'border-blue-500/60'
       default: return 'border-forge-border'
+    }
+  }
+
+  const getRarityBg = (r: string) => {
+    switch (r) {
+      case 'legendary': return 'bg-yellow-500/10'
+      case 'epic': return 'bg-purple-500/10'
+      case 'rare': return 'bg-blue-500/10'
+      default: return 'bg-forge-bg'
     }
   }
 
@@ -156,7 +150,7 @@ export default function HighriseSearch({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted" />
             <input
               type="text"
-              placeholder="Search Highrise items by name or ID..."
+              placeholder="Search Highrise items (name or ID like 'hoodie')..."
               value={query}
               onChange={e => setQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
@@ -185,45 +179,54 @@ export default function HighriseSearch({
 
         {/* Dropdown Results */}
         <AnimatePresence>
-          {isOpen && filteredItems.length > 0 && (
+          {isOpen && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute z-20 left-0 right-0 mt-2 max-h-64 overflow-y-auto bg-forge-surface border border-forge-border rounded-xl shadow-xl"
+              className="absolute z-20 left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-forge-surface border border-forge-border rounded-xl shadow-xl"
             >
-              <div className="grid grid-cols-5 gap-1 p-2">
-                {filteredItems.slice(0, 50).map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => toggleItem(item)}
-                    disabled={!isSelected(item) && selectedItems.length >= maxItems}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      isSelected(item)
-                        ? 'border-violet-500 ring-2 ring-violet-500/30'
-                        : `${getRarityColor(item.rarity)} hover:border-violet-500/30`
-                    } disabled:opacity-30 disabled:cursor-not-allowed`}
-                    title={`${item.name} (${item.id})`}
-                  >
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-full object-contain bg-forge-bg"
-                      loading="lazy"
-                    />
-                    {isSelected(item) && (
-                      <div className="absolute inset-0 bg-violet-500/30 flex items-center justify-center">
-                        <div className="w-4 h-4 bg-violet-500 rounded-full flex items-center justify-center">
+              {loading ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="w-6 h-6 text-violet-400 animate-spin mx-auto" />
+                  <p className="text-xs text-forge-text-muted mt-2">Searching...</p>
+                </div>
+              ) : items.length === 0 ? (
+                <div className="p-8 text-center text-forge-text-muted text-sm">
+                  {query ? `No items found for "${query}"` : 'Type to search items'}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-3">
+                  {items.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => toggleItem(item)}
+                      disabled={!isSelected(item) && selectedItems.length >= maxItems}
+                      className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${
+                        isSelected(item)
+                          ? 'border-violet-500 ring-2 ring-violet-500/30'
+                          : `${getRarityBorder(item.rarity)} hover:border-violet-500/30`
+                      } disabled:opacity-30 disabled:cursor-not-allowed`}
+                    >
+                      <div className={`aspect-square ${getRarityBg(item.rarity)}`}>
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      {isSelected(item) && (
+                        <div className="absolute top-1 right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs">✓</span>
                         </div>
+                      )}
+                      <div className="px-1.5 py-1 bg-forge-bg/90 border-t border-forge-border">
+                        <p className="text-[10px] text-forge-text truncate font-medium">{item.name}</p>
+                        <p className="text-[9px] text-forge-text-muted truncate">{item.id}</p>
                       </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-              {filteredItems.length > 50 && (
-                <div className="px-3 py-2 text-xs text-forge-text-muted text-center border-t border-forge-border">
-                  Showing 50 of {filteredItems.length} results. Refine your search.
+                    </button>
+                  ))}
                 </div>
               )}
             </motion.div>
@@ -247,25 +250,33 @@ export default function HighriseSearch({
           </div>
           
           <div className="flex flex-wrap gap-2">
-            {selectedItems.map((item, i) => (
+            {selectedItems.map((item) => (
               <div 
                 key={item.url} 
-                className="relative group bg-forge-surface border border-forge-border rounded-lg p-1"
+                className="relative group bg-forge-surface border border-forge-border rounded-lg overflow-hidden"
+                style={{ width: '80px' }}
               >
                 <img
                   src={item.url}
-                  alt={`Reference ${i + 1}`}
-                  className="w-14 h-14 object-contain"
+                  alt={item.name || 'Reference'}
+                  className="w-full h-16 object-contain bg-forge-bg"
                 />
                 <button
                   onClick={() => removeItem(item.url)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="w-3 h-3 text-white" />
+                  <X className="w-2.5 h-2.5 text-white" />
                 </button>
                 
+                {/* Name */}
+                {item.name && (
+                  <div className="px-1 py-0.5 border-t border-forge-border">
+                    <p className="text-[9px] text-forge-text truncate">{item.name}</p>
+                  </div>
+                )}
+                
                 {/* Strength slider */}
-                <div className="mt-1">
+                <div className="px-1 pb-1">
                   <input
                     type="range"
                     min="-2"
@@ -274,9 +285,8 @@ export default function HighriseSearch({
                     value={item.strength}
                     onChange={e => updateStrength(item.url, parseFloat(e.target.value))}
                     className="w-full h-1 accent-violet-500 cursor-pointer"
-                    title={`Strength: ${item.strength}`}
                   />
-                  <div className="text-[10px] text-center text-forge-text-muted">
+                  <div className="text-[9px] text-center text-forge-text-muted">
                     {item.strength > 0 ? '+' : ''}{item.strength}
                   </div>
                 </div>

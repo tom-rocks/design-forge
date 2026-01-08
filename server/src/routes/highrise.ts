@@ -33,21 +33,29 @@ interface SearchResult {
 router.get('/items', async (req: Request, res: Response) => {
   try {
     const { 
-      q,           // search query (item_name)
+      q,           // search query (searches both name and ID)
       category,    // filter by category
       rarity,      // filter by rarity (rare,epic,legendary,none)
-      limit = '20',
+      limit = '50',
       starts_after 
     } = req.query;
 
-    const params = new URLSearchParams();
+    const searchQuery = q ? String(q).toLowerCase() : '';
     
-    if (q) params.set('item_name', String(q));
+    // Build API params - fetch more to filter client-side for ID matches
+    const params = new URLSearchParams();
     if (category) params.set('category', String(category));
     if (rarity) params.set('rarity', String(rarity));
     if (starts_after) params.set('starts_after', String(starts_after));
-    params.set('limit', String(Math.min(parseInt(String(limit)), 50)));
+    // Fetch more items when searching to allow ID filtering
+    const fetchLimit = searchQuery ? 200 : Math.min(parseInt(String(limit)), 100);
+    params.set('limit', String(fetchLimit));
     params.set('sort_order', 'desc');
+    
+    // If searching, also try API search by name
+    if (searchQuery) {
+      params.set('item_name', searchQuery);
+    }
 
     const url = `${HIGHRISE_API}/items?${params.toString()}`;
     console.log('[Highrise] Fetching:', url);
@@ -58,10 +66,41 @@ router.get('/items', async (req: Request, res: Response) => {
     }
 
     const data = await response.json();
-    const items: HighriseItem[] = data.items || [];
+    let items: HighriseItem[] = data.items || [];
+
+    // If searching, also fetch without name filter to catch ID matches
+    if (searchQuery) {
+      const idParams = new URLSearchParams();
+      if (category) idParams.set('category', String(category));
+      if (rarity) idParams.set('rarity', String(rarity));
+      idParams.set('limit', '200');
+      idParams.set('sort_order', 'desc');
+      
+      const idUrl = `${HIGHRISE_API}/items?${idParams.toString()}`;
+      const idResponse = await fetch(idUrl);
+      if (idResponse.ok) {
+        const idData = await idResponse.json();
+        const idItems: HighriseItem[] = idData.items || [];
+        
+        // Merge and dedupe
+        const seenIds = new Set(items.map(i => i.item_id));
+        for (const item of idItems) {
+          if (!seenIds.has(item.item_id)) {
+            items.push(item);
+            seenIds.add(item.item_id);
+          }
+        }
+      }
+      
+      // Filter by query matching both name and ID
+      items = items.filter(item => 
+        item.item_id.toLowerCase().includes(searchQuery) ||
+        item.item_name.toLowerCase().includes(searchQuery)
+      );
+    }
 
     // Transform to our format with image URLs
-    const results: SearchResult[] = items.map(item => ({
+    const results: SearchResult[] = items.slice(0, parseInt(String(limit))).map(item => ({
       id: item.item_id,
       name: item.item_name,
       category: item.category,
@@ -71,8 +110,8 @@ router.get('/items', async (req: Request, res: Response) => {
 
     res.json({
       items: results,
-      hasMore: items.length === parseInt(String(limit)),
-      nextCursor: items.length > 0 ? items[items.length - 1].item_id : null,
+      hasMore: items.length > parseInt(String(limit)),
+      nextCursor: results.length > 0 ? results[results.length - 1].id : null,
     });
 
   } catch (error) {
