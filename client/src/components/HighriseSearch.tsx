@@ -53,12 +53,27 @@ export default function HighriseSearch({
   const [items, setItems] = useState<HighriseItem[]>([])
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [searchNote, setSearchNote] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+
+  // Check if query looks like an item ID and add directly
+  const isItemId = (text: string) => {
+    return text.includes('-') && text.includes('_') && !text.includes(' ')
+  }
+
+  const addItemById = (itemId: string) => {
+    const url = `https://cdn.highrisegame.com/avatar/${itemId}.png`
+    if (!selectedItems.some(s => s.url === url) && selectedItems.length < maxItems) {
+      onSelectionChange([...selectedItems, { url, strength: 1, name: itemId }])
+      setQuery('')
+    }
+  }
 
   // Fetch items from API (backend handles both name and ID search)
   const fetchItems = useCallback(async (searchQuery: string, cat: string) => {
     setLoading(true)
+    setSearchNote(null)
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.set('q', searchQuery)
@@ -68,6 +83,7 @@ export default function HighriseSearch({
       const res = await fetch(`${API_URL}/api/highrise/items?${params}`)
       const data = await res.json()
       setItems(data.items || [])
+      if (data.searchNote) setSearchNote(data.searchNote)
     } catch (e) {
       console.error('Failed to fetch items:', e)
     } finally {
@@ -150,10 +166,16 @@ export default function HighriseSearch({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted" />
             <input
               type="text"
-              placeholder="Search Highrise items (name or ID like 'hoodie')..."
+              placeholder={category ? `Search ${category} items...` : "Select a category, then search..."}
               value={query}
               onChange={e => setQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && query && isItemId(query)) {
+                  e.preventDefault()
+                  addItemById(query.trim())
+                }
+              }}
               disabled={disabled}
               className="w-full pl-10 pr-4 py-2.5 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-violet-500/50 disabled:opacity-50"
             />
@@ -176,6 +198,26 @@ export default function HighriseSearch({
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted pointer-events-none" />
           </div>
         </div>
+
+        {/* Direct Item ID Add */}
+        {query && isItemId(query) && (
+          <div className="mt-2 p-2 bg-violet-500/10 border border-violet-500/30 rounded-lg flex items-center justify-between">
+            <span className="text-xs text-violet-300">Add item ID directly?</span>
+            <button
+              onClick={() => addItemById(query.trim())}
+              className="px-3 py-1 bg-violet-500 hover:bg-violet-600 text-white text-xs rounded-lg"
+            >
+              Add "{query.slice(0, 20)}..."
+            </button>
+          </div>
+        )}
+
+        {/* Search Note */}
+        {searchNote && !loading && (
+          <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <span className="text-xs text-amber-300">{searchNote}</span>
+          </div>
+        )}
 
         {/* Dropdown Results */}
         <AnimatePresence>

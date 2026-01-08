@@ -29,12 +29,12 @@ interface SearchResult {
   imageUrl: string;
 }
 
-// Search items - fetches multiple pages when searching to filter client-side
+// Search items - fetches multiple pages when searching within a category
 router.get('/items', async (req: Request, res: Response) => {
   try {
     const { 
       q,           // search query (searches both name and ID client-side)
-      category,    // filter by category
+      category,    // filter by category - REQUIRED for effective search
       rarity,      // filter by rarity (rare,epic,legendary,none)
       limit = '50',
       starts_after 
@@ -45,8 +45,9 @@ router.get('/items', async (req: Request, res: Response) => {
     
     let allItems: HighriseItem[] = [];
     
-    // When searching, fetch multiple pages to have enough data to filter
-    const pagesToFetch = searchQuery ? 3 : 1; // Fetch 300 items max when searching
+    // When searching WITH a category, fetch more pages (category narrows results significantly)
+    // Without category, we can only show recent items (API has no global search)
+    const pagesToFetch = (searchQuery && category) ? 10 : (category ? 3 : 1);
     let cursor: string | undefined = starts_after && !searchQuery ? String(starts_after) : undefined;
     
     for (let page = 0; page < pagesToFetch; page++) {
@@ -74,8 +75,14 @@ router.get('/items', async (req: Request, res: Response) => {
       allItems = [...allItems, ...pageItems];
       cursor = pageItems[pageItems.length - 1].item_id;
       
-      // Stop early if not searching (we only need one page)
-      if (!searchQuery) break;
+      // If we found enough matches, stop early
+      if (searchQuery) {
+        const matches = allItems.filter(item => 
+          item.item_id.toLowerCase().includes(searchQuery) ||
+          item.item_name.toLowerCase().includes(searchQuery)
+        );
+        if (matches.length >= requestedLimit * 2) break;
+      }
     }
 
     // Filter by search query (matches both name and ID)
@@ -100,6 +107,7 @@ router.get('/items', async (req: Request, res: Response) => {
       items: results,
       hasMore: items.length > requestedLimit,
       nextCursor: results.length > 0 ? results[results.length - 1].id : null,
+      searchNote: searchQuery && !category ? 'Select a category for better search results' : undefined,
     });
 
   } catch (error) {
