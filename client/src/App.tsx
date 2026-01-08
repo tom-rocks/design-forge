@@ -5,6 +5,7 @@ import SettingsPanel from './components/SettingsPanel'
 import ImageDisplay from './components/ImageDisplay'
 import GenerateButton from './components/GenerateButton'
 import Header from './components/Header'
+import DebugPanel from './components/DebugPanel'
 
 export interface GenerationSettings {
   resolution: '1024' | '2048' | '4096'
@@ -123,7 +124,11 @@ function App() {
                 exit={{ opacity: 0, y: -10 }}
                 className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
               >
-                {error}
+                <div className="font-medium mb-1">Generation Error</div>
+                <div className="text-red-300/80 text-xs font-mono break-all">{error}</div>
+                <div className="mt-2 text-xs text-red-300/60">
+                  Click the bug icon (bottom right) to open the debug panel for more details.
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -141,6 +146,9 @@ function App() {
           </motion.div>
         </main>
       </div>
+      
+      {/* Debug Panel */}
+      <DebugPanel />
     </div>
   )
 }
