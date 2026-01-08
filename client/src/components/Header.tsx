@@ -29,7 +29,7 @@ export default function Header() {
         transition={{ duration: 0.5 }}
         className="text-xs text-forge-text-muted"
       >
-        via Krea API
+        AI Image Generation
       </motion.div>
     </header>
   )

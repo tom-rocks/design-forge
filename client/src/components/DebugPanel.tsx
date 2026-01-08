@@ -215,7 +215,7 @@ export default function DebugPanel() {
             <div className="px-4 py-2 border-t border-forge-border bg-forge-bg/50">
               <p className="text-xs text-forge-text-muted">
                 <strong>Tip:</strong> If you see "API returned HTML" errors, the API endpoint might be incorrect. 
-                Check your Krea API documentation for the correct endpoint URL.
+                Check the API endpoint configuration if issues persist.
               </p>
             </div>
           </motion.div>

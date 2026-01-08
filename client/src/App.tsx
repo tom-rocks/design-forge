@@ -18,6 +18,7 @@ export interface GenerationSettings {
 export interface GenerationProgress {
   status: string
   message: string
+  progress: number
   elapsed?: number
 }
 
@@ -44,7 +45,7 @@ function App() {
 
     setIsGenerating(true)
     setError(null)
-    setProgress({ status: 'connecting', message: 'Connecting...' })
+    setProgress({ status: 'connecting', message: 'Connecting...', progress: 0 })
 
     try {
       const response = await fetch(`${API_URL}/api/generate`, {
@@ -82,6 +83,7 @@ function App() {
                 setProgress({
                   status: data.status,
                   message: data.message,
+                  progress: data.progress || 0,
                   elapsed: data.elapsed,
                 })
               } else if (event === 'complete') {
@@ -152,14 +154,25 @@ function App() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-lg"
+                className="p-4 bg-forge-surface border border-forge-border rounded-xl"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
-                  <span className="text-violet-300 text-sm font-medium">{progress.message}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+                    <span className="text-forge-text text-sm font-medium">{progress.message}</span>
+                  </div>
                   {progress.elapsed && (
-                    <span className="text-violet-400/60 text-xs ml-auto">{progress.elapsed}s</span>
+                    <span className="text-forge-text-muted text-xs tabular-nums">{progress.elapsed}s</span>
                   )}
+                </div>
+                {/* Progress bar */}
+                <div className="h-1.5 bg-forge-border rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress.progress}%` }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                  />
                 </div>
               </motion.div>
             )}

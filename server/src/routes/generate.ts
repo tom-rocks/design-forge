@@ -50,7 +50,7 @@ router.post('/generate', async (req: Request, res: Response) => {
   
   const apiKey = process.env.KREA_API_KEY;
   if (!apiKey) {
-    send('error', { error: 'KREA_API_KEY not set', id });
+    send('error', { error: 'API key not configured', id });
     res.end();
     return;
   }
@@ -67,7 +67,7 @@ router.post('/generate', async (req: Request, res: Response) => {
   const url = `${KREA_API_BASE}/generate/image/google/nano-banana-pro`;
   const payload = { prompt, resolution: kreaResolution, aspectRatio: aspectRatio || '1:1' };
   
-  send('progress', { status: 'submitting', message: 'Submitting to Krea...', id });
+  send('progress', { status: 'submitting', message: 'Initializing...', progress: 5, id });
   
   try {
     const submitRes = await fetch(url, {
@@ -84,7 +84,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
     
     const jobId = submitData.job_id;
-    send('progress', { status: 'queued', message: 'Job queued...', id, jobId, position: submitData.position });
+    send('progress', { status: 'queued', message: 'In queue...', progress: 10, id, jobId });
     
     // Poll for completion
     const maxAttempts = 90; // 3 minutes max
@@ -100,19 +100,20 @@ router.post('/generate', async (req: Request, res: Response) => {
       const pollData = await pollRes.json().catch(() => null);
       if (!pollData) continue;
       
-      const statusMap: Record<string, string> = {
-        'queued': 'Waiting in queue...',
-        'processing': 'Generating image...',
-        'sampling': 'Sampling...',
-        'completed': 'Complete!',
+      const statusInfo: Record<string, { message: string; progress: number }> = {
+        'queued': { message: 'Waiting in queue...', progress: 15 },
+        'processing': { message: 'Generating...', progress: 30 + Math.min(attempt * 2, 50) },
+        'sampling': { message: 'Refining details...', progress: 85 },
+        'completed': { message: 'Finalizing...', progress: 95 },
       };
+      const info = statusInfo[pollData.status] || { message: 'Processing...', progress: 30 };
       
       send('progress', { 
         status: pollData.status, 
-        message: statusMap[pollData.status] || pollData.status,
+        message: info.message,
+        progress: info.progress,
         id, 
         jobId,
-        attempt,
         elapsed: (attempt + 1) * 2,
       });
       
