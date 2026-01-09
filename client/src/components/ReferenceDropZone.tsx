@@ -329,6 +329,36 @@ export default function ReferenceDropZone({
         )}
       </div>
 
+      {/* Pour spout at bottom center - connects to gutter */}
+      <div className="relative flex justify-center">
+        <div 
+          className="w-4 h-3 relative -mb-1"
+          style={{
+            background: effectiveHeat > 0.2 
+              ? `linear-gradient(180deg, ${heatColors.border} 0%, ${isForging ? '#ff6b35' : heatColors.border} 100%)`
+              : '#333',
+            clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)',
+            boxShadow: effectiveHeat > 0.3 ? `0 4px 8px ${heatColors.glow}` : 'none',
+          }}
+        >
+          {/* Drip animation when forging */}
+          {isForging && (
+            <motion.div
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 rounded-full"
+              animate={{
+                height: ['0px', '8px', '0px'],
+                opacity: [0.8, 1, 0],
+              }}
+              transition={{ duration: 0.5, repeat: Infinity }}
+              style={{
+                background: 'linear-gradient(180deg, #ffcc00, #ff6b35)',
+                boxShadow: '0 0 6px #ff6b35',
+              }}
+            />
+          )}
+        </div>
+      </div>
+
     </motion.div>
   )
 }

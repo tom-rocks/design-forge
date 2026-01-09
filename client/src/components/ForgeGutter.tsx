@@ -6,94 +6,73 @@ interface ForgeGutterProps {
 }
 
 export default function ForgeGutter({ isForging, progress }: ForgeGutterProps) {
-  const heatLevel = progress / 100
+  const heatLevel = Math.min(progress / 100, 1)
+  
+  // Base color when not forging
+  const baseColor = heatLevel > 0.1 ? `rgba(255, 107, 53, ${0.3 + heatLevel * 0.4})` : '#333'
   
   return (
-    <div className="relative h-16 flex items-center justify-center">
-      {/* Simple vertical line */}
+    <div className="relative h-12 flex items-start justify-center pt-0">
+      {/* The pour line - simple and elegant */}
       <div 
-        className="w-0.5 h-full rounded-full transition-all duration-300"
+        className="w-0.5 h-full rounded-full transition-all duration-500"
         style={{
-          backgroundColor: isForging ? '#ff6b35' : '#333',
+          backgroundColor: isForging ? '#ff6b35' : baseColor,
           boxShadow: isForging 
-            ? `0 0 ${10 + heatLevel * 20}px rgba(255, 107, 53, ${0.5 + heatLevel * 0.5}), 0 0 ${5 + heatLevel * 10}px rgba(255, 69, 0, 0.8)`
-            : 'none',
+            ? `0 0 ${8 + heatLevel * 15}px rgba(255, 107, 53, ${0.6 + heatLevel * 0.4}), 0 0 ${4 + heatLevel * 8}px rgba(255, 69, 0, 0.9)`
+            : heatLevel > 0.1 
+              ? `0 0 ${heatLevel * 10}px rgba(255, 107, 53, ${heatLevel * 0.5})`
+              : 'none',
         }}
       />
       
-      {/* Flowing molten animation when forging */}
+      {/* Flowing molten pulses when forging */}
       <AnimatePresence>
         {isForging && (
           <>
-            {/* Main flow pulse */}
+            {/* Primary flow */}
             <motion.div
               className="absolute left-1/2 -translate-x-1/2 w-1 rounded-full"
               initial={{ top: 0, height: 0, opacity: 0 }}
               animate={{ 
-                top: ['0%', '100%'],
-                height: ['20%', '20%'],
+                top: ['0%', '85%'],
+                height: ['15%', '15%'],
                 opacity: [0, 1, 1, 0],
               }}
               transition={{ 
-                duration: 0.8, 
+                duration: 0.6, 
                 repeat: Infinity,
                 ease: 'easeIn',
               }}
               style={{
-                background: 'linear-gradient(180deg, #ffcc00 0%, #ff6b35 50%, #ff4500 100%)',
-                boxShadow: '0 0 12px #ff6b35, 0 0 24px rgba(255, 107, 53, 0.5)',
+                background: 'linear-gradient(180deg, #ffdd44 0%, #ff6b35 40%, #ff4500 100%)',
+                boxShadow: '0 0 10px #ff6b35, 0 0 20px rgba(255, 107, 53, 0.6)',
               }}
             />
             
-            {/* Secondary flow pulse - offset */}
+            {/* Secondary flow - offset timing */}
             <motion.div
-              className="absolute left-1/2 -translate-x-1/2 w-1 rounded-full"
+              className="absolute left-1/2 -translate-x-1/2 w-0.5 rounded-full"
               initial={{ top: 0, height: 0, opacity: 0 }}
               animate={{ 
-                top: ['0%', '100%'],
-                height: ['15%', '15%'],
-                opacity: [0, 0.8, 0.8, 0],
+                top: ['0%', '90%'],
+                height: ['10%', '10%'],
+                opacity: [0, 0.7, 0.7, 0],
               }}
               transition={{ 
-                duration: 0.8, 
+                duration: 0.6, 
                 repeat: Infinity,
                 ease: 'easeIn',
-                delay: 0.4,
+                delay: 0.3,
               }}
               style={{
                 background: 'linear-gradient(180deg, #ffa500 0%, #ff6b35 100%)',
-                boxShadow: '0 0 8px #ff6b35',
-              }}
-            />
-
-            {/* Ambient glow */}
-            <motion.div
-              className="absolute left-1/2 -translate-x-1/2 w-8 h-full pointer-events-none"
-              animate={{
-                opacity: [0.2, 0.4, 0.2],
-              }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              style={{
-                background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.3) 0%, transparent 70%)',
+                boxShadow: '0 0 6px #ff6b35',
               }}
             />
           </>
         )}
       </AnimatePresence>
-
-      {/* Residual glow when not forging but has heat */}
-      {!isForging && heatLevel > 0 && (
-        <motion.div
-          className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full rounded-full"
-          initial={{ opacity: 0.6 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 2 }}
-          style={{
-            background: `linear-gradient(180deg, rgba(255, 107, 53, ${heatLevel * 0.5}) 0%, rgba(255, 69, 0, ${heatLevel * 0.3}) 100%)`,
-            boxShadow: `0 0 ${heatLevel * 10}px rgba(255, 107, 53, ${heatLevel * 0.4})`,
-          }}
-        />
-      )}
     </div>
   )
 }

@@ -143,9 +143,24 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
 
   return (
     <>
+      {/* Receiving funnel - connects to gutter */}
+      <div className="relative flex justify-center -mt-1 z-10">
+        <div 
+          className="w-6 h-3"
+          style={{
+            background: isLoading 
+              ? `linear-gradient(180deg, ${heatStyle.border} 0%, ${heatStyle.bg} 100%)`
+              : '#2a2a2a',
+            clipPath: 'polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%)',
+            boxShadow: isLoading && heatLevel > 0.2 ? `0 0 10px ${heatStyle.glow}` : 'none',
+            transition: 'all 0.3s ease',
+          }}
+        />
+      </div>
+
       {/* OUTPUT MOLD - The receiving block */}
       <motion.div 
-        className="relative overflow-hidden rounded-xl"
+        className="relative overflow-hidden rounded-xl -mt-0.5"
         animate={{
           boxShadow: isLoading 
             ? `0 0 ${30 + heatLevel * 40}px ${heatStyle.glow}, inset 0 0 30px rgba(0,0,0,0.8)`
