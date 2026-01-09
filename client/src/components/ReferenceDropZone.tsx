@@ -16,34 +16,15 @@ interface ReferenceDropZoneProps {
   onReferencesChange: (refs: ReferenceItem[]) => void
   maxRefs: number
   disabled?: boolean
-  isForging?: boolean
 }
 
 export default function ReferenceDropZone({ 
   references, 
   onReferencesChange, 
   maxRefs, 
-  disabled,
-  isForging = false
+  disabled
 }: ReferenceDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
-
-  // Heat level based on refs (0 = cold, 1 = max heat)
-  const heatLevel = Math.min(references.length / maxRefs, 1)
-  
-  // Boost heat when forging
-  const effectiveHeat = isForging ? Math.max(heatLevel, 0.8) : heatLevel
-  
-  // Color transitions - MUST MATCH ForgeGutter and ImageDisplay
-  const getHeatColor = (level: number) => {
-    if (level < 0.2) return { border: '#3a3a3a', glow: 'transparent', bg: '#1a1a1a', inner: '#222' }
-    if (level < 0.4) return { border: '#8b4513', glow: 'rgba(139, 69, 19, 0.4)', bg: '#2a1a10', inner: '#3d2817' }
-    if (level < 0.6) return { border: '#d2691e', glow: 'rgba(210, 105, 30, 0.5)', bg: '#3a2010', inner: '#4d3020' }
-    if (level < 0.8) return { border: '#ff6b35', glow: 'rgba(255, 107, 53, 0.6)', bg: '#4a2515', inner: '#5d3525' }
-    return { border: '#ff4500', glow: 'rgba(255, 69, 0, 0.7)', bg: '#5a2a1a', inner: '#6d3a2a' }
-  }
-  
-  const heatColors = getHeatColor(effectiveHeat)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -115,129 +96,39 @@ export default function ReferenceDropZone({
   }
 
   return (
-    <motion.div
+    <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      animate={{ scale: isDragging ? 1.01 : 1 }}
-      className="relative overflow-hidden rounded-xl"
-      style={{
-        background: `linear-gradient(180deg, ${heatColors.bg} 0%, #0a0a0a 100%)`,
-        border: `4px solid ${heatColors.border}`,
-        boxShadow: `
-          0 0 ${isForging ? 40 : 20}px ${heatColors.glow},
-          inset 0 0 40px rgba(0,0,0,0.9),
-          inset 0 4px 8px rgba(0,0,0,0.5)
-        `,
-        transition: 'all 0.5s ease',
-      }}
+      className={`
+        te-panel overflow-hidden transition-all duration-200
+        ${isDragging ? 'ring-2 ring-te-fuchsia ring-offset-2 ring-offset-te-bg' : ''}
+      `}
     >
-      {/* Heat glow pulsing on edges */}
-      {effectiveHeat > 0.2 && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none rounded-xl"
-          animate={{
-            opacity: isForging ? [0.4, 0.8, 0.4] : [0.2, 0.5, 0.2],
-          }}
-          transition={{ duration: isForging ? 0.5 : 2, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            background: `radial-gradient(ellipse at center, transparent 30%, ${heatColors.glow} 100%)`,
-          }}
-        />
-      )}
-
-      {/* Ember particles when hot or forging */}
-      {(effectiveHeat > 0.5 || isForging) && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(isForging ? 12 : Math.floor(effectiveHeat * 8))].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1.5 h-1.5 rounded-full"
-              initial={{ 
-                x: `${Math.random() * 100}%`,
-                y: '100%',
-                opacity: 0,
-              }}
-              animate={{
-                y: '-30%',
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: isForging ? 1 + Math.random() : 2 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-                ease: 'easeOut',
-              }}
-              style={{
-                left: `${5 + Math.random() * 90}%`,
-                background: `hsl(${20 + Math.random() * 20}, 100%, ${50 + Math.random() * 20}%)`,
-                filter: 'blur(0.5px)',
-                boxShadow: '0 0 6px #ff6b35',
-              }}
-            />
-          ))}
-        </div>
-      )}
-
       {/* Header */}
-      <div className="relative z-10 px-4 py-3 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          {/* Crucible icon */}
-          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke={effectiveHeat > 0.3 ? '#ff6b35' : '#666'} strokeWidth="2">
-            <path d="M4 6 C4 6, 2 8, 2 12 C2 16, 6 20, 12 20 C18 20, 22 16, 22 12 C22 8, 20 6, 20 6" />
-            <path d="M4 6 L20 6" />
-            <path d="M6 6 L6 4 M18 6 L18 4" />
-          </svg>
-          <span 
-            className="font-mono text-sm uppercase tracking-wider font-bold"
-            style={{ 
-              color: effectiveHeat > 0.3 ? '#ff6b35' : '#888',
-              textShadow: effectiveHeat > 0.5 ? '0 0 10px rgba(255, 107, 53, 0.5)' : 'none',
-            }}
-          >
-            CRUCIBLE
-          </span>
-          <div className="flex-1" />
-          <span 
-            className="font-mono text-xs"
-            style={{ color: effectiveHeat > 0.5 ? '#ff6b35' : '#666' }}
-          >
-            {references.length}/{maxRefs}
-          </span>
-          {/* Heat indicator bars */}
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="w-2 h-4 rounded-sm"
-                animate={isForging && i < Math.ceil(effectiveHeat * 5) ? {
-                  opacity: [0.7, 1, 0.7],
-                } : {}}
-                transition={{ duration: 0.3, repeat: Infinity, delay: i * 0.1 }}
-                style={{
-                  backgroundColor: i < Math.ceil(effectiveHeat * 5) 
-                    ? `hsl(${30 - i * 6}, 100%, ${50 + i * 5}%)`
-                    : '#333'
-                }}
-              />
-            ))}
-          </div>
-        </div>
+      <div className="te-module-header">
+        <svg className="w-4 h-4 text-te-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 6 C4 6, 2 8, 2 12 C2 16, 6 20, 12 20 C18 20, 22 16, 22 12 C22 8, 20 6, 20 6" />
+          <path d="M4 6 L20 6" />
+          <path d="M6 6 L6 4 M18 6 L18 4" />
+        </svg>
+        <span>CRUCIBLE</span>
+        <div className="flex-1" />
+        <span className="text-te-cream-dim font-mono text-[10px]">
+          {references.length}/{maxRefs}
+        </span>
       </div>
 
-      {/* Drop zone content - LARGER THUMBNAILS */}
-      <div 
-        className="relative z-10 min-h-[120px] p-4"
-        style={{ backgroundColor: heatColors.inner }}
-      >
+      {/* Drop zone content */}
+      <div className="relative min-h-[100px] p-4 bg-te-lcd">
         {/* Empty state */}
         {references.length === 0 && !isDragging && (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Plus className="w-10 h-10 mb-3 opacity-30 text-gray-500" />
-            <p className="font-mono text-sm text-gray-500 uppercase tracking-wider">
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <Plus className="w-8 h-8 mb-2 opacity-30 text-te-cream-dim" />
+            <p className="font-mono text-xs text-te-cream-dim uppercase tracking-wider">
               Drop ingredients here
             </p>
-            <p className="font-mono text-[11px] text-gray-600 mt-1">
+            <p className="font-mono text-[10px] text-te-cream-dim/50 mt-1">
               Drag from Highrise items or past generations
             </p>
           </div>
@@ -246,42 +137,34 @@ export default function ReferenceDropZone({
         {/* Drag active state */}
         {isDragging && (
           <motion.div 
-            className="absolute inset-0 flex flex-col items-center justify-center z-20 rounded-b-lg"
+            className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-te-fuchsia/10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{ backgroundColor: 'rgba(255, 107, 53, 0.25)' }}
           >
             <motion.div
-              animate={{ y: [0, -10, 0], scale: [1, 1.15, 1] }}
+              animate={{ y: [0, -8, 0], scale: [1, 1.1, 1] }}
               transition={{ repeat: Infinity, duration: 0.6 }}
             >
-              <Plus className="w-12 h-12 text-orange-400" />
+              <Plus className="w-10 h-10 text-te-fuchsia" />
             </motion.div>
-            <p className="font-mono text-base text-orange-400 uppercase mt-3 font-bold">
-              Add to crucible
+            <p className="font-mono text-sm text-te-fuchsia uppercase mt-2 font-bold">
+              Drop to add
             </p>
           </motion.div>
         )}
 
-        {/* Reference grid - LARGER 80-100px thumbnails */}
+        {/* Reference grid */}
         {references.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             <AnimatePresence mode="popLayout">
-              {references.map((ref, i) => (
+              {references.map((ref) => (
                 <motion.div
                   key={ref.id}
                   layout
-                  initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  exit={{ opacity: 0, scale: 0.5, y: 20 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="relative aspect-square rounded-lg overflow-hidden group"
-                  style={{
-                    border: `3px solid ${effectiveHeat > 0.5 ? 'rgba(255, 107, 53, 0.6)' : '#444'}`,
-                    boxShadow: effectiveHeat > 0.3 
-                      ? `0 0 ${10 + i * 2}px rgba(255, 107, 53, ${0.3 + effectiveHeat * 0.3}), inset 0 0 20px rgba(0,0,0,0.5)` 
-                      : 'inset 0 0 20px rgba(0,0,0,0.5)',
-                  }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="relative aspect-square rounded-lg overflow-hidden border-2 border-te-border hover:border-te-fuchsia transition-colors group"
                 >
                   <img
                     src={getDisplayUrl(ref)}
@@ -290,23 +173,23 @@ export default function ReferenceDropZone({
                     loading="lazy"
                   />
                   
-                  {/* Remove button - always visible */}
+                  {/* Remove button */}
                   {!disabled && (
                     <button
                       onClick={() => removeReference(ref.id)}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 hover:bg-red-500 flex items-center justify-center transition-colors"
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <X className="w-4 h-4 text-white" />
+                      <X className="w-3 h-3 text-white" />
                     </button>
                   )}
                   
                   {/* Type badge */}
                   <div 
-                    className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-mono uppercase"
+                    className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-mono uppercase"
                     style={{
-                      backgroundColor: ref.type === 'highrise' ? 'rgba(168, 85, 247, 0.8)' : 
-                                       ref.type === 'generation' ? 'rgba(6, 182, 212, 0.8)' : 
-                                       'rgba(75, 85, 99, 0.8)',
+                      backgroundColor: ref.type === 'highrise' ? 'rgba(168, 85, 247, 0.9)' : 
+                                       ref.type === 'generation' ? 'rgba(6, 182, 212, 0.9)' : 
+                                       'rgba(75, 85, 99, 0.9)',
                       color: 'white',
                     }}
                   >
@@ -318,17 +201,13 @@ export default function ReferenceDropZone({
 
             {/* Add more placeholder */}
             {references.length < maxRefs && !isDragging && (
-              <div 
-                className="aspect-square rounded-lg border-3 border-dashed flex items-center justify-center transition-colors"
-                style={{ borderColor: effectiveHeat > 0.3 ? 'rgba(255, 107, 53, 0.4)' : '#444' }}
-              >
-                <Plus className="w-6 h-6" style={{ color: effectiveHeat > 0.3 ? 'rgba(255, 107, 53, 0.6)' : '#555' }} />
+              <div className="aspect-square rounded-lg border-2 border-dashed border-te-border flex items-center justify-center">
+                <Plus className="w-5 h-5 text-te-cream-dim/30" />
               </div>
             )}
           </div>
         )}
       </div>
-
-    </motion.div>
+    </div>
   )
 }

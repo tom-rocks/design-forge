@@ -316,7 +316,6 @@ function App() {
                       onReferencesChange={setReferences}
                       maxRefs={maxRefs}
                       disabled={isGenerating}
-                      isForging={isGenerating}
                     />
                   </div>
                   
@@ -371,13 +370,10 @@ function App() {
                   </motion.button>
                 </div>
 
-                {/* Gutter - directly connected */}
-                <ForgeGutter 
-                  isForging={isGenerating} 
-                  heatLevel={heatLevel}
-                />
+                {/* Gutter line */}
+                <ForgeGutter isForging={isGenerating} heatLevel={heatLevel} />
 
-                {/* Output mold - directly connected */}
+                {/* Output */}
                 <ImageDisplay
                   result={result}
                   isLoading={isGenerating}
