@@ -4,6 +4,7 @@ import sharp from 'sharp';
 const router = Router();
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1beta';
 
 // Available Gemini image generation models
 const MODELS = {
@@ -72,7 +73,7 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
     console.log(`[Gemini Files] Uploading ${numBytes} bytes...`);
     
     // Step 1: Start resumable upload
-    const startResponse = await fetch(`${GEMINI_API_BASE}/upload/v1beta/files`, {
+    const startResponse = await fetch(`${GEMINI_UPLOAD_BASE}/files`, {
       method: 'POST',
       headers: {
         'x-goog-api-key': apiKey,
