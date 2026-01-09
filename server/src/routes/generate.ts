@@ -176,10 +176,12 @@ router.post('/generate', async (req: Request, res: Response) => {
   const url = `${KREA_API_BASE}/generate/image/google/nano-banana-pro`;
   
   // Build payload with all supported features
-  // Enhance prompt if we have style images - tell the model to match the art style
+  // Enhance prompt if we have style images - strongly instruct to match art style
   let enhancedPrompt = prompt;
   if (styleImages?.length) {
-    enhancedPrompt = `In the exact same art style as the reference images: ${prompt}`;
+    enhancedPrompt = `CRITICAL: Analyze the ${styleImages.length} reference image(s) and PRECISELY match their art style, rendering technique, line work, shading method, and level of detail. The output MUST look like it was created by the same artist using the same tools and techniques. Do NOT deviate from this style.
+
+Now generate: ${prompt}`;
   }
   
   const payload: Record<string, unknown> = {
