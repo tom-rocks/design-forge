@@ -237,7 +237,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
 Request: ${prompt}
 
-Render it with the same line weight, shading technique, color palette, and proportions as the references. The output should look like it was drawn by the same artist.`;
+Render it with the same shading, color palette, and proportions as the references. The output should look like it was drawn by the same artist.`;
     }
     
     // Add negative prompt if provided
