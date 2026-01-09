@@ -234,7 +234,11 @@ router.post('/generate', async (req: Request, res: Response) => {
     if (imageParts.length > 0) {
       // Images go FIRST (context), then instruction at END
       parts.push(...imageParts);
-      fullPrompt = `Based on the ${imageParts.length} reference image(s) above, generate: ${prompt}. Match the exact art style.`;
+      fullPrompt = `The ${imageParts.length} images above are reference examples from a video game. Study their exact visual style: the line weight, shading technique, color palette, level of detail, and overall aesthetic.
+
+Now create: ${prompt}
+
+CRITICAL: Your output MUST look like it belongs in the same game. Copy the exact rendering style, outlines, shading, and proportions from the references. Do NOT create a generic illustration - match the game's specific art style precisely.`;
     }
     
     // Add negative prompt if provided
