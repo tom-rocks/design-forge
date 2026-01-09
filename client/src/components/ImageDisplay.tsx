@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Monitor, X, Grid, Square, Pencil } from 'lucide-react'
+import { Download, Monitor, X, Grid, Square } from 'lucide-react'
+
+// Chisel icon for edit/refine actions
+const ChiselIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 3l2 2-1 1-2-2 1-1z" />
+    <path d="M17 5l-3 3" />
+    <line x1="14" y1="8" x2="8" y2="14" />
+    <path d="M8 14l-4 4-1 3 3-1 4-4" />
+    <path d="M3 21l2-2" />
+  </svg>
+)
 
 interface ImageDisplayProps {
   result: {
@@ -221,17 +232,17 @@ export default function ImageDisplay({ result, isLoading, onEditImage }: ImageDi
                     #{i + 1}
                   </div>
                   
-                  {/* Edit button - always visible */}
+                  {/* Refine button - always visible */}
                   {onEditImage && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         onEditImage(url)
                       }}
-                      className="absolute bottom-2 right-2 p-2 rounded-lg bg-cyan-500/90 hover:bg-cyan-400 text-white transition-colors shadow-lg"
-                      title="Edit this image"
+                      className="absolute bottom-2 right-2 p-2 rounded-lg bg-te-panel border border-te-border hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300 transition-colors shadow-lg"
+                      title="Refine this image"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <ChiselIcon className="w-4 h-4" />
                     </button>
                   )}
                 </motion.div>
@@ -255,15 +266,16 @@ export default function ImageDisplay({ result, isLoading, onEditImage }: ImageDi
                 className={`w-full h-auto cursor-zoom-in ${loadedImages.has(selectedIndex ?? 0) ? 'block' : 'hidden'}`}
               />
               
-              {/* Edit button */}
+              {/* Refine button */}
               {onEditImage && currentImage && (
                 <button
                   onClick={() => onEditImage(currentImage)}
-                  className="absolute bottom-4 right-4 p-3 rounded-xl bg-cyan-500/90 hover:bg-cyan-400 text-white transition-colors shadow-lg flex items-center gap-2"
-                  title="Edit this image"
+                  className="absolute bottom-4 right-4 px-4 py-3 rounded-lg bg-te-panel border-2 border-te-border hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300 transition-all shadow-lg flex items-center gap-2"
+                  style={{ boxShadow: '0 4px 0 #1a1a1a, 0 6px 12px rgba(0, 0, 0, 0.3)' }}
+                  title="Refine this image"
                 >
-                  <Pencil className="w-5 h-5" />
-                  <span className="font-mono text-sm">EDIT</span>
+                  <ChiselIcon className="w-5 h-5" />
+                  <span className="font-mono text-sm font-bold tracking-wider">REFINE</span>
                 </button>
               )}
             </motion.div>

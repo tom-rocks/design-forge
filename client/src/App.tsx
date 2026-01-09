@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Zap, Pencil } from 'lucide-react'
 import PromptInput from './components/PromptInput'
 import SettingsPanel from './components/SettingsPanel'
 import ImageDisplay from './components/ImageDisplay'
-import GenerateButton from './components/GenerateButton'
 import EditImageUpload from './components/EditImageUpload'
 import GenerationHistory from './components/GenerationHistory'
 import { EditImageRef } from './components/EditImageUpload'
@@ -50,6 +50,7 @@ interface GenerationResult {
 }
 
 function App() {
+  const [mode, setMode] = useState<GenerationMode>('create')
   const [prompt, setPrompt] = useState('')
   const [settings, setSettings] = useState<GenerationSettings>({
     model: 'pro',
@@ -63,23 +64,28 @@ function App() {
   })
   const [editImage, setEditImage] = useState<EditImageRef | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [loadingMode, setLoadingMode] = useState<GenerationMode | null>(null)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [historyKey, setHistoryKey] = useState(0) // Used to refresh history
+  const [historyKey, setHistoryKey] = useState(0)
 
-  const handleGenerate = useCallback(async (mode: GenerationMode) => {
+  // Switch mode - clear edit image when switching to create
+  const handleModeChange = useCallback((newMode: GenerationMode) => {
+    setMode(newMode)
+    if (newMode === 'create') {
+      setEditImage(null)
+    }
+  }, [])
+
+  const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || isGenerating) return
     if (mode === 'edit' && !editImage) return
 
     setIsGenerating(true)
-    setLoadingMode(mode)
     setError(null)
     setProgress({ status: 'connecting', message: 'Connecting...', progress: 0 })
 
     try {
-      // Build edit image data - either base64 or storage path
       const editData = mode === 'edit' && editImage ? {
         editImageType: editImage.type,
         editImageValue: editImage.value,
@@ -133,7 +139,6 @@ function App() {
                   elapsed: data.elapsed,
                 })
               } else if (currentEvent === 'complete') {
-                console.log('Generation complete:', data)
                 setResult({ 
                   imageUrl: data.imageUrl, 
                   imageUrls: data.imageUrls,
@@ -141,8 +146,6 @@ function App() {
                 })
                 setProgress(null)
                 setIsGenerating(false)
-                setLoadingMode(null)
-                // Refresh history
                 setHistoryKey(k => k + 1)
                 return
               } else if (currentEvent === 'error') {
@@ -151,7 +154,7 @@ function App() {
             } catch (parseError) {
               console.error('Failed to parse SSE data:', parseError)
             }
-            currentEvent = '' // Reset after processing
+            currentEvent = ''
           }
         }
       }
@@ -160,11 +163,10 @@ function App() {
       setProgress(null)
     } finally {
       setIsGenerating(false)
-      setLoadingMode(null)
     }
-  }, [prompt, settings, isGenerating, editImage])
+  }, [prompt, settings, isGenerating, editImage, mode])
 
-  // Handler for using a history image as a style reference
+  // Use image as style reference (stays in FORGE mode)
   const handleUseAsReference = useCallback((imageUrl: string) => {
     const newRef: StyleImage = { url: imageUrl, strength: 1 }
     const maxRefs = settings.model === 'pro' ? 14 : 3
@@ -175,10 +177,13 @@ function App() {
     }))
   }, [settings.model])
 
-  // Handler for editing a history image (uses storage path reference)
-  const handleEditFromHistory = useCallback((ref: EditImageRef) => {
+  // Edit an image (switches to EDIT mode)
+  const handleEditImage = useCallback((ref: EditImageRef) => {
     setEditImage(ref)
+    setMode('edit')
   }, [])
+
+  const canGenerate = prompt.trim() && (mode === 'create' || editImage)
 
   return (
     <div className="min-h-screen bg-forge-bg">
@@ -188,67 +193,108 @@ function App() {
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-8">
         <Header />
         
-        <main className="mt-12 space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <PromptInput
-              value={prompt}
-              onChange={setPrompt}
-              onSubmit={() => handleGenerate(editImage ? 'edit' : 'create')}
-              disabled={isGenerating}
-            />
-          </motion.div>
+        <main className="mt-8 space-y-6">
+          {/* MODE SELECTOR - Big and clear */}
+          <div className="te-panel p-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleModeChange('create')}
+                disabled={isGenerating}
+                className={`
+                  flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-lg font-mono text-sm uppercase tracking-wider
+                  transition-all duration-200
+                  ${mode === 'create' 
+                    ? 'bg-gradient-to-b from-fuchsia-500 to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/30' 
+                    : 'bg-te-panel-dark text-te-cream-dim hover:bg-te-panel hover:text-te-cream'
+                  }
+                  ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                <Zap className="w-5 h-5" />
+                <span className="text-base font-bold">FORGE</span>
+                <span className="text-xs opacity-70">Create new</span>
+              </button>
+              
+              <button
+                onClick={() => handleModeChange('edit')}
+                disabled={isGenerating}
+                className={`
+                  flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-lg font-mono text-sm uppercase tracking-wider
+                  transition-all duration-200
+                  ${mode === 'edit' 
+                    ? 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30' 
+                    : 'bg-te-panel-dark text-te-cream-dim hover:bg-te-panel hover:text-te-cream'
+                  }
+                  ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                <Pencil className="w-5 h-5" />
+                <span className="text-base font-bold">EDIT</span>
+                <span className="text-xs opacity-70">Modify existing</span>
+              </button>
+            </div>
+          </div>
 
-          {/* Edit Image Upload */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-          >
-            <EditImageUpload
-              image={editImage}
-              onImageChange={setEditImage}
-              disabled={isGenerating}
-            />
-          </motion.div>
+          {/* EDIT MODE: Image to edit (only shown in edit mode) */}
+          <AnimatePresence mode="wait">
+            {mode === 'edit' && (
+              <motion.div
+                key="edit-upload"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <EditImageUpload
+                  image={editImage}
+                  onImageChange={setEditImage}
+                  disabled={isGenerating}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Highrise Item Search - Style References */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <HighriseSearch
-              selectedItems={settings.styleImages || []}
-              onSelectionChange={(items) => setSettings({ ...settings, styleImages: items })}
-              disabled={isGenerating}
-              maxItems={settings.model === 'pro' ? 14 : 3}
-            />
-          </motion.div>
+          {/* PROMPT - Always visible */}
+          <PromptInput
+            value={prompt}
+            onChange={setPrompt}
+            onSubmit={handleGenerate}
+            disabled={isGenerating}
+            placeholder={mode === 'edit' ? 'Describe the changes you want...' : 'Describe what you want to create...'}
+          />
 
-          {/* Generation History - Use past generations as references */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.12 }}
-          >
-            <GenerationHistory
-              key={historyKey}
-              onUseAsReference={handleUseAsReference}
-              onEditImage={handleEditFromHistory}
-              disabled={isGenerating}
-            />
-          </motion.div>
+          {/* FORGE MODE: Style references */}
+          <AnimatePresence mode="wait">
+            {mode === 'create' && (
+              <motion.div
+                key="forge-refs"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-6"
+              >
+                <HighriseSearch
+                  selectedItems={settings.styleImages || []}
+                  onSelectionChange={(items) => setSettings({ ...settings, styleImages: items })}
+                  disabled={isGenerating}
+                  maxItems={settings.model === 'pro' ? 14 : 3}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="flex flex-col sm:flex-row gap-4 items-start"
-          >
+          {/* HISTORY - Available in both modes with different actions */}
+          <GenerationHistory
+            key={historyKey}
+            onUseAsReference={handleUseAsReference}
+            onEditImage={handleEditImage}
+            disabled={isGenerating}
+            mode={mode}
+          />
+
+          {/* SETTINGS + GENERATE */}
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
             <div className="flex-1">
               <SettingsPanel
                 settings={settings}
@@ -257,18 +303,46 @@ function App() {
               />
             </div>
             
-            <div className="w-full sm:w-auto">
-              <GenerateButton
-                onClick={handleGenerate}
-                isLoading={isGenerating}
-                disabled={!prompt.trim()}
-                editDisabled={!editImage}
-                loadingMode={loadingMode}
-              />
-            </div>
-          </motion.div>
+            {/* Single generate button - color changes based on mode */}
+            <motion.button
+              onClick={handleGenerate}
+              disabled={!canGenerate || isGenerating}
+              whileTap={canGenerate && !isGenerating ? { scale: 0.98 } : undefined}
+              className={`
+                relative min-w-[180px] min-h-[100px] rounded-xl font-mono text-base font-bold uppercase tracking-wider
+                transition-all duration-200 overflow-hidden
+                ${!canGenerate || isGenerating
+                  ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
+                  : mode === 'create'
+                    ? 'bg-gradient-to-b from-fuchsia-500 to-fuchsia-600 text-white cursor-pointer shadow-lg shadow-fuchsia-500/30 hover:shadow-fuchsia-500/50'
+                    : 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white cursor-pointer shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50'
+                }
+              `}
+            >
+              {isGenerating ? (
+                <div className="flex flex-col items-center justify-center gap-2 p-4">
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="text-sm">{mode === 'create' ? 'FORGING...' : 'EDITING...'}</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 p-4">
+                  {mode === 'create' ? (
+                    <>
+                      <Zap className="w-8 h-8" />
+                      <span>FORGE</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="w-8 h-8" />
+                      <span>EDIT</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </motion.button>
+          </div>
 
-          {/* Progress indicator - Same ASCII style as canvas */}
+          {/* Progress */}
           <AnimatePresence>
             {progress && (
               <motion.div
@@ -276,25 +350,30 @@ function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className="rounded-xl overflow-hidden"
-                style={{ background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)', border: '1px solid #2a1a3a' }}
+                style={{ 
+                  background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)', 
+                  border: `1px solid ${mode === 'create' ? '#a21caf' : '#0891b2'}` 
+                }}
               >
                 <div className="flex items-center justify-between px-4 py-2">
                   <span 
                     className="font-mono text-xs uppercase tracking-wider"
-                    style={{ color: '#e879f9', textShadow: '0 0 8px rgba(232, 121, 249, 0.5)' }}
+                    style={{ 
+                      color: mode === 'create' ? '#e879f9' : '#22d3ee', 
+                      textShadow: `0 0 8px ${mode === 'create' ? 'rgba(232, 121, 249, 0.5)' : 'rgba(34, 211, 238, 0.5)'}` 
+                    }}
                   >
                     {progress.message}
                   </span>
-                  <span className="font-mono text-xs" style={{ color: '#a855f7' }}>
+                  <span className="font-mono text-xs" style={{ color: mode === 'create' ? '#a855f7' : '#06b6d4' }}>
                     {Math.floor(progress.progress)}%{progress.elapsed !== undefined && ` · ${progress.elapsed}s`}
                   </span>
                 </div>
-                {/* ASCII progress - same characters as canvas: ·:;░▒▓█ */}
                 <pre 
                   className="px-4 pb-3 font-mono text-sm select-none whitespace-pre overflow-hidden"
                   style={{ 
-                    color: '#e879f9', 
-                    textShadow: '0 0 8px rgba(232, 121, 249, 0.6)',
+                    color: mode === 'create' ? '#e879f9' : '#22d3ee', 
+                    textShadow: `0 0 8px ${mode === 'create' ? 'rgba(232, 121, 249, 0.6)' : 'rgba(34, 211, 238, 0.6)'}`,
                     letterSpacing: '0.05em',
                   }}
                 >
@@ -309,7 +388,7 @@ function App() {
             )}
           </AnimatePresence>
 
-          {/* Error Message */}
+          {/* Error */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -324,21 +403,12 @@ function App() {
             )}
           </AnimatePresence>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <ImageDisplay
-              result={result}
-              isLoading={isGenerating}
-              onEditImage={(imageUrl) => {
-                // Generated images are served from storage URLs
-                setEditImage({ type: 'storage', value: imageUrl })
-              }}
-            />
-          </motion.div>
-
+          {/* Output */}
+          <ImageDisplay
+            result={result}
+            isLoading={isGenerating}
+            onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
+          />
         </main>
       </div>
       

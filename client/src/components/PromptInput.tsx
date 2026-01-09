@@ -7,9 +7,10 @@ interface PromptInputProps {
   onChange: (value: string) => void
   onSubmit: () => void
   disabled?: boolean
+  placeholder?: string
 }
 
-export default function PromptInput({ value, onChange, onSubmit, disabled }: PromptInputProps) {
+export default function PromptInput({ value, onChange, onSubmit, disabled, placeholder }: PromptInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-resize textarea
@@ -52,7 +53,7 @@ export default function PromptInput({ value, onChange, onSubmit, disabled }: Pro
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            placeholder="describe your vision..."
+            placeholder={placeholder || "describe your vision..."}
             className="w-full pl-5 bg-transparent text-te-cream placeholder-te-cream-dim resize-none focus:outline-none font-mono text-sm leading-relaxed min-h-[80px] disabled:opacity-50"
             rows={3}
           />
