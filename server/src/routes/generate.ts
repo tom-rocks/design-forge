@@ -60,13 +60,13 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
     
     const buffer = Buffer.from(await response.arrayBuffer());
     
-    // Process image: flatten transparency to gray background
+    // Flatten transparency to gray background, keep as PNG for crispy refs
     const processedBuffer = await sharp(buffer)
       .flatten({ background: { r: 88, g: 89, b: 91 } })
-      .jpeg({ quality: 90 })
+      .png()
       .toBuffer();
     
-    const mimeType = 'image/jpeg';
+    const mimeType = 'image/png';
     const numBytes = processedBuffer.byteLength;
     const displayName = `ref-${Date.now()}`;
     
