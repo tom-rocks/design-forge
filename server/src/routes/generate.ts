@@ -45,33 +45,86 @@ function addLog(type: DebugLog['type'], data: unknown) {
 }
 
 /**
- * Fetch an image and convert to base64
+ * Upload an image to Gemini Files API and get back a file_uri
+ * This is the proper way to handle reference images
  */
-async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
+async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileUri: string; mimeType: string } | null> {
   try {
-    console.log(`[Gemini] Fetching image: ${url}`);
+    console.log(`[Gemini Files] Fetching image: ${url}`);
     const response = await fetch(url);
     if (!response.ok) {
-      console.log(`[Gemini] Failed to fetch image: ${response.status}`);
+      console.log(`[Gemini Files] Failed to fetch: ${response.status}`);
       return null;
     }
     
     const buffer = Buffer.from(await response.arrayBuffer());
     
-    // Resize to max 1024px, flatten transparency, convert to JPEG
-    // Keeps payload manageable while preserving style detail
+    // Process image: flatten transparency to gray background
     const processedBuffer = await sharp(buffer)
-      .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
       .flatten({ background: { r: 88, g: 89, b: 91 } })
-      .jpeg({ quality: 85 })
+      .jpeg({ quality: 90 })
       .toBuffer();
     
-    const base64 = processedBuffer.toString('base64');
+    const mimeType = 'image/jpeg';
+    const numBytes = processedBuffer.byteLength;
+    const displayName = `ref-${Date.now()}`;
     
-    console.log(`[Gemini] Image: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes (max 1024px)`);
-    return { data: base64, mimeType: 'image/jpeg' };
+    console.log(`[Gemini Files] Uploading ${numBytes} bytes...`);
+    
+    // Step 1: Start resumable upload
+    const startResponse = await fetch(`${GEMINI_API_BASE}/upload/v1beta/files`, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': apiKey,
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': String(numBytes),
+        'X-Goog-Upload-Header-Content-Type': mimeType,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ file: { display_name: displayName } }),
+    });
+    
+    if (!startResponse.ok) {
+      console.log(`[Gemini Files] Start upload failed: ${startResponse.status}`);
+      return null;
+    }
+    
+    const uploadUrl = startResponse.headers.get('x-goog-upload-url');
+    if (!uploadUrl) {
+      console.log(`[Gemini Files] No upload URL in response`);
+      return null;
+    }
+    
+    // Step 2: Upload the actual bytes
+    const uint8Array = new Uint8Array(processedBuffer);
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Length': String(numBytes),
+        'X-Goog-Upload-Offset': '0',
+        'X-Goog-Upload-Command': 'upload, finalize',
+      },
+      body: uint8Array,
+    });
+    
+    if (!uploadResponse.ok) {
+      console.log(`[Gemini Files] Upload failed: ${uploadResponse.status}`);
+      return null;
+    }
+    
+    const fileInfo = await uploadResponse.json();
+    const fileUri = fileInfo.file?.uri;
+    
+    if (!fileUri) {
+      console.log(`[Gemini Files] No file URI in response:`, fileInfo);
+      return null;
+    }
+    
+    console.log(`[Gemini Files] Uploaded: ${fileUri}`);
+    return { fileUri, mimeType };
   } catch (e) {
-    console.error(`[Gemini] Error fetching/processing image:`, e);
+    console.error(`[Gemini Files] Error:`, e);
     return null;
   }
 }
@@ -189,39 +242,39 @@ router.post('/generate', async (req: Request, res: Response) => {
     const parts: any[] = [];
     const imageParts: any[] = [];
     
-    // Fetch style images as base64
+    // Upload style images to Gemini Files API (proper way for references)
     const effectiveStyleImages = styleImages?.slice(0, maxRefs) || [];
     if (effectiveStyleImages.length > 0) {
       send('progress', { 
-        status: 'loading', 
-        message: `LOADING ${effectiveStyleImages.length} REFERENCE IMAGE${effectiveStyleImages.length > 1 ? 'S' : ''}...`, 
+        status: 'uploading', 
+        message: `UPLOADING ${effectiveStyleImages.length} REFERENCE IMAGE${effectiveStyleImages.length > 1 ? 'S' : ''}...`, 
         progress: 10, 
         id 
       });
       
-      let loaded = 0;
+      let uploaded = 0;
       for (const styleImg of effectiveStyleImages) {
-        const imageData = await fetchImageAsBase64(styleImg.url);
-        if (imageData) {
-          // REST API uses snake_case (not camelCase like the SDK)
+        const fileData = await uploadToGeminiFiles(styleImg.url, apiKey);
+        if (fileData) {
+          // Use file_data with file_uri (not inline_data with base64)
           imageParts.push({
-            inline_data: {
-              mime_type: imageData.mimeType,
-              data: imageData.data,
+            file_data: {
+              mime_type: fileData.mimeType,
+              file_uri: fileData.fileUri,
             }
           });
-          loaded++;
-          const pct = 10 + Math.floor((loaded / effectiveStyleImages.length) * 15);
+          uploaded++;
+          const pct = 10 + Math.floor((uploaded / effectiveStyleImages.length) * 20);
           send('progress', { 
-            status: 'loading', 
-            message: `LOADED REFERENCE ${loaded}/${effectiveStyleImages.length}...`, 
+            status: 'uploading', 
+            message: `UPLOADED REFERENCE ${uploaded}/${effectiveStyleImages.length}...`, 
             progress: pct, 
             id 
           });
         }
       }
       
-      addLog('info', { id, loadedImages: loaded, maxRefs, model: modelType });
+      addLog('info', { id, uploadedImages: uploaded, maxRefs, model: modelType });
     }
     
     // Build the prompt text
