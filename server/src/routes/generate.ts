@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
+import { saveGeneration } from '../db.js';
+import { saveImage, createThumbnail } from '../storage.js';
 
 const router = Router();
 
@@ -31,6 +33,7 @@ interface GenerateRequest {
   seed?: string;
   mode?: 'create' | 'edit';
   editImage?: string; // base64 data URL of image to edit
+  parentId?: string; // ID of parent generation (for edit chains)
 }
 
 interface DebugLog {
@@ -281,6 +284,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     seed,
     mode = 'create',
     editImage,
+    parentId,
   } = req.body as GenerateRequest;
   
   // Set up SSE headers
@@ -582,11 +586,57 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
     
     send('progress', { status: 'complete', message: 'GENERATION COMPLETE', progress: 95, id, elapsed });
     
+    // Save to database if configured
+    let savedGeneration: { id: string } | null = null;
+    if (process.env.DATABASE_URL) {
+      try {
+        send('progress', { status: 'saving', message: 'SAVING TO HISTORY...', progress: 97, id, elapsed });
+        
+        // Generate a unique ID for this generation
+        const genId = `gen-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        
+        // Save images to storage
+        const imagePaths: string[] = [];
+        for (let i = 0; i < images.length; i++) {
+          const imagePath = await saveImage(images[i], genId, i);
+          imagePaths.push(imagePath);
+        }
+        
+        // Create thumbnail from first image
+        let thumbnailPath: string | undefined;
+        if (imagePaths.length > 0) {
+          thumbnailPath = await createThumbnail(imagePaths[0], genId);
+        }
+        
+        // Save to database
+        savedGeneration = await saveGeneration({
+          prompt,
+          model: modelType,
+          resolution: finalResolution,
+          aspectRatio: aspectRatio || '1:1',
+          mode,
+          parentId,
+          imagePaths,
+          thumbnailPath,
+          settings: {
+            styleImages: styleImages?.map(s => ({ url: s.url, name: s.name })),
+            negativePrompt,
+          },
+        });
+        
+        console.log(`[Gen ${id}] Saved to database as ${savedGeneration.id}`);
+      } catch (saveErr) {
+        console.error(`[Gen ${id}] Failed to save to database:`, saveErr);
+        // Don't fail the request, just log
+      }
+    }
+    
     send('complete', {
       success: true,
       imageUrl: images[0],
       imageUrls: images,
       id,
+      generationId: savedGeneration?.id,
       model: modelType,
       elapsed,
       variations: images.length,

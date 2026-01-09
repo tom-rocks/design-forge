@@ -5,6 +5,7 @@ import SettingsPanel from './components/SettingsPanel'
 import ImageDisplay from './components/ImageDisplay'
 import GenerateButton from './components/GenerateButton'
 import EditImageUpload from './components/EditImageUpload'
+import GenerationHistory from './components/GenerationHistory'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
@@ -60,11 +61,13 @@ function App() {
     references: [],
   })
   const [editImage, setEditImage] = useState<string | null>(null)
+  const [editParentId, setEditParentId] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [loadingMode, setLoadingMode] = useState<GenerationMode | null>(null)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [historyKey, setHistoryKey] = useState(0) // Used to refresh history
 
   const handleGenerate = useCallback(async (mode: GenerationMode) => {
     if (!prompt.trim() || isGenerating) return
@@ -89,6 +92,7 @@ function App() {
           references: settings.references?.length ? settings.references : undefined,
           mode,
           editImage: mode === 'edit' ? editImage : undefined,
+          parentId: mode === 'edit' ? editParentId : undefined,
         }),
       })
 
@@ -132,6 +136,8 @@ function App() {
                 setProgress(null)
                 setIsGenerating(false)
                 setLoadingMode(null)
+                // Refresh history
+                setHistoryKey(k => k + 1)
                 return
               } else if (currentEvent === 'error') {
                 throw new Error(data.error)
@@ -150,7 +156,24 @@ function App() {
       setIsGenerating(false)
       setLoadingMode(null)
     }
-  }, [prompt, settings, isGenerating, editImage])
+  }, [prompt, settings, isGenerating, editImage, editParentId])
+
+  // Handler for using a history image as a style reference
+  const handleUseAsReference = useCallback((imageUrl: string) => {
+    const newRef: StyleImage = { url: imageUrl, strength: 1 }
+    const maxRefs = settings.model === 'pro' ? 14 : 3
+    
+    setSettings(prev => ({
+      ...prev,
+      styleImages: [...(prev.styleImages || []), newRef].slice(0, maxRefs)
+    }))
+  }, [settings.model])
+
+  // Handler for editing a history image
+  const handleEditFromHistory = useCallback((base64: string, generationId: string) => {
+    setEditImage(base64)
+    setEditParentId(generationId)
+  }, [])
 
   return (
     <div className="min-h-screen bg-forge-bg">
@@ -182,7 +205,11 @@ function App() {
           >
             <EditImageUpload
               image={editImage}
-              onImageChange={setEditImage}
+              onImageChange={(img) => {
+                setEditImage(img)
+                // Clear parent ID when manually uploading (not from history)
+                if (!img) setEditParentId(null)
+              }}
               disabled={isGenerating}
             />
           </motion.div>
@@ -286,6 +313,20 @@ function App() {
             <ImageDisplay
               result={result}
               isLoading={isGenerating}
+            />
+          </motion.div>
+
+          {/* Generation History */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+          >
+            <GenerationHistory
+              key={historyKey}
+              onUseAsReference={handleUseAsReference}
+              onEditImage={handleEditFromHistory}
+              disabled={isGenerating}
             />
           </motion.div>
         </main>
