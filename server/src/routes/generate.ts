@@ -87,15 +87,22 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
     });
     
     if (!startResponse.ok) {
-      console.log(`[Gemini Files] Start upload failed: ${startResponse.status}`);
+      const errText = await startResponse.text();
+      console.log(`[Gemini Files] Start upload failed: ${startResponse.status}`, errText);
       return null;
     }
     
+    // Get upload URL from response header (case-insensitive)
     const uploadUrl = startResponse.headers.get('x-goog-upload-url');
     if (!uploadUrl) {
-      console.log(`[Gemini Files] No upload URL in response`);
+      // Debug: log all headers
+      const allHeaders: string[] = [];
+      startResponse.headers.forEach((v, k) => allHeaders.push(`${k}: ${v}`));
+      console.log(`[Gemini Files] No upload URL. Headers:`, allHeaders.join(', '));
       return null;
     }
+    
+    console.log(`[Gemini Files] Got upload URL: ${uploadUrl.substring(0, 50)}...`);
     
     // Step 2: Upload the actual bytes
     const uint8Array = new Uint8Array(processedBuffer);
@@ -110,19 +117,21 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
     });
     
     if (!uploadResponse.ok) {
-      console.log(`[Gemini Files] Upload failed: ${uploadResponse.status}`);
+      const errText = await uploadResponse.text();
+      console.log(`[Gemini Files] Upload failed: ${uploadResponse.status}`, errText);
       return null;
     }
     
     const fileInfo = await uploadResponse.json();
-    const fileUri = fileInfo.file?.uri;
+    console.log(`[Gemini Files] Upload response:`, JSON.stringify(fileInfo).substring(0, 200));
     
+    const fileUri = fileInfo.file?.uri;
     if (!fileUri) {
-      console.log(`[Gemini Files] No file URI in response:`, fileInfo);
+      console.log(`[Gemini Files] No file URI in response`);
       return null;
     }
     
-    console.log(`[Gemini Files] Uploaded: ${fileUri}`);
+    console.log(`[Gemini Files] Success: ${fileUri}`);
     return { fileUri, mimeType };
   } catch (e) {
     console.error(`[Gemini Files] Error:`, e);
