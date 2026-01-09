@@ -72,13 +72,12 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const currentImage = selectedIndex !== null ? images[selectedIndex] : images[0]
   
-  // Heat colors based on progress
+  // Heat colors - MUST MATCH ReferenceDropZone and ForgeGutter
   const getHeatStyle = (level: number) => {
-    if (level < 0.1) return { border: '#2a2a2a', glow: 'transparent', bg: '#0a0a0a' }
-    if (level < 0.3) return { border: '#5c3a1a', glow: 'rgba(92, 58, 26, 0.3)', bg: '#1a1008' }
-    if (level < 0.5) return { border: '#8b4513', glow: 'rgba(139, 69, 19, 0.4)', bg: '#2a1a10' }
-    if (level < 0.7) return { border: '#d2691e', glow: 'rgba(210, 105, 30, 0.5)', bg: '#3a2010' }
-    if (level < 0.9) return { border: '#ff6b35', glow: 'rgba(255, 107, 53, 0.6)', bg: '#4a2515' }
+    if (level < 0.2) return { border: '#3a3a3a', glow: 'transparent', bg: '#0a0a0a' }
+    if (level < 0.4) return { border: '#8b4513', glow: 'rgba(139, 69, 19, 0.4)', bg: '#2a1a10' }
+    if (level < 0.6) return { border: '#d2691e', glow: 'rgba(210, 105, 30, 0.5)', bg: '#3a2010' }
+    if (level < 0.8) return { border: '#ff6b35', glow: 'rgba(255, 107, 53, 0.6)', bg: '#4a2515' }
     return { border: '#ff4500', glow: 'rgba(255, 69, 0, 0.7)', bg: '#5a2a1a' }
   }
   
@@ -143,16 +142,14 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
 
   return (
     <>
-      {/* Receiving funnel - connects to gutter */}
-      <div className="relative flex justify-center -mt-1 z-10">
+      {/* Receiving funnel - connects to gutter, matches its color */}
+      <div className="relative flex justify-center -mt-0.5 z-10">
         <div 
-          className="w-6 h-3"
+          className="w-2 h-2"
           style={{
-            background: isLoading 
-              ? `linear-gradient(180deg, ${heatStyle.border} 0%, ${heatStyle.bg} 100%)`
-              : '#2a2a2a',
-            clipPath: 'polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%)',
-            boxShadow: isLoading && heatLevel > 0.2 ? `0 0 10px ${heatStyle.glow}` : 'none',
+            background: heatStyle.border, // Always match the gutter color
+            clipPath: 'polygon(0% 0%, 100% 0%, 70% 100%, 30% 100%)',
+            boxShadow: heatLevel > 0.2 ? `0 0 8px ${heatStyle.glow}` : 'none',
             transition: 'all 0.3s ease',
           }}
         />

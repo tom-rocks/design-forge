@@ -371,23 +371,19 @@ function App() {
                   </motion.button>
                 </div>
 
-                {/* Gutter - directly connected, no margin */}
-                <div className="-mt-1">
-                  <ForgeGutter 
-                    isForging={isGenerating} 
-                    progress={progress?.progress || 0}
-                  />
-                </div>
+                {/* Gutter - directly connected */}
+                <ForgeGutter 
+                  isForging={isGenerating} 
+                  heatLevel={heatLevel}
+                />
 
                 {/* Output mold - directly connected */}
-                <div className="-mt-1">
-                  <ImageDisplay
-                    result={result}
-                    isLoading={isGenerating}
-                    heatLevel={heatLevel}
-                    onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
-                  />
-                </div>
+                <ImageDisplay
+                  result={result}
+                  isLoading={isGenerating}
+                  heatLevel={heatLevel}
+                  onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
+                />
               </motion.div>
             )}
           </AnimatePresence>

@@ -34,13 +34,13 @@ export default function ReferenceDropZone({
   // Boost heat when forging
   const effectiveHeat = isForging ? Math.max(heatLevel, 0.8) : heatLevel
   
-  // Color transitions from cool to hot
+  // Color transitions - MUST MATCH ForgeGutter and ImageDisplay
   const getHeatColor = (level: number) => {
     if (level < 0.2) return { border: '#3a3a3a', glow: 'transparent', bg: '#1a1a1a', inner: '#222' }
-    if (level < 0.4) return { border: '#8b4513', glow: 'rgba(139, 69, 19, 0.3)', bg: '#2a1a10', inner: '#3d2817' }
-    if (level < 0.6) return { border: '#d2691e', glow: 'rgba(210, 105, 30, 0.4)', bg: '#3a2010', inner: '#4d3020' }
-    if (level < 0.8) return { border: '#ff6b35', glow: 'rgba(255, 107, 53, 0.5)', bg: '#4a2515', inner: '#5d3525' }
-    return { border: '#ff4500', glow: 'rgba(255, 69, 0, 0.6)', bg: '#5a2a1a', inner: '#6d3a2a' }
+    if (level < 0.4) return { border: '#8b4513', glow: 'rgba(139, 69, 19, 0.4)', bg: '#2a1a10', inner: '#3d2817' }
+    if (level < 0.6) return { border: '#d2691e', glow: 'rgba(210, 105, 30, 0.5)', bg: '#3a2010', inner: '#4d3020' }
+    if (level < 0.8) return { border: '#ff6b35', glow: 'rgba(255, 107, 53, 0.6)', bg: '#4a2515', inner: '#5d3525' }
+    return { border: '#ff4500', glow: 'rgba(255, 69, 0, 0.7)', bg: '#5a2a1a', inner: '#6d3a2a' }
   }
   
   const heatColors = getHeatColor(effectiveHeat)
@@ -332,31 +332,13 @@ export default function ReferenceDropZone({
       {/* Pour spout at bottom center - connects to gutter */}
       <div className="relative flex justify-center">
         <div 
-          className="w-4 h-3 relative -mb-1"
+          className="w-2 h-2 relative"
           style={{
-            background: effectiveHeat > 0.2 
-              ? `linear-gradient(180deg, ${heatColors.border} 0%, ${isForging ? '#ff6b35' : heatColors.border} 100%)`
-              : '#333',
-            clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)',
-            boxShadow: effectiveHeat > 0.3 ? `0 4px 8px ${heatColors.glow}` : 'none',
+            background: heatColors.border, // Always match gutter color
+            clipPath: 'polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)',
+            boxShadow: effectiveHeat > 0.2 ? `0 4px 8px ${heatColors.glow}` : 'none',
           }}
-        >
-          {/* Drip animation when forging */}
-          {isForging && (
-            <motion.div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 rounded-full"
-              animate={{
-                height: ['0px', '8px', '0px'],
-                opacity: [0.8, 1, 0],
-              }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              style={{
-                background: 'linear-gradient(180deg, #ffcc00, #ff6b35)',
-                boxShadow: '0 0 6px #ff6b35',
-              }}
-            />
-          )}
-        </div>
+        />
       </div>
 
     </motion.div>
