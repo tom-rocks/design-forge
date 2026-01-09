@@ -230,14 +230,11 @@ router.post('/generate', async (req: Request, res: Response) => {
     let fullPrompt = prompt;
     
     // Add style context if we have references
+    // Google's example: contents=[prompt] + reference_images (text FIRST, images AFTER)
     if (imageParts.length > 0) {
-      // Images go FIRST (context), then instruction at END
-      parts.push(...imageParts);
-      fullPrompt = `Study the ${imageParts.length} reference images above. Note their visual style: line weight, shading, colors, and proportions.
+      fullPrompt = `Create: ${prompt}
 
-Create: ${prompt}
-
-Your output must match the exact same art style as the references. Same lines, same shading, same aesthetic.`;
+Use these ${imageParts.length} reference images as style guide. Match their exact art style: same lines, shading, colors, proportions.`;
     }
     
     // Add negative prompt if provided
@@ -245,8 +242,9 @@ Your output must match the exact same art style as the references. Same lines, s
       fullPrompt += ` Avoid: ${negativePrompt.trim()}`;
     }
     
-    // Text instruction goes LAST (after images)
+    // Text FIRST, then images (per Google's example)
     parts.push({ text: fullPrompt });
+    parts.push(...imageParts);
     
     // Build the request payload
     // Note: Including both TEXT and IMAGE in responseModalities per Google's examples
