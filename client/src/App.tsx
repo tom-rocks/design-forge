@@ -291,12 +291,13 @@ function App() {
                 transition={{ duration: 0.2 }}
                 className="space-y-4"
               >
-                {/* Main drop zone for all references */}
+                {/* Main drop zone for all references - THE CRUCIBLE */}
                 <ReferenceDropZone
                   references={references}
                   onReferencesChange={setReferences}
                   maxRefs={maxRefs}
                   disabled={isGenerating}
+                  isForging={isGenerating && mode === 'create'}
                 />
 
                 {/* Browse panels - drag items from here */}
