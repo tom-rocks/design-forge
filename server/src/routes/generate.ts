@@ -167,10 +167,18 @@ router.post('/generate', async (req: Request, res: Response) => {
   const maxRefs = modelType === 'pro' ? 14 : 3;
   const supportsHighRes = modelType === 'pro';
   
+  // Map client resolution values to API values
+  const resolutionMap: Record<string, string> = {
+    '1024': '1K', '1K': '1K',
+    '2048': '2K', '2K': '2K', 
+    '4096': '4K', '4K': '4K',
+  };
+  const mappedResolution = resolutionMap[resolution] || '1K';
+  
   // Validate resolution for model
-  const finalResolution = supportsHighRes ? resolution : '1K';
-  if (resolution !== '1K' && !supportsHighRes) {
-    console.log(`[Gen ${id}] Downgrading resolution from ${resolution} to 1K (Flash model)`);
+  const finalResolution = supportsHighRes ? mappedResolution : '1K';
+  if (mappedResolution !== '1K' && !supportsHighRes) {
+    console.log(`[Gen ${id}] Downgrading resolution from ${mappedResolution} to 1K (Flash model)`);
   }
   
   send('progress', { status: 'starting', message: 'INITIALIZING GEMINI...', progress: 5, id });
