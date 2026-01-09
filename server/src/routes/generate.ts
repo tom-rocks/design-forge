@@ -215,15 +215,17 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
     
     // Build the prompt text
+    // Per Google's Gemini 3 prompting guide:
+    // - Be concise (Gemini 3 may over-analyze verbose prompts)
+    // - Place instructions AFTER context/data
+    // - Use "Based on the above..." pattern
     let fullPrompt = prompt;
     
-    // Add strong style context if we have references
+    // Add style context if we have references
     if (imageParts.length > 0) {
-      fullPrompt = `Here are ${imageParts.length} reference image(s) showing the exact visual style I need.
-
-Generate a new image in this EXACT same style: ${prompt}
-
-IMPORTANT: The output must match the reference images' art style, rendering technique, and aesthetic perfectly.`;
+      // Images go FIRST (context), then instruction at END
+      parts.push(...imageParts);
+      fullPrompt = `Based on the ${imageParts.length} reference image(s) above, generate: ${prompt}. Match the exact art style.`;
     }
     
     // Add negative prompt if provided
@@ -231,9 +233,8 @@ IMPORTANT: The output must match the reference images' art style, rendering tech
       fullPrompt += ` Avoid: ${negativePrompt.trim()}`;
     }
     
-    // Add text prompt FIRST, then images (more natural for instruction-following)
+    // Text instruction goes LAST (after images)
     parts.push({ text: fullPrompt });
-    parts.push(...imageParts);
     
     // Build the request payload
     // Note: Including both TEXT and IMAGE in responseModalities per Google's examples
