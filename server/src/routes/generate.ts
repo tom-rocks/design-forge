@@ -237,12 +237,14 @@ IMPORTANT: The output must match the reference images' art style, rendering tech
     
     // Build the request payload
     // Note: Including both TEXT and IMAGE in responseModalities per Google's examples
+    // media_resolution_high ensures model can see fine style details in reference images
     const payload: any = {
       contents: [{
         parts: parts,
       }],
       generationConfig: {
         responseModalities: ['TEXT', 'IMAGE'],
+        mediaResolution: 'media_resolution_high',  // Better style analysis (1120 tokens per image)
       },
     };
     
