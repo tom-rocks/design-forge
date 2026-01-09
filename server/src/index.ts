@@ -43,7 +43,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    hasApiKey: !!process.env.KREA_API_KEY,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
     bridgeConnected: isBridgeConnected(),
   });
 });

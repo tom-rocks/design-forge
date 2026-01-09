@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, ExternalLink, ImageIcon, ZoomIn, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Download, ExternalLink, Monitor, ZoomIn, X, Grid, Square } from 'lucide-react'
 
 interface ImageDisplayProps {
   result: {
@@ -11,168 +11,388 @@ interface ImageDisplayProps {
   isLoading: boolean
 }
 
+// Pixel characters for the visualization
+const PIXELS = ' ░▒▓█'
+
 export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
-  const [imageLoaded, setImageLoaded] = useState(false)
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
+  const [viewMode, setViewMode] = useState<'grid' | 'single'>('grid')
+  const [pixelGrid, setPixelGrid] = useState<string[][]>([])
+  const [progressBar, setProgressBar] = useState<number[]>([])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
-  const currentImage = images[selectedIndex] || result?.imageUrl
+  const currentImage = selectedIndex !== null ? images[selectedIndex] : images[0]
+  
+  // Nostradamus visualization - pure visual, no text
+  useEffect(() => {
+    if (isLoading) {
+      setLoadedImages(new Set())
+      
+      // Generate evolving pixel visualization
+      const pixelInterval = setInterval(() => {
+        const width = 24
+        const height = 24
+        const time = Date.now() / 1000
+        const grid: string[][] = []
+        
+        for (let y = 0; y < height; y++) {
+          const row: string[] = []
+          for (let x = 0; x < width; x++) {
+            // Normalize to -1 to 1
+            const nx = (x / width - 0.5) * 2
+            const ny = (y / height - 0.5) * 2
+            
+            // Distance from center
+            const dist = Math.sqrt(nx * nx + ny * ny)
+            
+            // Multiple wave patterns creating interference
+            const wave1 = Math.sin(dist * 6 - time * 2)
+            const wave2 = Math.sin(nx * 4 + time * 1.5)
+            const wave3 = Math.cos(ny * 4 - time * 1.2)
+            const spiral = Math.sin(Math.atan2(ny, nx) * 3 + dist * 4 - time * 2)
+            
+            // Combine waves
+            const combined = (wave1 + wave2 + wave3 + spiral) / 4
+            
+            // Map to pixel character
+            const idx = Math.floor((combined + 1) * 2.4)
+            row.push(PIXELS[Math.max(0, Math.min(idx, PIXELS.length - 1))])
+          }
+          grid.push(row)
+        }
+        
+        setPixelGrid(grid)
+        
+        // Progress bar visualizer - waves traveling through segments
+        const barSegments = 40
+        const bar: number[] = []
+        for (let i = 0; i < barSegments; i++) {
+          const nx = (i / barSegments - 0.5) * 2
+          // Multiple traveling waves
+          const wave1 = Math.sin(nx * 8 - time * 3)
+          const wave2 = Math.sin(nx * 12 + time * 2)
+          const wave3 = Math.sin(nx * 4 - time * 4) * 0.5
+          const pulse = Math.sin(time * 2) * 0.3
+          // Combine with some noise
+          const combined = (wave1 + wave2 + wave3 + pulse) / 3
+          bar.push((combined + 1) / 2) // Normalize to 0-1
+        }
+        setProgressBar(bar)
+      }, 50)
+      
+      return () => clearInterval(pixelInterval)
+    }
+  }, [isLoading])
 
-  const handleDownload = async (url?: string) => {
-    const imageUrl = url || currentImage
-    if (!imageUrl) return
-    
+
+  // Reset selection when new results come in
+  useEffect(() => {
+    if (result) {
+      setSelectedIndex(null)
+    }
+  }, [result])
+
+  const handleImageLoad = (index: number) => {
+    setLoadedImages(prev => new Set(prev).add(index))
+  }
+
+  const handleDownload = async (url: string, index: number) => {
     try {
-      const response = await fetch(imageUrl)
+      const response = await fetch(url)
       const blob = await response.blob()
       const blobUrl = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = `design-forge-${Date.now()}.png`
+      a.download = `design-forge-${index + 1}-${Date.now()}.png`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       window.URL.revokeObjectURL(blobUrl)
     } catch {
-      window.open(imageUrl, '_blank')
+      window.open(url, '_blank')
     }
   }
 
-  const nextImage = () => setSelectedIndex((i) => (i + 1) % images.length)
-  const prevImage = () => setSelectedIndex((i) => (i - 1 + images.length) % images.length)
+  const handleDownloadAll = async () => {
+    for (let i = 0; i < images.length; i++) {
+      await handleDownload(images[i], i)
+      await new Promise(r => setTimeout(r, 500))
+    }
+  }
 
+  // Empty state
   if (!result && !isLoading) {
     return (
-      <div className="border border-dashed border-forge-border rounded-2xl p-12 flex flex-col items-center justify-center text-forge-text-muted min-h-[300px]">
-        <ImageIcon className="w-12 h-12 mb-4 opacity-30" />
-        <p className="text-sm">Your generated image will appear here</p>
+      <div className="te-panel overflow-hidden">
+        <div className="te-module-header">
+          <Monitor className="w-3.5 h-3.5 text-te-fuchsia" />
+          <span>OUTPUT_DISPLAY</span>
+          <div className="flex-1" />
+          <div className="w-2 h-2 led led-off" />
+        </div>
+        <div className="aspect-square flex flex-col items-center justify-center bg-te-lcd p-12 relative">
+          <Monitor className="w-16 h-16 mb-4 text-te-lcd-text-dim opacity-30" />
+          <p className="font-mono text-sm text-te-lcd-text-dim uppercase tracking-wider">AWAITING INPUT</p>
+          <p className="font-mono text-[10px] mt-2 text-te-lcd-text-dim/50">ENTER PROMPT TO BEGIN GENERATION</p>
+        </div>
       </div>
     )
   }
 
+  // Get grid columns based on image count
+  const getGridClass = () => {
+    if (images.length === 1) return 'grid-cols-1'
+    if (images.length === 2) return 'grid-cols-2'
+    if (images.length <= 4) return 'grid-cols-2'
+    return 'grid-cols-3'
+  }
+
   return (
     <>
-      <div className="space-y-4">
-        {/* Main Image */}
-        <div className="relative group">
-          <div className="bg-forge-surface border border-forge-border rounded-2xl overflow-hidden">
-            {/* Loading State */}
-            <AnimatePresence>
-              {isLoading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="aspect-square flex items-center justify-center"
-                >
-                  <div className="text-center">
-                    <div className="relative w-16 h-16 mx-auto mb-4">
-                      <motion.div
-                        className="absolute inset-0 border-2 border-violet-500/30 rounded-full"
-                        animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                      />
-                      <motion.div
-                        className="absolute inset-0 border-2 border-violet-500/30 rounded-full"
-                        animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    </div>
-                    <p className="text-sm text-forge-text-muted">Creating your image...</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+      <div className="te-panel overflow-hidden">
+        {/* Module Header */}
+        <div className="te-module-header">
+          <Monitor className="w-3.5 h-3.5 text-te-fuchsia" />
+          <span>OUTPUT_DISPLAY</span>
+          <div className="flex-1" />
+          
+          {/* View toggle for multiple images */}
+          {images.length > 1 && !isLoading && (
+            <div className="flex gap-1 mr-3">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1 rounded transition-colors ${viewMode === 'grid' ? 'bg-te-fuchsia text-te-bg' : 'text-te-cream-dim hover:text-te-cream'}`}
+                title="Grid view"
+              >
+                <Grid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('single')}
+                className={`p-1 rounded transition-colors ${viewMode === 'single' ? 'bg-te-fuchsia text-te-bg' : 'text-te-cream-dim hover:text-te-cream'}`}
+                title="Single view"
+              >
+                <Square className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          
+          {images.length > 1 && !isLoading && (
+            <span className="font-mono text-[9px] text-te-cream-dim mr-2">
+              {images.length} VARIATIONS
+            </span>
+          )}
+          
+          <div className={`w-2 h-2 led ${isLoading ? 'led-amber led-pulse' : result ? 'led-green' : 'led-off'}`} />
+        </div>
 
-            {/* Current Image */}
-            {result && !isLoading && currentImage && (
+        {/* Display Area */}
+        <div className="relative bg-te-lcd">
+          {/* Loading State - Pure Visual Nostradamus Animation */}
+          <AnimatePresence>
+            {isLoading && (
               <motion.div
-                key={selectedIndex}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="relative"
+                exit={{ opacity: 0 }}
+                className="aspect-square flex flex-col relative overflow-hidden"
+                style={{ background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)' }}
               >
-                {!imageLoaded && <div className="aspect-square shimmer" />}
-                <img
-                  src={currentImage}
-                  alt={result.prompt}
-                  onLoad={() => setImageLoaded(true)}
-                  className={`w-full h-auto ${imageLoaded ? 'block' : 'hidden'}`}
+                {/* Animated wave progress bar at TOP */}
+                <div className="relative z-10 px-3 pt-3 pb-2">
+                  <div className="flex gap-[1px] h-4 items-end">
+                    {progressBar.map((value, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-sm transition-all duration-75"
+                        style={{
+                          height: `${20 + value * 80}%`,
+                          background: `linear-gradient(to top, #701a75, ${value > 0.6 ? '#e879f9' : value > 0.3 ? '#d946ef' : '#a21caf'})`,
+                          boxShadow: value > 0.5 ? `0 0 ${4 + value * 4}px rgba(232, 121, 249, ${value * 0.8})` : 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Slow scanning line */}
+                <motion.div
+                  className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/60 to-transparent z-20"
+                  animate={{ top: ['10%', '100%'] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
                 />
                 
-                {/* Navigation arrows for multiple images */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
+                {/* The main pixel visualization */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div 
+                    className="font-mono text-xs leading-[1.1] tracking-tight select-none"
+                    style={{ 
+                      textShadow: '0 0 4px rgba(217, 70, 239, 0.8)',
+                      filter: 'blur(0.3px)',
+                    }}
+                  >
+                    {pixelGrid.map((row, y) => (
+                      <div key={y} className="flex justify-center">
+                        {row.map((char, x) => (
+                          <span 
+                            key={x} 
+                            className="inline-block w-[14px] text-center"
+                            style={{
+                              color: char === '█' ? '#e879f9' : 
+                                     char === '▓' ? '#d946ef' :
+                                     char === '▒' ? '#a21caf' :
+                                     char === '░' ? '#701a75' : '#2e0a33',
+                              opacity: char === ' ' ? 0.1 : 1,
+                            }}
+                          >
+                            {char}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4">
-                  <div className="text-white text-sm max-w-[70%]">
-                    <p className="font-medium truncate">{result.prompt}</p>
-                    {images.length > 1 && (
-                      <p className="text-xs text-white/60 mt-1">{selectedIndex + 1} of {images.length}</p>
-                    )}
+                {/* Vignette overlay */}
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.7) 100%)',
+                  }}
+                />
+                
+                {/* Subtle CRT flicker */}
+                <motion.div
+                  className="absolute inset-0 bg-fuchsia-500/5 pointer-events-none"
+                  animate={{ opacity: [0, 0.1, 0] }}
+                  transition={{ duration: 0.1, repeat: Infinity, repeatDelay: 3 }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Grid View - All images at once */}
+          {result && !isLoading && viewMode === 'grid' && images.length > 1 && (
+            <div className={`grid ${getGridClass()} gap-2 p-2`}>
+              {images.map((url, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative group aspect-square bg-te-bg rounded-lg overflow-hidden border-2 border-te-border hover:border-te-fuchsia transition-colors cursor-pointer"
+                  onClick={() => { setSelectedIndex(i); setIsZoomed(true); }}
+                >
+                  {!loadedImages.has(i) && (
+                    <div className="absolute inset-0 te-shimmer" />
+                  )}
+                  <img
+                    src={url}
+                    alt={`Variation ${i + 1}`}
+                    onLoad={() => handleImageLoad(i)}
+                    className={`w-full h-full object-contain ${loadedImages.has(i) ? 'block' : 'invisible'}`}
+                  />
+                  
+                  {/* Variation number badge */}
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-te-bg/90 border border-te-border rounded font-mono text-[10px] text-te-cream">
+                    #{i + 1}
                   </div>
                   
-                  <div className="flex gap-2">
+                  {/* Hover actions */}
+                  <div className="absolute inset-0 bg-te-bg/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
-                      onClick={() => setIsZoomed(true)}
-                      className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-white transition-colors"
-                      title="View full size"
+                      onClick={(e) => { e.stopPropagation(); setSelectedIndex(i); setIsZoomed(true); }}
+                      className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
+                      title="Zoom"
                     >
                       <ZoomIn className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDownload()}
-                      className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-white transition-colors"
+                      onClick={(e) => { e.stopPropagation(); handleDownload(url, i); }}
+                      className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
                       title="Download"
                     >
                       <Download className="w-4 h-4" />
                     </button>
                     <a
-                      href={currentImage}
+                      href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-white transition-colors"
-                      title="Open in new tab"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
+                      title="Open"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Single View - One image with thumbnails */}
+          {result && !isLoading && (viewMode === 'single' || images.length === 1) && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="relative group"
+            >
+              {!loadedImages.has(selectedIndex ?? 0) && <div className="aspect-square te-shimmer" />}
+              <img
+                src={currentImage}
+                alt={result.prompt}
+                onLoad={() => handleImageLoad(selectedIndex ?? 0)}
+                className={`w-full h-auto ${loadedImages.has(selectedIndex ?? 0) ? 'block' : 'hidden'}`}
+              />
+              
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-te-bg/95 via-te-bg/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 z-20">
+                <div className="flex-1 mr-4">
+                  <p className="font-mono text-xs text-te-cream uppercase tracking-wider truncate">{result.prompt}</p>
                 </div>
-              </motion.div>
-            )}
-          </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsZoomed(true)}
+                    className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
+                    title="Zoom"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDownload(currentImage!, selectedIndex ?? 0)}
+                    className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <a
+                    href={currentImage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
+                    title="Open"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        {/* Thumbnail Grid for multiple images */}
-        {images.length > 1 && (
-          <div className="flex gap-2 justify-center">
+        {/* Thumbnail strip for single view */}
+        {images.length > 1 && viewMode === 'single' && !isLoading && (
+          <div className="flex gap-2 justify-center p-3 border-t border-te-border bg-te-panel-dark">
             {images.map((url, i) => (
               <button
                 key={i}
                 onClick={() => setSelectedIndex(i)}
-                className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                  i === selectedIndex 
-                    ? 'border-violet-500 ring-2 ring-violet-500/30' 
-                    : 'border-forge-border hover:border-forge-muted'
+                className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                  (selectedIndex ?? 0) === i 
+                    ? 'border-te-fuchsia ring-2 ring-te-fuchsia/30' 
+                    : 'border-te-border hover:border-te-fuchsia/50'
                 }`}
               >
                 <img src={url} alt={`Variation ${i + 1}`} className="w-full h-full object-cover" />
@@ -180,9 +400,22 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
             ))}
           </div>
         )}
+
+        {/* Download all button for grid view */}
+        {images.length > 1 && viewMode === 'grid' && !isLoading && (
+          <div className="flex justify-center p-3 border-t border-te-border bg-te-panel-dark">
+            <button
+              onClick={handleDownloadAll}
+              className="flex items-center gap-2 px-4 py-2 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream font-mono text-xs uppercase transition-all"
+            >
+              <Download className="w-4 h-4" />
+              Download All ({images.length})
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Fullscreen Modal */}
+      {/* Zoom Modal */}
       <AnimatePresence>
         {isZoomed && currentImage && (
           <motion.div
@@ -190,21 +423,40 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsZoomed(false)}
-            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+            className="fixed inset-0 z-50 bg-te-bg/98 backdrop-blur-sm flex items-center justify-center p-8 cursor-zoom-out"
           >
             <button
               onClick={() => setIsZoomed(false)}
-              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              className="absolute top-6 right-6 p-3 bg-te-panel border-2 border-te-border hover:border-te-fuchsia rounded-lg text-te-cream transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
+            
+            {/* Navigation in zoom mode */}
+            {images.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => { e.stopPropagation(); setSelectedIndex(i); }}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      (selectedIndex ?? 0) === i 
+                        ? 'bg-te-fuchsia scale-125' 
+                        : 'bg-te-border hover:bg-te-cream'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+            
             <motion.img
+              key={selectedIndex}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               src={currentImage}
               alt={result?.prompt}
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="max-w-full max-h-[85vh] object-contain rounded-te border-2 border-te-border"
             />
           </motion.div>
         )}

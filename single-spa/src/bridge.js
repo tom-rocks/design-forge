@@ -5,6 +5,7 @@
  */
 
 const DESIGN_FORGE_WS = process.env.DESIGN_FORGE_WS || "wss://design-forge-production.up.railway.app/ws/bridge";
+const BRIDGE_SECRET = process.env.BRIDGE_SECRET || "dev-secret-change-me";
 const API_BASE = "/api";
 
 let ws = null;
@@ -14,17 +15,62 @@ const RECONNECT_DELAY = 3000;
 
 /**
  * Search items using AP's internal API
+ * Uses GetNextjsItemsRequest for text search, GetItemsRequest for browsing
  */
-const searchItems = async ({ query, type, page = 0, limit = 40, rarity = [], sort = "relevance_descending" }) => {
+const searchItems = async ({ query, category, limit = 20, offset = 0 }) => {
+    const trimmedQuery = query?.trim() || "";
+    
+    // If we have a search query, use GetNextjsItemsRequest for relevance
+    if (trimmedQuery) {
+        let type = "all";
+        if (category && category !== "all") {
+            if (category === "clothing") type = "clothing";
+            else if (category === "furniture") type = "furniture";
+            else type = category;
+        }
+
+        const page = Math.floor(offset / limit);
+
+        const payload = {
+            _type: "GetNextjsItemsRequest",
+            page,
+            limit,
+            sort: "relevance_descending",
+            query: trimmedQuery,
+            type,
+            rarity: [],
+        };
+
+        console.log("[Bridge] Text search with payload:", payload);
+
+        const response = await fetch(API_BASE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.status}`);
+        }
+
+        return response.json();
+    }
+    
+    // No query - use GetItemsRequest for browsing
+    const filters = [];
+    if (category && category !== "all") {
+        filters.push(["category", category]);
+    }
+
     const payload = {
-        _type: "GetNextjsItemsRequest",
-        page,
+        _type: "GetItemsRequest",
         limit,
-        sort,
-        query: query || "",
-        type: type || "all",
-        rarity: rarity || [],
+        offset,
+        filters,
+        sorts: [["created_at", -1]], // Latest first
     };
+
+    console.log("[Bridge] Browse with payload:", payload);
 
     const response = await fetch(API_BASE, {
         method: "POST",
@@ -33,19 +79,22 @@ const searchItems = async ({ query, type, page = 0, limit = 40, rarity = [], sor
     });
 
     if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
+        throw new Error(`Browse failed: ${response.status}`);
     }
 
     return response.json();
 };
 
 /**
- * Get single item details
+ * Get single item by disp_id
  */
 const getItem = async (dispId) => {
     const payload = {
-        _type: "GetItemRequest",
-        disp_id: dispId,
+        _type: "GetItemsRequest",
+        limit: 1,
+        offset: 0,
+        filters: [["disp_id", dispId]],
+        sorts: [],
     };
 
     const response = await fetch(API_BASE, {
@@ -58,7 +107,9 @@ const getItem = async (dispId) => {
         throw new Error(`Get item failed: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    // Return first item if found
+    return { item: data.items?.[0] || null };
 };
 
 /**
@@ -106,10 +157,11 @@ const connect = () => {
         console.log("[Bridge] Connected to Design Forge");
         reconnectAttempts = 0;
         
-        // Send handshake
+        // Send handshake with secret
         ws.send(JSON.stringify({ 
             type: "handshake", 
             client: "ap-bridge",
+            secret: BRIDGE_SECRET,
             timestamp: Date.now() 
         }));
     };

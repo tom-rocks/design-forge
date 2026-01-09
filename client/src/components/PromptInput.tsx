@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Wand2 } from 'lucide-react'
+import { Terminal } from 'lucide-react'
 
 interface PromptInputProps {
   value: string
@@ -29,42 +29,66 @@ export default function PromptInput({ value, onChange, onSubmit, disabled }: Pro
   }
 
   return (
-    <div className="relative group">
-      {/* Glow effect */}
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="te-panel overflow-hidden">
+      {/* Module Header */}
+      <div className="te-module-header">
+        <Terminal className="w-3.5 h-3.5 text-te-fuchsia" />
+        <span>INPUT_PROMPT</span>
+        <div className="flex-1" />
+        <div className={`w-2 h-2 led ${disabled ? 'led-amber' : 'led-green'} led-pulse`} />
+      </div>
       
-      <div className="relative bg-forge-surface border border-forge-border rounded-2xl overflow-hidden transition-colors duration-300 group-hover:border-forge-muted">
-        <div className="flex items-center gap-2 px-4 pt-4 pb-2 border-b border-forge-border/50">
-          <Wand2 className="w-4 h-4 text-violet-400" />
-          <span className="text-xs font-medium text-forge-text-muted uppercase tracking-wider">
-            Prompt
-          </span>
+      {/* Input area with terminal styling */}
+      <div className="p-4 bg-te-panel-dark">
+        <div className="relative">
+          {/* Terminal prefix */}
+          <div className="absolute left-0 top-0 font-mono text-te-fuchsia text-sm select-none pointer-events-none">
+            <span className="opacity-60">&gt;</span>
+          </div>
+          
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            placeholder="describe your vision..."
+            className="w-full pl-5 bg-transparent text-te-cream placeholder-te-cream-dim resize-none focus:outline-none font-mono text-sm leading-relaxed min-h-[80px] disabled:opacity-50"
+            rows={3}
+          />
+          
+          {/* Blinking cursor indicator when empty */}
+          {value.length === 0 && !disabled && (
+            <motion.span 
+              className="absolute left-5 top-0 font-mono text-te-fuchsia text-sm"
+              animate={{ opacity: [1, 0] }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: "steps(1)" }}
+            >
+              █
+            </motion.span>
+          )}
+        </div>
+      </div>
+      
+      {/* Footer with data displays */}
+      <div className="flex items-center justify-between px-4 py-2 border-t border-te-border bg-te-panel">
+        {/* Character count LCD */}
+        <div className="te-data-display">
+          <span className="text-te-lcd-text-dim">CHR:</span>
+          <span className="ml-1">{String(value.length).padStart(4, '0')}</span>
         </div>
         
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          placeholder="Describe the image you want to create..."
-          className="w-full px-4 py-4 bg-transparent text-forge-text placeholder-forge-text-muted/50 resize-none focus:outline-none font-mono text-sm leading-relaxed min-h-[100px] disabled:opacity-50"
-          rows={3}
-        />
-        
-        <div className="flex items-center justify-between px-4 pb-3 text-xs text-forge-text-muted">
-          <span>{value.length} characters</span>
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: value.length > 0 ? 1 : 0 }}
-            className="flex items-center gap-1"
-          >
-            <kbd className="px-1.5 py-0.5 bg-forge-muted rounded text-[10px]">⌘</kbd>
-            <span>+</span>
-            <kbd className="px-1.5 py-0.5 bg-forge-muted rounded text-[10px]">↵</kbd>
-            <span className="ml-1">to generate</span>
-          </motion.span>
-        </div>
+        {/* Keyboard shortcut */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: value.length > 0 ? 1 : 0 }}
+          className="flex items-center gap-1.5"
+        >
+          <span className="te-keycap">⌘</span>
+          <span className="text-te-cream-dim text-xs">+</span>
+          <span className="te-keycap">↵</span>
+          <span className="font-mono text-[10px] text-te-cream-muted ml-2 uppercase tracking-wider">execute</span>
+        </motion.div>
       </div>
     </div>
   )

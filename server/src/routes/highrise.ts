@@ -19,7 +19,10 @@ interface HighriseItem {
 }
 
 interface BridgeItem {
+  _id?: string;
+  _type?: string; // DAvatarItemArchetype, DContainerArchetype, etc.
   disp_id?: string;
+  disp_name?: string;
   id?: string;
   item_id?: string;
   name?: string;
@@ -30,6 +33,47 @@ interface BridgeItem {
   type?: string;
 }
 
+// Only avatar items have valid PNG thumbnails
+const VALID_ITEM_TYPES = ['DAvatarItemArchetype'];
+
+// Categories that have valid avatar thumbnails
+const AVATAR_CATEGORIES = [
+  'shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+  'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+  'gloves', 'watch', 'sock', 'hair_front', 'hair_back', 'eye', 'eyebrow',
+  'mouth', 'nose', 'body', 'blush', 'freckle', 'mole', 'lashes', 'face_hair',
+  'tattoo', 'aura', 'emote'
+];
+
+// Filter out items without valid thumbnails
+const hasValidThumbnail = (item: BridgeItem): boolean => {
+  const id = item.disp_id || item.id || item.item_id || '';
+  
+  // Skip containers (cn-...) and other non-avatar items by ID prefix
+  if (id.startsWith('cn-') || id.startsWith('room-') || id.startsWith('grab-')) {
+    return false;
+  }
+  
+  // If _type is present (bridge response), check if it's an avatar item
+  if (item._type && !VALID_ITEM_TYPES.includes(item._type)) {
+    return false;
+  }
+  
+  // If category is container or not a known avatar category, skip it
+  const category = item.category?.toLowerCase();
+  if (category === 'container' || category === 'room' || category === 'grab') {
+    return false;
+  }
+  
+  // For bridge responses with category, check if it's a valid avatar category
+  // For public API (no _type), allow all categories that pass the above checks
+  if (item._type && category && !AVATAR_CATEGORIES.includes(category)) {
+    return false;
+  }
+  
+  return true;
+};
+
 interface SearchResult {
   id: string;
   name: string;
@@ -38,12 +82,22 @@ interface SearchResult {
   imageUrl: string;
 }
 
-// Transform bridge item to our format
+// Transform bridge item to our format (handles GetItemsRequest response)
 const transformBridgeItem = (item: BridgeItem): SearchResult => {
   const id = item.disp_id || item.id || item.item_id || '';
+  // Debug: log available name fields
+  const nameFields = {
+    disp_name: item.disp_name,
+    name: item.name,
+    display_name: item.display_name,
+    item_name: item.item_name,
+  };
+  const resolvedName = item.disp_name || item.name || item.display_name || item.item_name || id;
+  console.log(`[Highrise] Item ${id} name resolution:`, nameFields, '→', resolvedName);
+  
   return {
     id,
-    name: item.name || item.display_name || item.item_name || id,
+    name: resolvedName,
     category: item.category || item.type || 'unknown',
     rarity: item.rarity || 'common',
     imageUrl: `${HIGHRISE_CDN}/${id}.png`,
@@ -70,21 +124,31 @@ router.get('/items', async (req: Request, res: Response) => {
     if (isBridgeConnected()) {
       console.log('[Highrise] Using bridge for search:', searchQuery);
       
+      // Use 'type' param (from client) or fall back to 'category' for backwards compat
+      const itemCategory = String(type || category || 'all');
+      console.log('[Highrise] Category filter:', itemCategory);
+      
       try {
         const bridgeResult = await searchItemsViaBridge({
           query: searchQuery,
-          type: String(type || 'all'),
-          page: pageNum,
+          category: itemCategory,
           limit: requestedLimit,
-          rarity: rarity ? String(rarity).split(',') : [],
-          sort: 'relevance_descending',
-        }) as { items?: BridgeItem[] };
+          offset: pageNum * requestedLimit,
+        }) as { items?: BridgeItem[]; pages?: number };
 
-        const items = (bridgeResult.items || []).map(transformBridgeItem);
+        // Debug: log first item to see what fields we're getting
+        if (bridgeResult.items?.[0]) {
+          console.log('[Highrise] Bridge item sample:', JSON.stringify(bridgeResult.items[0], null, 2));
+        }
+
+        // Filter out items without valid thumbnails (containers, etc.)
+        const validItems = (bridgeResult.items || []).filter(hasValidThumbnail);
+        const items = validItems.map(transformBridgeItem);
         
         res.json({
           items,
-          hasMore: items.length === requestedLimit,
+          hasMore: (bridgeResult.pages || 0) > (pageNum + 1),
+          totalPages: bridgeResult.pages || 0,
           source: 'bridge',
           page: pageNum,
         });
@@ -214,6 +278,43 @@ router.get('/types', (_req: Request, res: Response) => {
     types: ITEM_TYPES,
     bridgeConnected: isBridgeConnected(),
   });
+});
+
+// Image proxy - allows Krea API to fetch Highrise images through our server
+// Using wildcard to capture the full item ID including any dots
+router.get('/proxy/*', async (req: Request, res: Response) => {
+  try {
+    // Get the full path after /proxy/
+    const fullPath = req.params[0] || '';
+    // Remove .png extension if present
+    const itemId = fullPath.replace(/\.png$/, '');
+    
+    if (!itemId) {
+      res.status(400).send('Missing item ID');
+      return;
+    }
+    
+    const imageUrl = `${HIGHRISE_CDN}/${itemId}.png`;
+    console.log('[Highrise] Proxying image:', itemId, '->', imageUrl);
+    
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.log('[Highrise] Image not found:', response.status);
+      res.status(response.status).send('Image not found');
+      return;
+    }
+    
+    const buffer = await response.arrayBuffer();
+    
+    // Cache for 1 hour, always return as PNG
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(Buffer.from(buffer));
+    
+  } catch (error) {
+    console.error('[Highrise] Proxy error:', error);
+    res.status(500).send('Failed to proxy image');
+  }
 });
 
 export default router;

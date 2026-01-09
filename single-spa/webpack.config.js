@@ -26,6 +26,9 @@ module.exports = (webpackConfigEnv, argv) => {
       ? "wss://design-forge-production.up.railway.app/ws/bridge"
       : "ws://localhost:3001/ws/bridge");
 
+  // Bridge secret - MUST match the server's BRIDGE_SECRET env var
+  const bridgeSecret = process.env.BRIDGE_SECRET || "dev-secret-change-me";
+
   return merge(defaultConfig, {
     output: {
       filename: "index.js",
@@ -33,6 +36,7 @@ module.exports = (webpackConfigEnv, argv) => {
     plugins: [
       new webpack.DefinePlugin({
         "process.env.DESIGN_FORGE_WS": JSON.stringify(designForgeWs),
+        "process.env.BRIDGE_SECRET": JSON.stringify(bridgeSecret),
       }),
     ],
   });

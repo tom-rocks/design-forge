@@ -20,9 +20,38 @@ interface PendingRequest {
   timeout: NodeJS.Timeout;
 }
 
+// Bridge secret - must match in microapp
+const BRIDGE_SECRET = process.env.BRIDGE_SECRET || 'dev-secret-change-me';
+
+// Allowed origins (Highrise admin panel domains)
+const ALLOWED_ORIGINS = [
+  'https://production-ap.highrise.game',
+  'https://staging-ap.highrise.game',
+  'http://localhost:9000', // local dev
+];
+
+// Rate limiting: max 60 requests per minute
+const RATE_LIMIT = 60;
+const RATE_WINDOW = 60000; // 1 minute
+let requestsThisWindow = 0;
+let windowStart = Date.now();
+
 let bridgeClient: WebSocket | null = null;
 const pendingRequests = new Map<string, PendingRequest>();
 let requestCounter = 0;
+
+function checkRateLimit(): boolean {
+  const now = Date.now();
+  if (now - windowStart > RATE_WINDOW) {
+    windowStart = now;
+    requestsThisWindow = 0;
+  }
+  if (requestsThisWindow >= RATE_LIMIT) {
+    return false;
+  }
+  requestsThisWindow++;
+  return true;
+}
 
 /**
  * Initialize WebSocket server for AP bridge
@@ -30,17 +59,52 @@ let requestCounter = 0;
 export function initBridgeServer(server: Server) {
   const wss = new WebSocketServer({ server, path: '/ws/bridge' });
 
-  wss.on('connection', (ws) => {
-    console.log('[Bridge] Client connected');
+  wss.on('connection', (ws, req) => {
+    const origin = req.headers.origin || '';
+    console.log('[Bridge] Connection attempt from:', origin);
+
+    // Validate origin (skip in dev if no origin)
+    if (origin && !ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))) {
+      console.log('[Bridge] Rejected - invalid origin:', origin);
+      ws.close(4002, 'Invalid origin');
+      return;
+    }
+
+    // Track if this connection is authenticated
+    let isAuthenticated = false;
+
+    // Auto-close if not authenticated within 10 seconds
+    const authTimeout = setTimeout(() => {
+      if (!isAuthenticated) {
+        console.log('[Bridge] Connection timeout - no valid handshake');
+        ws.close(4001, 'Authentication timeout');
+      }
+    }, 10000);
 
     ws.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
         
+        // Handshake with secret validation
         if (message.type === 'handshake' && message.client === 'ap-bridge') {
-          console.log('[Bridge] AP bridge authenticated');
+          if (message.secret !== BRIDGE_SECRET) {
+            console.log('[Bridge] Invalid secret provided');
+            ws.close(4003, 'Invalid credentials');
+            return;
+          }
+          
+          console.log('[Bridge] AP bridge authenticated successfully');
+          isAuthenticated = true;
+          clearTimeout(authTimeout);
           bridgeClient = ws;
           ws.send(JSON.stringify({ type: 'handshake-ack' }));
+          return;
+        }
+        
+        // Reject all other messages if not authenticated
+        if (!isAuthenticated) {
+          console.log('[Bridge] Rejecting message - not authenticated');
+          ws.close(4003, 'Not authenticated');
           return;
         }
 
@@ -96,6 +160,10 @@ export async function bridgeRequest<T>(type: string, params?: Record<string, unk
     throw new Error('Bridge not connected');
   }
 
+  if (!checkRateLimit()) {
+    throw new Error('Rate limit exceeded');
+  }
+
   const id = `req-${++requestCounter}-${Date.now()}`;
   const request: BridgeRequest = { id, type: type as BridgeRequest['type'], params };
 
@@ -115,11 +183,9 @@ export async function bridgeRequest<T>(type: string, params?: Record<string, unk
  */
 export async function searchItemsViaBridge(options: {
   query?: string;
-  type?: string;
-  page?: number;
+  category?: string;
   limit?: number;
-  rarity?: string[];
-  sort?: string;
+  offset?: number;
 }) {
   return bridgeRequest('search', options);
 }
