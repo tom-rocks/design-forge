@@ -57,18 +57,14 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
     }
     
     const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type') || 'image/png';
     
-    // Process with sharp to add solid background (Gemini doesn't like transparent PNGs)
-    // Use a neutral gray background color
-    const processedBuffer = await sharp(buffer)
-      .flatten({ background: { r: 88, g: 89, b: 91 } }) // #58595b gray
-      .jpeg({ quality: 90 }) // Convert to JPEG for better compatibility
-      .toBuffer();
+    // Keep original format - Gemini supports PNG, JPEG, WEBP
+    // Don't flatten transparency - it may contain important style info
+    const base64 = buffer.toString('base64');
     
-    const base64 = processedBuffer.toString('base64');
-    
-    console.log(`[Gemini] Processed image: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes (JPEG with background)`);
-    return { data: base64, mimeType: 'image/jpeg' };
+    console.log(`[Gemini] Image loaded: ${buffer.byteLength} bytes, type: ${contentType}`);
+    return { data: base64, mimeType: contentType };
   } catch (e) {
     console.error(`[Gemini] Error fetching/processing image:`, e);
     return null;
