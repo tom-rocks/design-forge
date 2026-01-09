@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PromptInput from './components/PromptInput'
 import SettingsPanel from './components/SettingsPanel'
@@ -8,7 +8,6 @@ import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
 import { API_URL } from './config'
-import { AlertTriangle } from 'lucide-react'
 
 export interface StyleImage {
   url: string
@@ -49,7 +48,7 @@ interface GenerationResult {
 function App() {
   const [prompt, setPrompt] = useState('')
   const [settings, setSettings] = useState<GenerationSettings>({
-    model: 'pro',  // Default to Pro for max references (14)
+    model: 'pro',
     resolution: '1024',
     aspectRatio: '1:1',
     negativePrompt: '',
@@ -68,7 +67,7 @@ function App() {
 
     setIsGenerating(true)
     setError(null)
-    setProgress({ status: 'connecting', message: 'ESTABLISHING CONNECTION...', progress: 0 })
+    setProgress({ status: 'connecting', message: 'Connecting...', progress: 0 })
 
     try {
       const response = await fetch(`${API_URL}/api/generate`, {
@@ -77,12 +76,11 @@ function App() {
         body: JSON.stringify({
           prompt: prompt.trim(),
           model: settings.model,
-          resolution: settings.resolution === '1024' ? '1K' : settings.resolution === '2048' ? '2K' : '4K',
+          resolution: settings.resolution,
           aspectRatio: settings.aspectRatio,
           numImages: settings.numImages > 1 ? settings.numImages : undefined,
           styleImages: settings.styleImages?.length ? settings.styleImages : undefined,
-          negativePrompt: settings.negativePrompt || undefined,
-          seed: settings.seed || undefined,
+          references: settings.references?.length ? settings.references : undefined,
         }),
       })
 
@@ -112,7 +110,7 @@ function App() {
               if (currentEvent === 'progress') {
                 setProgress({
                   status: data.status,
-                  message: data.message?.toUpperCase() || 'PROCESSING...',
+                  message: data.message,
                   progress: data.progress || 0,
                   elapsed: data.elapsed,
                 })
@@ -132,7 +130,7 @@ function App() {
             } catch (parseError) {
               console.error('Failed to parse SSE data:', parseError)
             }
-            currentEvent = ''
+            currentEvent = '' // Reset after processing
           }
         }
       }
@@ -144,73 +142,19 @@ function App() {
     }
   }, [prompt, settings, isGenerating])
 
-  // ASCII visualizer for progress
-  const PIXELS = ' ░▒▓█'
-  const [progressViz, setProgressViz] = useState<string[]>([])
-  
-  useEffect(() => {
-    if (!progress) {
-      setProgressViz([])
-      return
-    }
-    
-    const vizInterval = setInterval(() => {
-      const width = 72  // Wide to fill the panel
-      const height = 8
-      const time = Date.now() / 1000
-      const prog = progress.progress / 100
-      const lines: string[] = []
-      
-      for (let y = 0; y < height; y++) {
-        let row = ''
-        for (let x = 0; x < width; x++) {
-          const nx = x / width
-          const ny = (y / height - 0.5) * 2
-          
-          // Wave patterns - horizontal traveling waves
-          const wave1 = Math.sin(nx * 12 - time * 4 + ny * 3)
-          const wave2 = Math.sin(nx * 20 + time * 2.5)
-          const wave3 = Math.cos(ny * 4 - time * 1.5)
-          
-          // Progress mask - fills from left as progress increases
-          const progressMask = nx < prog ? 1.3 : 0.2
-          
-          const combined = (wave1 + wave2 + wave3) / 3 * progressMask
-          const idx = Math.floor((combined + 1) * 2.2)
-          row += PIXELS[Math.max(0, Math.min(idx, PIXELS.length - 1))]
-        }
-        lines.push(row)
-      }
-      
-      setProgressViz(lines)
-    }, 50)
-    
-    return () => clearInterval(vizInterval)
-  }, [progress])
-
   return (
-    <div className="min-h-screen bg-te-bg te-grid-bg">
-      {/* Subtle vignette */}
-      <div className="fixed inset-0 pointer-events-none" 
-        style={{ background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)' }} 
-      />
+    <div className="min-h-screen bg-forge-bg">
+      <div className="fixed inset-0 bg-gradient-to-br from-forge-bg via-forge-surface to-forge-bg opacity-50" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/10 via-transparent to-transparent" />
       
-      <div className="relative z-10 max-w-5xl mx-auto px-6 py-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <Header />
-        </motion.div>
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-8">
+        <Header />
         
-        <main className="mt-8 space-y-6">
-          {/* Prompt Input Module */}
+        <main className="mt-12 space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.5 }}
           >
             <PromptInput
               value={prompt}
@@ -220,125 +164,101 @@ function App() {
             />
           </motion.div>
 
-          {/* Asset Database Module */}
+          {/* Highrise Item Search */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
             <HighriseSearch
               selectedItems={settings.styleImages || []}
               onSelectionChange={(items) => setSettings({ ...settings, styleImages: items })}
               disabled={isGenerating}
-              maxItems={settings.model === 'pro' ? 14 : 3}
-              prompt={prompt}
+              maxItems={15}
             />
           </motion.div>
 
-          {/* Controls Row */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="flex flex-col lg:flex-row gap-4 items-stretch"
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between"
           >
-            <div className="flex-1">
-              <SettingsPanel
-                settings={settings}
-                onChange={setSettings}
-                disabled={isGenerating}
-              />
-            </div>
+            <SettingsPanel
+              settings={settings}
+              onChange={setSettings}
+              disabled={isGenerating}
+            />
             
-            <div className="lg:w-auto">
-              <GenerateButton
-                onClick={handleGenerate}
-                isLoading={isGenerating}
-                disabled={!prompt.trim()}
-              />
-            </div>
+            <GenerateButton
+              onClick={handleGenerate}
+              isLoading={isGenerating}
+              disabled={!prompt.trim()}
+            />
           </motion.div>
 
-          {/* Progress Indicator - ASCII Visualizer Style */}
+          {/* Progress indicator - Full width ASCII bar */}
           <AnimatePresence>
             {progress && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="te-panel overflow-hidden"
+                className="p-4 rounded-xl overflow-hidden"
+                style={{ background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)', border: '1px solid #2a1a3a' }}
               >
-                <div className="te-module-header py-2">
-                  <span>PROCESS_STATUS</span>
-                  <div className="flex-1" />
-                  <span className="font-mono text-[10px] text-fuchsia-400">
-                    {String(Math.floor(progress.progress)).padStart(3, '0')}%
-                  </span>
-                  <div className="w-2 h-2 led led-amber led-pulse ml-2" />
-                </div>
-                
-                <div className="p-3" style={{ background: '#0a0510' }}>
-                  {/* ASCII Visualizer */}
-                  <pre 
-                    className="font-mono text-[10px] leading-tight text-fuchsia-400/80 text-center select-none"
-                    style={{ textShadow: '0 0 8px rgba(217, 70, 239, 0.4)' }}
+                <div className="flex items-center justify-between mb-3">
+                  <span 
+                    className="font-mono text-sm uppercase tracking-wider"
+                    style={{ color: '#e879f9', textShadow: '0 0 8px rgba(232, 121, 249, 0.5)' }}
                   >
-                    {progressViz.join('\n')}
-                  </pre>
-                  
-                  {/* Status message */}
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-fuchsia-500/20">
-                    <motion.span 
-                      className="font-mono text-[10px] text-fuchsia-300 tracking-widest uppercase"
-                      key={progress.message}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      {progress.message}
-                    </motion.span>
-                    {progress.elapsed !== undefined && (
-                      <span className="font-mono text-[10px] text-fuchsia-400/60">
-                        {String(Math.floor(progress.elapsed)).padStart(3, '0')}s
-                      </span>
-                    )}
+                    {progress.message}
+                  </span>
+                  <span className="font-mono text-sm" style={{ color: '#a855f7' }}>
+                    {Math.floor(progress.progress)}%{progress.elapsed !== undefined && ` · ${progress.elapsed}s`}
+                  </span>
+                </div>
+                {/* Full-width progress bar using flex */}
+                <div 
+                  className="h-6 rounded overflow-hidden flex font-mono text-lg"
+                  style={{ background: '#1a0a1f', border: '1px solid #3d1a4a' }}
+                >
+                  <div 
+                    className="h-full flex items-center justify-center transition-all duration-300"
+                    style={{ 
+                      width: `${progress.progress}%`,
+                      background: 'linear-gradient(90deg, #7c3aed, #e879f9)',
+                      color: '#0d0712',
+                      textShadow: 'none',
+                      minWidth: progress.progress > 0 ? '2rem' : 0,
+                    }}
+                  >
+                    {progress.progress > 10 && '█'.repeat(Math.min(20, Math.floor(progress.progress / 5)))}
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Error Message - Console Style */}
+          {/* Error Message */}
           <AnimatePresence>
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="te-panel overflow-hidden border-te-led-red/50"
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
               >
-                <div className="te-module-header py-2 border-b-te-led-red/30">
-                  <AlertTriangle className="w-3.5 h-3.5 text-te-led-red" />
-                  <span className="text-te-led-red">SYSTEM_ERROR</span>
-                  <div className="flex-1" />
-                  <div className="w-2 h-2 led led-red" />
-                </div>
-                
-                <div className="p-4 bg-te-lcd">
-                  <p className="font-mono text-sm text-te-led-red uppercase tracking-wider mb-2">
-                    GENERATION FAILED
-                  </p>
-                  <p className="font-mono text-xs text-te-cream-dim break-all">{error}</p>
-                </div>
+                <div className="font-medium mb-1">Generation Error</div>
+                <div className="text-red-300/80 text-xs font-mono break-all">{error}</div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Output Display Module */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             <ImageDisplay
               result={result}
@@ -346,21 +266,6 @@ function App() {
             />
           </motion.div>
         </main>
-        
-        {/* Footer badge */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8 text-center"
-        >
-          <div className="inline-flex items-center gap-3 px-4 py-2 bg-te-panel border-2 border-te-border rounded-lg">
-            <div className="w-1.5 h-1.5 led led-green" />
-            <span className="font-mono text-[9px] text-te-cream-dim uppercase tracking-widest">
-              DESIGN_FORGE CONSOLE v2.0 — ALL SYSTEMS NOMINAL
-            </span>
-          </div>
-        </motion.footer>
       </div>
       
       <DebugPanel />

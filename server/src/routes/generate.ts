@@ -1,33 +1,116 @@
 import { Router, Request, Response } from 'express';
-import sharp from 'sharp';
 
 const router = Router();
 
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const KREA_API_BASE = 'https://api.krea.ai';
 
-// Available Gemini image generation models
-const MODELS = {
-  flash: 'gemini-2.5-flash-image',      // Fast, up to 3 refs, 1K only
-  pro: 'gemini-3-pro-image-preview',    // Professional, up to 14 refs, 1K/2K/4K, Thinking
-} as const;
+/**
+ * Upload an image to Krea's asset storage
+ * Returns the Krea CDN URL that can be used in generation requests
+ */
+async function uploadToKrea(imageUrl: string, apiKey: string): Promise<string | null> {
+  try {
+    // Fetch the image
+    const imageRes = await fetch(imageUrl);
+    if (!imageRes.ok) {
+      console.log(`[Krea] Failed to fetch image: ${imageUrl}`);
+      return null;
+    }
+    
+    const imageBlob = await imageRes.blob();
+    
+    // Upload to Krea using FormData
+    const form = new FormData();
+    form.append('file', imageBlob, 'reference.png');
+    
+    const uploadRes = await fetch(`${KREA_API_BASE}/assets`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: form,
+    });
+    
+    if (!uploadRes.ok) {
+      const errorText = await uploadRes.text();
+      console.log(`[Krea] Asset upload failed: ${uploadRes.status} - ${errorText}`);
+      return null;
+    }
+    
+    const uploadData = await uploadRes.json() as { url?: string; asset_url?: string; id?: string };
+    const kreaUrl = uploadData.url || uploadData.asset_url;
+    
+    if (kreaUrl) {
+      console.log(`[Krea] Uploaded asset: ${kreaUrl}`);
+      return kreaUrl;
+    }
+    
+    // If we get an ID, construct the URL
+    if (uploadData.id) {
+      const constructedUrl = `https://assets.krea.ai/${uploadData.id}`;
+      console.log(`[Krea] Constructed asset URL: ${constructedUrl}`);
+      return constructedUrl;
+    }
+    
+    console.log(`[Krea] Upload response:`, uploadData);
+    return null;
+  } catch (e) {
+    console.error(`[Krea] Upload error:`, e);
+    return null;
+  }
+}
 
-type ModelType = keyof typeof MODELS;
+/**
+ * Upload multiple images to Krea in parallel
+ */
+async function uploadImagesToKrea(
+  styleImages: StyleImage[], 
+  apiKey: string,
+  onProgress: (uploaded: number, total: number) => void
+): Promise<{ url: string; strength: number }[]> {
+  const results: { url: string; strength: number }[] = [];
+  let uploaded = 0;
+  
+  // Upload in parallel batches of 3 to avoid overwhelming the API
+  const batchSize = 3;
+  for (let i = 0; i < styleImages.length; i += batchSize) {
+    const batch = styleImages.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async (img) => {
+        const kreaUrl = await uploadToKrea(img.url, apiKey);
+        uploaded++;
+        onProgress(uploaded, styleImages.length);
+        if (kreaUrl) {
+          return { url: kreaUrl, strength: img.strength };
+        }
+        return null;
+      })
+    );
+    
+    results.push(...batchResults.filter((r): r is { url: string; strength: number } => r !== null));
+  }
+  
+  return results;
+}
 
 interface StyleImage {
   url: string;
-  strength: number;
-  name?: string;
+  strength: number; // -2 to 2
+  name?: string; // Item display name from Highrise
+}
+
+interface Reference {
+  name: string;
+  images: { url: string }[];
 }
 
 interface GenerateRequest {
   prompt: string;
-  model?: ModelType;
   resolution?: '1K' | '2K' | '4K';
   aspectRatio?: string;
   numImages?: number;
   styleImages?: StyleImage[];
-  negativePrompt?: string;
-  seed?: string;
+  references?: Reference[];
 }
 
 interface DebugLog {
@@ -44,66 +127,11 @@ function addLog(type: DebugLog['type'], data: unknown) {
   console.log(`[${type}]`, JSON.stringify(data, null, 2));
 }
 
-/**
- * Fetch an image and convert to base64
- */
-async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
-  try {
-    console.log(`[Gemini] Fetching image: ${url}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.log(`[Gemini] Failed to fetch image: ${response.status}`);
-      return null;
-    }
-    
-    const buffer = Buffer.from(await response.arrayBuffer());
-    
-    // Process with sharp to add solid background (Gemini doesn't like transparent PNGs)
-    // Use a neutral gray background color
-    const processedBuffer = await sharp(buffer)
-      .flatten({ background: { r: 88, g: 89, b: 91 } }) // #58595b gray
-      .jpeg({ quality: 90 }) // Convert to JPEG for better compatibility
-      .toBuffer();
-    
-    const base64 = processedBuffer.toString('base64');
-    
-    console.log(`[Gemini] Processed image: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes (JPEG with background)`);
-    return { data: base64, mimeType: 'image/jpeg' };
-  } catch (e) {
-    console.error(`[Gemini] Error fetching/processing image:`, e);
-    return null;
-  }
-}
-
-/**
- * Parse Gemini response and extract generated images
- * Note: Gemini API uses camelCase (inlineData, mimeType) not snake_case
- */
-function extractImagesFromResponse(responseData: any): string[] {
-  const images: string[] = [];
-  
-  if (!responseData?.candidates?.[0]?.content?.parts) {
-    return images;
-  }
-  
-  for (const part of responseData.candidates[0].content.parts) {
-    // Gemini uses camelCase: inlineData, mimeType
-    const inlineData = part.inlineData || part.inline_data;
-    if (inlineData?.data && inlineData?.mimeType?.startsWith('image/')) {
-      const dataUrl = `data:${inlineData.mimeType};base64,${inlineData.data}`;
-      images.push(dataUrl);
-    }
-  }
-  
-  return images;
-}
-
 // Debug endpoints
 router.get('/debug/logs', (_req: Request, res: Response) => {
   res.json({
     logs: debugLogs,
-    geminiKey: process.env.GEMINI_API_KEY ? `${process.env.GEMINI_API_KEY.slice(0, 10)}...` : 'NOT SET',
-    models: MODELS,
+    apiKey: process.env.KREA_API_KEY ? `${process.env.KREA_API_KEY.slice(0, 8)}...` : 'NOT SET',
   });
 });
 
@@ -115,16 +143,7 @@ router.delete('/debug/logs', (_req: Request, res: Response) => {
 // Streaming generation endpoint
 router.post('/generate', async (req: Request, res: Response) => {
   const id = `gen-${Date.now().toString(36)}`;
-  const { 
-    prompt, 
-    model = 'pro',  // Default to Pro for max references
-    resolution = '1K', 
-    aspectRatio = '1:1', 
-    numImages = 1, 
-    styleImages,
-    negativePrompt,
-    seed,
-  } = req.body as GenerateRequest;
+  const { prompt, resolution, aspectRatio, numImages, styleImages, references } = req.body as GenerateRequest;
   
   // Set up SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -133,217 +152,170 @@ router.post('/generate', async (req: Request, res: Response) => {
   res.flushHeaders();
   
   const send = (event: string, data: unknown) => {
-    if (!res.writableEnded) {
-      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-    }
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
   
-  addLog('request', { 
-    id, 
-    prompt: prompt?.slice(0, 50), 
-    model,
-    resolution, 
-    aspectRatio, 
-    numImages, 
-    styleImagesCount: styleImages?.length || 0 
-  });
+  addLog('request', { id, prompt: prompt?.slice(0, 50), resolution, aspectRatio, numImages, hasStyleImages: !!styleImages?.length, hasReferences: !!references?.length });
   
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.KREA_API_KEY;
   if (!apiKey) {
-    send('error', { error: 'GEMINI_API_KEY not configured', id });
+    send('error', { error: 'API key not configured', id });
     res.end();
     return;
   }
-  
   if (!prompt || prompt.length < 3) {
     send('error', { error: 'Prompt must be at least 3 characters', id });
     res.end();
     return;
   }
   
-  // Validate model and get limits
-  const modelType = model in MODELS ? model : 'pro';
-  const modelId = MODELS[modelType as ModelType];
-  const maxRefs = modelType === 'pro' ? 14 : 3;
-  const supportsHighRes = modelType === 'pro';
+  // Map resolution from frontend format
+  const resolutionMap: Record<string, string> = { '1024': '1K', '2048': '2K', '4096': '4K' };
+  const kreaResolution = resolutionMap[resolution || ''] || resolution || '1K';
   
-  // Validate resolution for model
-  const finalResolution = supportsHighRes ? resolution : '1K';
-  if (resolution !== '1K' && !supportsHighRes) {
-    console.log(`[Gen ${id}] Downgrading resolution from ${resolution} to 1K (Flash model)`);
+  const url = `${KREA_API_BASE}/generate/image/google/nano-banana-pro`;
+  
+  // Build payload with all supported features
+  const payload: Record<string, unknown> = {
+    prompt,
+    resolution: kreaResolution,
+    aspectRatio: aspectRatio || '1:1',
+  };
+  
+  // Add optional features
+  if (numImages && numImages > 1 && numImages <= 4) {
+    payload.numImages = numImages;
   }
   
-  send('progress', { status: 'starting', message: 'INITIALIZING GEMINI...', progress: 5, id });
+  // Upload style images to Krea first, then use Krea CDN URLs
+  if (styleImages?.length) {
+    send('progress', { status: 'uploading', message: `Uploading ${styleImages.length} reference images...`, progress: 5, id });
+    
+    const uploadedImages = await uploadImagesToKrea(
+      styleImages, 
+      apiKey,
+      (uploaded, total) => {
+        const pct = 5 + Math.floor((uploaded / total) * 15);
+        send('progress', { status: 'uploading', message: `Uploading references (${uploaded}/${total})...`, progress: pct, id });
+      }
+    );
+    
+    if (uploadedImages.length > 0) {
+      payload.styleImages = uploadedImages;
+      addLog('info', { id, uploadedImages: uploadedImages.length, note: 'Style images uploaded to Krea' });
+    } else {
+      addLog('info', { id, note: 'No images uploaded successfully, proceeding without style references' });
+    }
+  }
+  
+  if (references?.length) {
+    payload.references = references;
+  }
+  
+  send('progress', { status: 'submitting', message: 'Initializing generation...', progress: 20, id });
   
   try {
-    // Build the parts array for multimodal input
-    const parts: any[] = [];
+    addLog('info', { id, payload: { ...payload, styleImages: payload.styleImages ? `[${(payload.styleImages as unknown[]).length} images]` : undefined } });
     
-    // Fetch and add style images as base64
-    const effectiveStyleImages = styleImages?.slice(0, maxRefs) || [];
-    if (effectiveStyleImages.length > 0) {
-      send('progress', { 
-        status: 'loading', 
-        message: `LOADING ${effectiveStyleImages.length} REFERENCE IMAGE${effectiveStyleImages.length > 1 ? 'S' : ''}...`, 
-        progress: 10, 
-        id 
-      });
-      
-      let loaded = 0;
-      for (const styleImg of effectiveStyleImages) {
-        const imageData = await fetchImageAsBase64(styleImg.url);
-        if (imageData) {
-          parts.push({
-            inline_data: {
-              mime_type: imageData.mimeType,
-              data: imageData.data,
-            }
-          });
-          loaded++;
-          const pct = 10 + Math.floor((loaded / effectiveStyleImages.length) * 15);
-          send('progress', { 
-            status: 'loading', 
-            message: `LOADED REFERENCE ${loaded}/${effectiveStyleImages.length}...`, 
-            progress: pct, 
-            id 
-          });
-        }
-      }
-      
-      addLog('info', { id, loadedImages: loaded, maxRefs, model: modelType });
-    }
-    
-    // Build the prompt text
-    let fullPrompt = prompt;
-    
-    // Add style context if we have references
-    if (parts.length > 0) {
-      fullPrompt = `Using these ${parts.length} reference image(s) as style inspiration, generate: ${prompt}`;
-    }
-    
-    // Add negative prompt if provided
-    if (negativePrompt?.trim()) {
-      fullPrompt += `. Avoid: ${negativePrompt.trim()}`;
-    }
-    
-    // Add the text prompt
-    parts.push({ text: fullPrompt });
-    
-    // Build the request payload
-    const payload: any = {
-      contents: [{
-        parts: parts,
-      }],
-      generationConfig: {
-        responseModalities: ['IMAGE'],
-      },
-    };
-    
-    // Add image config for aspect ratio and resolution
-    if (aspectRatio || finalResolution !== '1K') {
-      payload.generationConfig.imageConfig = {};
-      if (aspectRatio) {
-        payload.generationConfig.imageConfig.aspectRatio = aspectRatio;
-      }
-      if (supportsHighRes && finalResolution !== '1K') {
-        payload.generationConfig.imageConfig.imageSize = finalResolution;
-      }
-    }
-    
-    const url = `${GEMINI_API_BASE}/models/${modelId}:generateContent`;
-    
-    // Determine how many variations to generate (Gemini doesn't have native numImages, so we make parallel calls)
-    const variationCount = Math.min(Math.max(1, numImages || 1), 4);
-    
-    send('progress', { 
-      status: 'generating', 
-      message: variationCount > 1 ? `GENERATING ${variationCount} VARIATIONS...` : 'GENERATING IMAGE...', 
-      progress: 30, 
-      id 
+    const submitRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     
-    addLog('info', { 
-      id, 
-      url,
-      variations: variationCount,
-      payload: {
-        ...payload,
-        contents: `[${parts.length} parts: ${parts.length - 1} images + 1 text]`,
-      }
-    });
+    const submitText = await submitRes.text();
+    let submitData: Record<string, unknown> | null = null;
+    try { submitData = JSON.parse(submitText); } catch { /* not json */ }
     
-    const startTime = Date.now();
+    addLog('response', { id, status: submitRes.status, data: submitData || submitText.slice(0, 500) });
     
-    // Make parallel API calls for variations
-    const generateOne = async (variationIndex: number): Promise<string[]> => {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      const responseText = await response.text();
-      let responseData: any = null;
-      
-      try {
-        responseData = JSON.parse(responseText);
-      } catch {
-        // Not JSON
-      }
-      
-      if (!response.ok) {
-        console.error(`[Gen ${id}] Variation ${variationIndex + 1} failed: ${response.status}`);
-        return [];
-      }
-      
-      return extractImagesFromResponse(responseData);
-    };
-    
-    // Run all variations in parallel
-    const variationPromises = Array.from({ length: variationCount }, (_, i) => generateOne(i));
-    const variationResults = await Promise.all(variationPromises);
-    
-    const elapsed = Math.round((Date.now() - startTime) / 1000);
-    
-    // Flatten results and filter out empty arrays
-    const images = variationResults.flat();
-    
-    addLog('response', { 
-      id, 
-      elapsed: `${elapsed}s`,
-      requestedVariations: variationCount,
-      successfulImages: images.length,
-    });
-    
-    if (images.length === 0) {
-      send('error', { error: 'No images generated from any variation', id });
+    if (!submitRes.ok || !submitData?.job_id) {
+      const errorMsg = submitData?.error || submitData?.message || submitData?.detail || submitText.slice(0, 200) || 'Failed to submit job';
+      addLog('error', { id, error: errorMsg, payload });
+      send('error', { error: errorMsg, id });
       res.end();
       return;
     }
     
-    console.log(`[Gen ${id}] Generated ${images.length} image(s) from ${variationCount} variation(s) in ${elapsed}s`);
+    const jobId = submitData.job_id;
+    send('progress', { status: 'queued', message: 'In queue...', progress: 25, id, jobId });
     
-    send('progress', { status: 'complete', message: 'GENERATION COMPLETE', progress: 95, id, elapsed });
+    // Poll for completion
+    const maxAttempts = 90;
+    const pollInterval = 2000;
     
-    send('complete', {
-      success: true,
-      imageUrl: images[0],
-      imageUrls: images,
-      id,
-      model: modelType,
-      elapsed,
-      variations: images.length,
-    });
+    console.log(`[Gen ${id}] Starting poll loop for job ${jobId}`);
     
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Check if client disconnected
+      if (res.writableEnded) {
+        console.log(`[Gen ${id}] Client disconnected at attempt ${attempt}`);
+        return;
+      }
+      
+      await new Promise(r => setTimeout(r, pollInterval));
+      
+      const pollRes = await fetch(`${KREA_API_BASE}/jobs/${jobId}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+      });
+      
+      const pollData = await pollRes.json().catch(() => null);
+      if (!pollData) {
+        console.log(`[Gen ${id}] Poll ${attempt}: No data`);
+        continue;
+      }
+      
+      console.log(`[Gen ${id}] Poll ${attempt}: status=${pollData.status}`);
+      
+      // Progress: 25-30 queued, 30-85 processing, 85-95 sampling, 95+ completing
+      const statusInfo: Record<string, { message: string; progress: number }> = {
+        'queued': { message: 'Waiting in queue...', progress: 25 + Math.min(attempt, 5) },
+        'processing': { message: 'Generating with references...', progress: 35 + Math.min(attempt * 2, 45) },
+        'sampling': { message: 'Refining details...', progress: 85 },
+        'completed': { message: 'Finalizing...', progress: 95 },
+      };
+      const info = statusInfo[pollData.status] || { message: 'Processing...', progress: 35 };
+      
+      send('progress', { 
+        status: pollData.status, 
+        message: info.message,
+        progress: info.progress,
+        id, 
+        jobId,
+        elapsed: (attempt + 1) * 2,
+      });
+      
+      if (pollData.status === 'completed') {
+        // Handle single or multiple images
+        const urls = pollData.result?.urls || [];
+        if (urls.length > 0) {
+          console.log(`[Gen ${id}] Completed with ${urls.length} images`);
+          send('complete', { 
+            success: true, 
+            imageUrl: urls[0], // Primary image
+            imageUrls: urls,   // All images if numImages > 1
+            id, 
+            jobId 
+          });
+          res.end();
+          return;
+        }
+      }
+      
+      if (pollData.status === 'failed' || pollData.status === 'cancelled') {
+        console.log(`[Gen ${id}] Job ${pollData.status}`);
+        send('error', { error: `Generation ${pollData.status}`, id, jobId });
+        res.end();
+        return;
+      }
+    }
+    
+    console.log(`[Gen ${id}] Timed out after ${maxAttempts} attempts`);
+    send('error', { error: 'Generation timed out', id, jobId });
     res.end();
     
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    addLog('error', { id, error: errorMsg });
-    send('error', { error: errorMsg, id });
+    send('error', { error: String(e), id });
     res.end();
   }
 });
@@ -351,27 +323,40 @@ router.post('/generate', async (req: Request, res: Response) => {
 // API capabilities endpoint
 router.get('/capabilities', (_req: Request, res: Response) => {
   res.json({
-    models: {
-      flash: {
-        id: MODELS.flash,
-        name: 'Gemini Flash',
-        description: 'Fast image generation, optimized for speed',
-        maxRefs: 3,
-        resolutions: ['1K'],
-        speed: 'fast',
+    model: {
+      id: 'nano-banana-pro',
+      name: 'Gemini Pro 3',
+      description: 'Native 4K image generation with style transfer and reference support',
+    },
+    features: {
+      resolutions: [
+        { id: '1K', name: '1K (1024px)', pixels: 1024 },
+        { id: '2K', name: '2K (2048px)', pixels: 2048 },
+        { id: '4K', name: '4K (4096px)', pixels: 4096 },
+      ],
+      aspectRatios: [
+        { id: '1:1', name: 'Square' },
+        { id: '16:9', name: 'Landscape Wide' },
+        { id: '9:16', name: 'Portrait Tall' },
+        { id: '4:3', name: 'Landscape' },
+        { id: '3:4', name: 'Portrait' },
+        { id: '3:2', name: 'Photo Landscape' },
+        { id: '2:3', name: 'Photo Portrait' },
+        { id: '21:9', name: 'Ultrawide' },
+        { id: '5:4', name: 'Classic' },
+        { id: '4:5', name: 'Instagram' },
+      ],
+      numImages: { min: 1, max: 4, description: 'Generate multiple variations at once' },
+      styleImages: {
+        description: 'Use reference images to influence the style',
+        strengthRange: { min: -2, max: 2 },
+        maxImages: 4,
       },
-      pro: {
-        id: MODELS.pro,
-        name: 'Gemini Pro 3',
-        description: 'Professional quality with Thinking mode, up to 4K',
-        maxRefs: 14,
-        resolutions: ['1K', '2K', '4K'],
-        speed: 'slower',
-        features: ['thinking', 'google_search', 'high_fidelity'],
+      references: {
+        description: 'Provide named reference images for context',
+        example: { name: 'subject', images: [{ url: 'https://...' }] },
       },
     },
-    aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9', '5:4', '4:5'],
-    defaultModel: 'pro',
   });
 });
 

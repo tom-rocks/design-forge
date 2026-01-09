@@ -11,61 +11,57 @@ interface ImageDisplayProps {
   isLoading: boolean
 }
 
-// Pixel characters for the visualization
-const PIXELS = ' ░▒▓█'
+// ASCII characters for wave visualization - same as progress bar
+const CHARS = ' ·:;░▒▓█'
+
+// Generate ASCII wave pattern - shared function for consistency
+function generateAsciiWave(width: number, height: number, time: number): string[] {
+  const lines: string[] = []
+  
+  for (let y = 0; y < height; y++) {
+    let line = ''
+    for (let x = 0; x < width; x++) {
+      const nx = (x / width - 0.5) * 2
+      const ny = (y / height - 0.5) * 2
+      const dist = Math.sqrt(nx * nx + ny * ny)
+      
+      const wave1 = Math.sin(dist * 6 - time * 2)
+      const wave2 = Math.sin(nx * 4 + time * 1.5)
+      const wave3 = Math.cos(ny * 4 - time * 1.2)
+      const spiral = Math.sin(Math.atan2(ny, nx) * 3 + dist * 4 - time * 1.8)
+      
+      const combined = (wave1 + wave2 + wave3 + spiral + 4) / 8
+      const idx = Math.floor(combined * (CHARS.length - 1))
+      line += CHARS[Math.max(0, Math.min(idx, CHARS.length - 1))]
+    }
+    lines.push(line)
+  }
+  
+  return lines
+}
 
 export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
   const [viewMode, setViewMode] = useState<'grid' | 'single'>('grid')
-  const [pixelGrid, setPixelGrid] = useState<string[][]>([])
+  const [asciiLines, setAsciiLines] = useState<string[]>([])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const currentImage = selectedIndex !== null ? images[selectedIndex] : images[0]
   
-  // Nostradamus visualization - pure visual, no text
+  // ASCII wave animation - large grid to fill the display area
   useEffect(() => {
     if (isLoading) {
       setLoadedImages(new Set())
       
-      // Generate evolving pixel visualization - wide format
-      const pixelInterval = setInterval(() => {
-        const width = 56  // Wide to fill the display
-        const height = 20
+      const interval = setInterval(() => {
         const time = Date.now() / 1000
-        const grid: string[][] = []
-        
-        for (let y = 0; y < height; y++) {
-          const row: string[] = []
-          for (let x = 0; x < width; x++) {
-            // Normalize to -1 to 1
-            const nx = (x / width - 0.5) * 2
-            const ny = (y / height - 0.5) * 2
-            
-            // Distance from center (adjusted for aspect ratio)
-            const dist = Math.sqrt(nx * nx * 0.5 + ny * ny)
-            
-            // Multiple wave patterns creating interference
-            const wave1 = Math.sin(dist * 8 - time * 2.5)
-            const wave2 = Math.sin(nx * 6 + time * 1.8)
-            const wave3 = Math.cos(ny * 5 - time * 1.4)
-            const spiral = Math.sin(Math.atan2(ny, nx * 0.7) * 4 + dist * 5 - time * 2)
-            
-            // Combine waves
-            const combined = (wave1 + wave2 + wave3 + spiral) / 4
-            
-            // Map to pixel character
-            const idx = Math.floor((combined + 1) * 2.4)
-            row.push(PIXELS[Math.max(0, Math.min(idx, PIXELS.length - 1))])
-          }
-          grid.push(row)
-        }
-        
-        setPixelGrid(grid)
+        // Much larger grid - 80 chars wide, 50 tall to properly fill a square
+        setAsciiLines(generateAsciiWave(80, 50, time))
       }, 50)
       
-      return () => clearInterval(pixelInterval)
+      return () => clearInterval(interval)
     }
   }, [isLoading])
 
@@ -172,46 +168,27 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
 
         {/* Display Area */}
         <div className="relative bg-te-lcd">
-          {/* Loading State - Pure Visual Nostradamus Animation */}
+          {/* Loading State - ASCII Wave Animation - FILLS THE ENTIRE CONTAINER */}
           <AnimatePresence>
             {isLoading && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="min-h-[320px] flex flex-col relative overflow-hidden"
+                className="aspect-square w-full relative overflow-hidden"
                 style={{ background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)' }}
               >
-                {/* The main pixel visualization */}
-                <div className="flex-1 flex items-center justify-center">
-                  <div 
-                    className="font-mono text-xs leading-[1.1] tracking-tight select-none"
-                    style={{ 
-                      textShadow: '0 0 4px rgba(217, 70, 239, 0.8)',
-                      filter: 'blur(0.3px)',
-                    }}
-                  >
-                    {pixelGrid.map((row, y) => (
-                      <div key={y} className="flex justify-center">
-                        {row.map((char, x) => (
-                          <span 
-                            key={x} 
-                            className="inline-block w-[10px] text-center"
-                            style={{
-                              color: char === '█' ? '#e879f9' : 
-                                     char === '▓' ? '#d946ef' :
-                                     char === '▒' ? '#a21caf' :
-                                     char === '░' ? '#701a75' : '#2e0a33',
-                              opacity: char === ' ' ? 0.1 : 1,
-                            }}
-                          >
-                            {char}
-                          </span>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <pre 
+                  className="absolute inset-0 font-mono select-none whitespace-pre overflow-hidden flex items-center justify-center"
+                  style={{ 
+                    color: '#e879f9',
+                    textShadow: '0 0 8px rgba(232, 121, 249, 0.6)',
+                    fontSize: 'min(2vw, 14px)',
+                    lineHeight: '1.1',
+                  }}
+                >
+                  {asciiLines.join('\n')}
+                </pre>
               </motion.div>
             )}
           </AnimatePresence>
