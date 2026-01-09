@@ -11,7 +11,7 @@ interface SettingsPanelProps {
 
 const models: { id: GeminiModel; label: string; desc: string; icon: typeof Zap; maxRefs: number }[] = [
   { id: 'flash', label: 'FLASH', desc: '3 refs • 1K • Fast', icon: Zap, maxRefs: 3 },
-  { id: 'pro', label: 'PRO', desc: '14 refs • 4K • Quality', icon: Sparkles, maxRefs: 14 },
+  { id: 'pro', label: 'PRO', desc: '5 refs • 4K • Quality', icon: Sparkles, maxRefs: 5 },
 ]
 
 const resolutions: { id: '1024' | '2048' | '4096'; label: string; desc: string; proOnly?: boolean }[] = [

@@ -162,9 +162,11 @@ router.post('/generate', async (req: Request, res: Response) => {
   }
   
   // Validate model and get limits
+  // NOTE: Pro supports up to 14 refs total, but HIGH FIDELITY style matching 
+  // only works reliably with the first 5 images. Beyond that, style adherence drops.
   const modelType = model in MODELS ? model : 'pro';
   const modelId = MODELS[modelType as ModelType];
-  const maxRefs = modelType === 'pro' ? 14 : 3;
+  const maxRefs = modelType === 'pro' ? 5 : 3;  // Limit to 5 for high-fidelity style matching
   const supportsHighRes = modelType === 'pro';
   
   // Validate resolution for model
@@ -369,8 +371,8 @@ router.get('/capabilities', (_req: Request, res: Response) => {
       pro: {
         id: MODELS.pro,
         name: 'Gemini Pro 3',
-        description: 'Professional quality with Thinking mode, up to 4K',
-        maxRefs: 14,
+        description: 'Professional quality with Thinking mode, up to 4K. Best style matching with 5 refs.',
+        maxRefs: 5,  // High-fidelity style matching only works well with first 5 images
         resolutions: ['1K', '2K', '4K'],
         speed: 'slower',
         features: ['thinking', 'google_search', 'high_fidelity'],

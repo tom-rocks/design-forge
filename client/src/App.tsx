@@ -174,7 +174,7 @@ function App() {
               selectedItems={settings.styleImages || []}
               onSelectionChange={(items) => setSettings({ ...settings, styleImages: items })}
               disabled={isGenerating}
-              maxItems={15}
+              maxItems={settings.model === 'pro' ? 5 : 3}
             />
           </motion.div>
 
