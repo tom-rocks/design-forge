@@ -231,13 +231,17 @@ router.post('/generate', async (req: Request, res: Response) => {
     
     // Add style context if we have references
     // Per docs: reference images are for "objects to include" - but we want STYLE TRANSFER
-    // Use explicit style transfer language from the docs
+    // Be VERY explicit about the style characteristics
     if (imageParts.length > 0) {
-      fullPrompt = `Transform this request into the exact artistic style shown in the ${imageParts.length} reference images.
+      fullPrompt = `Look at these ${imageParts.length} reference images carefully. They are digital art assets with:
+- NO outlines or black lines
+- Soft gradient shading
+- A specific 3/4 perspective angle
+- Stylized proportions
 
-Request: ${prompt}
+Create: ${prompt}
 
-Render it with the same shading, color palette, and proportions as the references. The output should look like it was drawn by the same artist.`;
+CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading. Same proportions.`;
     }
     
     // Add negative prompt if provided
