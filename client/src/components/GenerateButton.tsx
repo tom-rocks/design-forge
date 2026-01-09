@@ -36,7 +36,7 @@ export default function GenerateButton({
   const editButtonDisabled = disabled || isLoading || editDisabled
 
   return (
-    <div className="te-panel p-3">
+    <div className="te-panel p-3 sm:w-[280px]">
       {/* Module label */}
       <div className="te-module-header border-b-0 px-0 pb-2">
         <span>EXECUTE</span>
@@ -45,7 +45,7 @@ export default function GenerateButton({
       </div>
       
       {/* Button row */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         {/* FORGE Button - Fuchsia */}
         <motion.button
           onClick={() => onClick('create')}

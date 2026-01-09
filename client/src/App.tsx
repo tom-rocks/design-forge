@@ -228,25 +228,43 @@ function App() {
             />
           </motion.div>
 
+          {/* Generation History - Use past generations as references */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.12 }}
+          >
+            <GenerationHistory
+              key={historyKey}
+              onUseAsReference={handleUseAsReference}
+              onEditImage={handleEditFromHistory}
+              disabled={isGenerating}
+            />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="flex flex-col sm:flex-row gap-4 items-stretch"
+            className="flex flex-col sm:flex-row gap-4 items-start"
           >
-            <SettingsPanel
-              settings={settings}
-              onChange={setSettings}
-              disabled={isGenerating}
-            />
+            <div className="flex-1">
+              <SettingsPanel
+                settings={settings}
+                onChange={setSettings}
+                disabled={isGenerating}
+              />
+            </div>
             
-            <GenerateButton
-              onClick={handleGenerate}
-              isLoading={isGenerating}
-              disabled={!prompt.trim()}
-              editDisabled={!editImage}
-              loadingMode={loadingMode}
-            />
+            <div className="w-full sm:w-auto">
+              <GenerateButton
+                onClick={handleGenerate}
+                isLoading={isGenerating}
+                disabled={!prompt.trim()}
+                editDisabled={!editImage}
+                loadingMode={loadingMode}
+              />
+            </div>
           </motion.div>
 
           {/* Progress indicator - Same ASCII style as canvas */}
@@ -320,19 +338,6 @@ function App() {
             />
           </motion.div>
 
-          {/* Generation History */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-          >
-            <GenerationHistory
-              key={historyKey}
-              onUseAsReference={handleUseAsReference}
-              onEditImage={handleEditFromHistory}
-              disabled={isGenerating}
-            />
-          </motion.div>
         </main>
       </div>
       
