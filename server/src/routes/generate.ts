@@ -176,8 +176,14 @@ router.post('/generate', async (req: Request, res: Response) => {
   const url = `${KREA_API_BASE}/generate/image/google/nano-banana-pro`;
   
   // Build payload with all supported features
+  // Enhance prompt if we have style images - tell the model to match the art style
+  let enhancedPrompt = prompt;
+  if (styleImages?.length) {
+    enhancedPrompt = `In the exact same art style as the reference images: ${prompt}`;
+  }
+  
   const payload: Record<string, unknown> = {
-    prompt,
+    prompt: enhancedPrompt,
     resolution: kreaResolution,
     aspectRatio: aspectRatio || '1:1',
   };
