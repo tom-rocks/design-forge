@@ -232,7 +232,7 @@ function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between"
+            className="flex flex-col sm:flex-row gap-4 items-stretch"
           >
             <SettingsPanel
               settings={settings}
@@ -313,6 +313,10 @@ function App() {
             <ImageDisplay
               result={result}
               isLoading={isGenerating}
+              onEditImage={(base64) => {
+                setEditImage(base64)
+                setEditParentId(null) // New image, no parent
+              }}
             />
           </motion.div>
 

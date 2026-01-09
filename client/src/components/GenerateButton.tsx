@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Zap, Pencil } from 'lucide-react'
+import { Hammer } from 'lucide-react'
 
 type Mode = 'create' | 'edit'
 
@@ -7,9 +7,23 @@ interface GenerateButtonProps {
   onClick: (mode: Mode) => void
   isLoading: boolean
   disabled: boolean
-  editDisabled?: boolean // True when no edit image uploaded
-  loadingMode?: Mode | null // Which mode is currently loading
+  editDisabled?: boolean
+  loadingMode?: Mode | null
 }
+
+// Actual Chisel icon - blade tool for carving
+const ChiselIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {/* Handle */}
+    <path d="M19 3l2 2-1 1-2-2 1-1z" />
+    <path d="M17 5l-3 3" />
+    {/* Shaft */}
+    <line x1="14" y1="8" x2="8" y2="14" />
+    {/* Blade - wide flat end */}
+    <path d="M8 14l-4 4-1 3 3-1 4-4" />
+    <path d="M3 21l2-2" />
+  </svg>
+)
 
 export default function GenerateButton({ 
   onClick, 
@@ -32,7 +46,7 @@ export default function GenerateButton({
       
       {/* Button row */}
       <div className="flex gap-3">
-        {/* FORGE Button - Orange/Fuchsia */}
+        {/* FORGE Button - Fuchsia */}
         <motion.button
           onClick={() => onClick('create')}
           disabled={forgeDisabled}
@@ -106,7 +120,7 @@ export default function GenerateButton({
               </>
             ) : (
               <>
-                <Zap className="w-7 h-7" strokeWidth={2.5} />
+                <Hammer className="w-7 h-7" strokeWidth={2.5} />
                 <span>FORGE</span>
               </>
             )}
@@ -118,7 +132,7 @@ export default function GenerateButton({
           )}
         </motion.button>
 
-        {/* EDIT Button - Cyan/Teal */}
+        {/* REFINE Button - Cyan/Teal */}
         <motion.button
           onClick={() => onClick('edit')}
           disabled={editButtonDisabled}
@@ -188,12 +202,12 @@ export default function GenerateButton({
                   />
                   <div className="absolute inset-2 border-2 border-white border-t-transparent rounded-full te-spinner" />
                 </div>
-                <span className="text-sm">EDITING...</span>
+                <span className="text-sm">REFINING...</span>
               </>
             ) : (
               <>
-                <Pencil className="w-6 h-6" strokeWidth={2.5} />
-                <span>EDIT</span>
+                <ChiselIcon className="w-7 h-7" />
+                <span>REFINE</span>
               </>
             )}
           </div>
@@ -208,7 +222,7 @@ export default function GenerateButton({
       {/* Hint when edit is disabled */}
       {editDisabled && !isLoading && (
         <p className="font-mono text-[9px] text-te-cream-dim text-center mt-2 uppercase">
-          Upload an image above to enable editing
+          Upload an image above to enable refining
         </p>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Monitor, X, Grid, Square } from 'lucide-react'
+import { Download, Monitor, X, Grid, Square, Pencil } from 'lucide-react'
 
 interface ImageDisplayProps {
   result: {
@@ -9,6 +9,7 @@ interface ImageDisplayProps {
     prompt: string
   } | null
   isLoading: boolean
+  onEditImage?: (base64: string) => void
 }
 
 // ASCII characters for wave visualization - same as progress bar
@@ -40,7 +41,7 @@ function generateAsciiWave(width: number, height: number, time: number): string[
   return lines
 }
 
-export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
+export default function ImageDisplay({ result, isLoading, onEditImage }: ImageDisplayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
@@ -202,8 +203,7 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.1 }}
-                  className="relative group aspect-square bg-te-bg rounded-lg overflow-hidden border-2 border-te-border hover:border-te-fuchsia transition-colors cursor-pointer"
-                  onClick={() => { setSelectedIndex(i); setIsZoomed(true); }}
+                  className="relative group aspect-square bg-te-bg rounded-lg overflow-hidden border-2 border-te-border hover:border-te-fuchsia transition-colors"
                 >
                   {!loadedImages.has(i) && (
                     <div className="absolute inset-0 te-shimmer" />
@@ -212,13 +212,28 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                     src={url}
                     alt={`Variation ${i + 1}`}
                     onLoad={() => handleImageLoad(i)}
-                    className={`w-full h-full object-contain ${loadedImages.has(i) ? 'block' : 'invisible'}`}
+                    onClick={() => { setSelectedIndex(i); setIsZoomed(true); }}
+                    className={`w-full h-full object-contain cursor-pointer ${loadedImages.has(i) ? 'block' : 'invisible'}`}
                   />
                   
                   {/* Variation number badge */}
                   <div className="absolute top-2 left-2 px-2 py-1 bg-te-bg/90 border border-te-border rounded font-mono text-[10px] text-te-cream">
                     #{i + 1}
                   </div>
+                  
+                  {/* Edit button - always visible */}
+                  {onEditImage && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEditImage(url)
+                      }}
+                      className="absolute bottom-2 right-2 p-2 rounded-lg bg-cyan-500/90 hover:bg-cyan-400 text-white transition-colors shadow-lg"
+                      title="Edit this image"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -239,6 +254,18 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                 onClick={() => setIsZoomed(true)}
                 className={`w-full h-auto cursor-zoom-in ${loadedImages.has(selectedIndex ?? 0) ? 'block' : 'hidden'}`}
               />
+              
+              {/* Edit button */}
+              {onEditImage && currentImage && (
+                <button
+                  onClick={() => onEditImage(currentImage)}
+                  className="absolute bottom-4 right-4 p-3 rounded-xl bg-cyan-500/90 hover:bg-cyan-400 text-white transition-colors shadow-lg flex items-center gap-2"
+                  title="Edit this image"
+                >
+                  <Pencil className="w-5 h-5" />
+                  <span className="font-mono text-sm">EDIT</span>
+                </button>
+              )}
             </motion.div>
           )}
         </div>
