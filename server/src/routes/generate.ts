@@ -315,10 +315,23 @@ router.post('/generate', async (req: Request, res: Response) => {
       
       if (!response.ok) {
         console.error(`[Gen ${id}] Variation ${variationIndex + 1} failed: ${response.status}`);
+        addLog('error', { id, variation: variationIndex + 1, status: response.status, response: responseText.slice(0, 500) });
         return [];
       }
       
-      return extractImagesFromResponse(responseData);
+      // Log successful response structure for debugging
+      const images = extractImagesFromResponse(responseData);
+      if (images.length === 0) {
+        addLog('info', { 
+          id, 
+          variation: variationIndex + 1, 
+          note: 'No images in response',
+          hasCandidate: !!responseData?.candidates?.[0],
+          partsCount: responseData?.candidates?.[0]?.content?.parts?.length || 0,
+          responsePreview: JSON.stringify(responseData).slice(0, 500)
+        });
+      }
+      return images;
     };
     
     // Run all variations in parallel
