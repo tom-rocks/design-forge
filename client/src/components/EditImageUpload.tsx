@@ -1,10 +1,18 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { API_URL } from '../config'
+
+// Edit image can be base64 (manual upload) or a server storage path
+export interface EditImageRef {
+  type: 'base64' | 'storage'
+  value: string // base64 data URL OR storage path like "/api/generations/:id/image/:index"
+  generationId?: string // for edit chains
+}
 
 interface EditImageUploadProps {
-  image: string | null
-  onImageChange: (image: string | null) => void
+  image: EditImageRef | null
+  onImageChange: (image: EditImageRef | null) => void
   disabled?: boolean
 }
 
@@ -18,10 +26,20 @@ export default function EditImageUpload({ image, onImageChange, disabled }: Edit
     const reader = new FileReader()
     reader.onload = (e) => {
       const result = e.target?.result as string
-      onImageChange(result)
+      onImageChange({ type: 'base64', value: result })
     }
     reader.readAsDataURL(file)
   }, [onImageChange])
+
+  // Get display URL for the image (handles both types)
+  const getImageUrl = () => {
+    if (!image) return null
+    if (image.type === 'base64') return image.value
+    // Storage path - prepend API_URL
+    return `${API_URL}${image.value}`
+  }
+
+  const imageUrl = getImageUrl()
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -93,7 +111,7 @@ export default function EditImageUpload({ image, onImageChange, disabled }: Edit
         />
 
         <AnimatePresence mode="wait">
-          {image ? (
+          {imageUrl ? (
             <motion.div
               key="preview"
               initial={{ opacity: 0 }}
@@ -102,7 +120,7 @@ export default function EditImageUpload({ image, onImageChange, disabled }: Edit
               className="relative"
             >
               <img
-                src={image}
+                src={imageUrl}
                 alt="Image to edit"
                 className="w-full h-auto max-h-[300px] object-contain"
               />

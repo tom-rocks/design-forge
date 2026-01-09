@@ -50,9 +50,9 @@ export default function GenerateButton({
         <motion.button
           onClick={() => onClick('create')}
           disabled={forgeDisabled}
-          whileTap={!forgeDisabled ? { y: 4 } : undefined}
+          whileTap={!forgeDisabled ? { y: 3 } : undefined}
           className={`
-            relative flex-1 min-h-[80px] rounded-xl font-mono text-base font-bold uppercase tracking-widest
+            relative flex-1 h-[72px] rounded-lg font-mono text-sm font-bold uppercase tracking-wider
             transition-all duration-100 overflow-hidden
             ${forgeDisabled
               ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
@@ -61,9 +61,9 @@ export default function GenerateButton({
           `}
           style={!forgeDisabled ? {
             background: 'linear-gradient(180deg, #e879f9 0%, #d946ef 50%, #a21caf 100%)',
-            boxShadow: '0 6px 0 #86198f, 0 8px 20px rgba(217, 70, 239, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+            boxShadow: '0 4px 0 #86198f, 0 6px 16px rgba(217, 70, 239, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
           } : {
-            boxShadow: '0 6px 0 #1a1a1a, 0 8px 16px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 4px 0 #1a1a1a, 0 6px 12px rgba(0, 0, 0, 0.3)',
           }}
         >
           {/* Surface texture lines */}
@@ -100,27 +100,17 @@ export default function GenerateButton({
           )}
           
           {/* Button content */}
-          <div className="relative flex flex-col items-center justify-center gap-2 p-4">
+          <div className="relative flex flex-col items-center justify-center gap-1 h-full">
             {isLoading && loadingMode === 'create' ? (
               <>
-                <div className="relative w-8 h-8">
-                  <motion.div
-                    className="absolute inset-0 border-2 border-white/30 rounded-full"
-                    animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 border-2 border-white/30 rounded-full"
-                    animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
-                  />
-                  <div className="absolute inset-2 border-2 border-white border-t-transparent rounded-full te-spinner" />
+                <div className="relative w-6 h-6">
+                  <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full te-spinner" />
                 </div>
-                <span className="text-sm">FORGING...</span>
+                <span className="text-xs">FORGING</span>
               </>
             ) : (
               <>
-                <Hammer className="w-7 h-7" strokeWidth={2.5} />
+                <Hammer className="w-6 h-6" strokeWidth={2.5} />
                 <span>FORGE</span>
               </>
             )}
@@ -136,9 +126,9 @@ export default function GenerateButton({
         <motion.button
           onClick={() => onClick('edit')}
           disabled={editButtonDisabled}
-          whileTap={!editButtonDisabled ? { y: 4 } : undefined}
+          whileTap={!editButtonDisabled ? { y: 3 } : undefined}
           className={`
-            relative flex-1 min-h-[80px] rounded-xl font-mono text-base font-bold uppercase tracking-widest
+            relative flex-1 h-[72px] rounded-lg font-mono text-sm font-bold uppercase tracking-wider
             transition-all duration-100 overflow-hidden
             ${editButtonDisabled
               ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
@@ -147,9 +137,9 @@ export default function GenerateButton({
           `}
           style={!editButtonDisabled ? {
             background: 'linear-gradient(180deg, #22d3ee 0%, #06b6d4 50%, #0891b2 100%)',
-            boxShadow: '0 6px 0 #0e7490, 0 8px 20px rgba(6, 182, 212, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+            boxShadow: '0 4px 0 #0e7490, 0 6px 16px rgba(6, 182, 212, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
           } : {
-            boxShadow: '0 6px 0 #1a1a1a, 0 8px 16px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 4px 0 #1a1a1a, 0 6px 12px rgba(0, 0, 0, 0.3)',
           }}
         >
           {/* Surface texture lines */}
@@ -186,27 +176,17 @@ export default function GenerateButton({
           )}
           
           {/* Button content */}
-          <div className="relative flex flex-col items-center justify-center gap-2 p-4">
+          <div className="relative flex flex-col items-center justify-center gap-1 h-full">
             {isLoading && loadingMode === 'edit' ? (
               <>
-                <div className="relative w-8 h-8">
-                  <motion.div
-                    className="absolute inset-0 border-2 border-white/30 rounded-full"
-                    animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 border-2 border-white/30 rounded-full"
-                    animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
-                  />
-                  <div className="absolute inset-2 border-2 border-white border-t-transparent rounded-full te-spinner" />
+                <div className="relative w-6 h-6">
+                  <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full te-spinner" />
                 </div>
-                <span className="text-sm">REFINING...</span>
+                <span className="text-xs">REFINING</span>
               </>
             ) : (
               <>
-                <ChiselIcon className="w-7 h-7" />
+                <ChiselIcon className="w-6 h-6" />
                 <span>REFINE</span>
               </>
             )}

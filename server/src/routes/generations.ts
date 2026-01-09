@@ -166,4 +166,31 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Clean up orphan records (where image files are missing)
+router.post('/cleanup', async (req: Request, res: Response) => {
+  try {
+    const { generations } = await getGenerations(1000, 0);
+    let cleaned = 0;
+    
+    for (const gen of generations) {
+      // Check if first image exists
+      if (gen.image_paths.length > 0) {
+        const firstImagePath = getImagePath(gen.image_paths[0]);
+        const exists = await fileExists(firstImagePath);
+        
+        if (!exists) {
+          console.log(`[Cleanup] Removing orphan generation: ${gen.id}`);
+          await deleteGeneration(gen.id);
+          cleaned++;
+        }
+      }
+    }
+    
+    res.json({ ok: true, cleaned, total: generations.length });
+  } catch (err) {
+    console.error('[Generations] Cleanup error:', err);
+    res.status(500).json({ error: 'Failed to cleanup generations' });
+  }
+});
+
 export default router;

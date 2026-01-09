@@ -9,7 +9,7 @@ interface ImageDisplayProps {
     prompt: string
   } | null
   isLoading: boolean
-  onEditImage?: (base64: string) => void
+  onEditImage?: (imageUrl: string) => void
 }
 
 // ASCII characters for wave visualization - same as progress bar

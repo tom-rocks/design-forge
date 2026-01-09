@@ -6,6 +6,7 @@ import ImageDisplay from './components/ImageDisplay'
 import GenerateButton from './components/GenerateButton'
 import EditImageUpload from './components/EditImageUpload'
 import GenerationHistory from './components/GenerationHistory'
+import { EditImageRef } from './components/EditImageUpload'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
@@ -60,8 +61,7 @@ function App() {
     styleImages: [],
     references: [],
   })
-  const [editImage, setEditImage] = useState<string | null>(null)
-  const [editParentId, setEditParentId] = useState<string | null>(null)
+  const [editImage, setEditImage] = useState<EditImageRef | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [loadingMode, setLoadingMode] = useState<GenerationMode | null>(null)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
@@ -79,6 +79,13 @@ function App() {
     setProgress({ status: 'connecting', message: 'Connecting...', progress: 0 })
 
     try {
+      // Build edit image data - either base64 or storage path
+      const editData = mode === 'edit' && editImage ? {
+        editImageType: editImage.type,
+        editImageValue: editImage.value,
+        parentId: editImage.generationId,
+      } : {}
+
       const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,8 +98,7 @@ function App() {
           styleImages: settings.styleImages?.length ? settings.styleImages : undefined,
           references: settings.references?.length ? settings.references : undefined,
           mode,
-          editImage: mode === 'edit' ? editImage : undefined,
-          parentId: mode === 'edit' ? editParentId : undefined,
+          ...editData,
         }),
       })
 
@@ -156,7 +162,7 @@ function App() {
       setIsGenerating(false)
       setLoadingMode(null)
     }
-  }, [prompt, settings, isGenerating, editImage, editParentId])
+  }, [prompt, settings, isGenerating, editImage])
 
   // Handler for using a history image as a style reference
   const handleUseAsReference = useCallback((imageUrl: string) => {
@@ -169,10 +175,9 @@ function App() {
     }))
   }, [settings.model])
 
-  // Handler for editing a history image
-  const handleEditFromHistory = useCallback((base64: string, generationId: string) => {
-    setEditImage(base64)
-    setEditParentId(generationId)
+  // Handler for editing a history image (uses storage path reference)
+  const handleEditFromHistory = useCallback((ref: EditImageRef) => {
+    setEditImage(ref)
   }, [])
 
   return (
@@ -205,11 +210,7 @@ function App() {
           >
             <EditImageUpload
               image={editImage}
-              onImageChange={(img) => {
-                setEditImage(img)
-                // Clear parent ID when manually uploading (not from history)
-                if (!img) setEditParentId(null)
-              }}
+              onImageChange={setEditImage}
               disabled={isGenerating}
             />
           </motion.div>
@@ -331,9 +332,9 @@ function App() {
             <ImageDisplay
               result={result}
               isLoading={isGenerating}
-              onEditImage={(base64) => {
-                setEditImage(base64)
-                setEditParentId(null) // New image, no parent
+              onEditImage={(imageUrl) => {
+                // Generated images are served from storage URLs
+                setEditImage({ type: 'storage', value: imageUrl })
               }}
             />
           </motion.div>

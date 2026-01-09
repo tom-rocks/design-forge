@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { History, Trash2, Pencil, Image as ImageIcon, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { API_URL } from '../config'
+import { EditImageRef } from './EditImageUpload'
 
 interface Generation {
   id: string
@@ -24,14 +25,16 @@ interface Generation {
 
 interface GenerationHistoryProps {
   onUseAsReference: (imageUrl: string) => void
-  onEditImage: (base64: string, generationId: string) => void
+  onEditImage: (ref: EditImageRef) => void
   disabled?: boolean
+  refreshKey?: number // Used to trigger refresh from parent
 }
 
 export default function GenerationHistory({ 
   onUseAsReference, 
   onEditImage,
-  disabled 
+  disabled,
+  refreshKey
 }: GenerationHistoryProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,7 +42,6 @@ export default function GenerationHistory({
   const [hasMore, setHasMore] = useState(false)
   const [total, setTotal] = useState(0)
   const [isExpanded, setIsExpanded] = useState(true)
-  const [loadingEdit, setLoadingEdit] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchGenerations = useCallback(async (offset = 0, append = false) => {
@@ -70,7 +72,7 @@ export default function GenerationHistory({
 
   useEffect(() => {
     fetchGenerations()
-  }, [fetchGenerations])
+  }, [fetchGenerations, refreshKey])
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
@@ -95,19 +97,13 @@ export default function GenerationHistory({
     }
   }
 
-  const handleEdit = async (gen: Generation, imageIndex: number) => {
-    setLoadingEdit(`${gen.id}-${imageIndex}`)
-    try {
-      const res = await fetch(`${API_URL}/api/generations/${gen.id}/image/${imageIndex}/base64`)
-      if (!res.ok) throw new Error('Failed to get image')
-      
-      const data = await res.json()
-      onEditImage(data.base64, gen.id)
-    } catch (err) {
-      console.error('Failed to load image for edit:', err)
-    } finally {
-      setLoadingEdit(null)
-    }
+  // Edit using server storage path - no base64 round-trip needed
+  const handleEdit = (gen: Generation, imageIndex: number) => {
+    onEditImage({
+      type: 'storage',
+      value: `/api/generations/${gen.id}/image/${imageIndex}`,
+      generationId: gen.id
+    })
   }
 
   const handleUseAsRef = (gen: Generation, imageIndex: number) => {
@@ -231,15 +227,11 @@ export default function GenerationHistory({
                           </button>
                           <button
                             onClick={() => handleEdit(gen, imgIndex)}
-                            disabled={disabled || loadingEdit === `${gen.id}-${imgIndex}`}
+                            disabled={disabled}
                             className="p-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
                             title="Edit this image"
                           >
-                            {loadingEdit === `${gen.id}-${imgIndex}` ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Pencil className="w-3 h-3" />
-                            )}
+                            <Pencil className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => handleDelete(gen.id)}
