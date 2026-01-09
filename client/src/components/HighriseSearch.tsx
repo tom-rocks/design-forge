@@ -26,12 +26,6 @@ interface HighriseSearchProps {
 
 const HIGHRISE_CDN = 'https://cdn.highrisegame.com/avatar'
 
-const ITEM_TYPES = [
-  { id: 'all', label: 'All' },
-  { id: 'clothing', label: 'Clothing' },
-  { id: 'furniture', label: 'Furniture' },
-]
-
 export default function HighriseSearch({ 
   selectedItems, 
   onSelectionChange, 
@@ -39,7 +33,7 @@ export default function HighriseSearch({
   maxItems = 15 
 }: HighriseSearchProps) {
   const [query, setQuery] = useState('')
-  const [itemType, setItemType] = useState('clothing')
+  const itemType = 'all' // Always search all item types
   const [items, setItems] = useState<HighriseItem[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -105,7 +99,7 @@ export default function HighriseSearch({
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [query, itemType, page, bridgeConnected])
+  }, [query, page, bridgeConnected])
 
   // Debounced search - reset pagination on new search
   useEffect(() => {
@@ -116,7 +110,7 @@ export default function HighriseSearch({
       searchItems(false) // false = fresh search, not append
     }, 300)
     return () => clearTimeout(timeout)
-  }, [query, itemType]) // Only trigger on query/type changes, not bridge status
+  }, [query]) // Only trigger on query changes
 
   // Initial load when bridge connects (one-time)
   useEffect(() => {
@@ -183,7 +177,7 @@ export default function HighriseSearch({
       case 'legendary': return 'border-yellow-500/60'
       case 'epic': return 'border-purple-500/60'
       case 'rare': return 'border-blue-500/60'
-      default: return 'border-forge-border'
+      default: return 'border-te-border'
     }
   }
 
@@ -192,15 +186,15 @@ export default function HighriseSearch({
       {/* Header with Bridge Status */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-forge-text">Style References</h3>
-          <p className="text-xs text-forge-text-muted">
+          <h3 className="text-sm font-medium text-te-cream">Style References</h3>
+          <p className="text-xs text-te-cream-muted">
             Search Highrise items ({selectedItems.length}/{maxItems})
           </p>
         </div>
         <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
           bridgeConnected 
-            ? 'bg-green-500/10 text-green-400' 
-            : 'bg-amber-500/10 text-amber-400'
+            ? 'bg-fuchsia-500/10 text-fuchsia-400' 
+            : 'bg-te-cream-muted/10 text-te-cream-muted'
         }`}>
           {bridgeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
           {bridgeConnected ? 'Full Search' : 'Limited'}
@@ -210,7 +204,7 @@ export default function HighriseSearch({
       {/* Search Bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forge-text-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-te-cream-muted" />
           <input
             type="text"
             placeholder={bridgeConnected ? "Search any item..." : "Paste item ID or search..."}
@@ -224,33 +218,20 @@ export default function HighriseSearch({
               }
             }}
             disabled={disabled}
-            className="w-full pl-10 pr-4 py-2.5 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text placeholder-forge-text-muted/50 focus:outline-none focus:border-violet-500/50 disabled:opacity-50"
+            className="w-full pl-10 pr-4 py-2.5 bg-te-panel border border-te-border rounded-xl text-sm text-te-cream placeholder-te-cream-dim/50 focus:outline-none focus:border-te-fuchsia/50 disabled:opacity-50"
           />
           {loading && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
+              <Loader2 className="w-4 h-4 text-te-fuchsia animate-spin" />
             </div>
           )}
         </div>
-
-        {bridgeConnected && (
-          <select
-            value={itemType}
-            onChange={e => setItemType(e.target.value)}
-            disabled={disabled}
-            className="px-3 bg-forge-surface border border-forge-border rounded-xl text-sm text-forge-text focus:outline-none focus:border-violet-500/50"
-          >
-            {ITEM_TYPES.map(t => (
-              <option key={t.id} value={t.id}>{t.label}</option>
-            ))}
-          </select>
-        )}
 
         {query.trim() && isItemId(query.trim()) && (
           <button
             onClick={() => addItemById(query.trim())}
             disabled={disabled || selectedItems.length >= maxItems}
-            className="px-4 bg-violet-500 hover:bg-violet-600 text-white rounded-xl disabled:opacity-50"
+            className="px-4 bg-te-fuchsia hover:bg-te-fuchsia-dim text-white rounded-xl disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -264,10 +245,10 @@ export default function HighriseSearch({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-forge-surface border border-forge-border rounded-xl shadow-xl max-h-80 overflow-y-auto"
+            className="bg-te-panel border border-te-border rounded-xl shadow-xl max-h-80 overflow-y-auto"
           >
             {source && (
-              <div className="px-3 py-1.5 border-b border-forge-border text-[10px] text-forge-text-muted flex justify-between">
+              <div className="px-3 py-1.5 border-b border-te-border text-[10px] text-te-cream-muted flex justify-between">
                 <span>Source: {source === 'bridge' ? '✓ Full catalog' : '⚠️ Limited'}</span>
                 {totalPages > 0 && <span>Page {page + 1} of {totalPages}</span>}
               </div>
@@ -280,15 +261,15 @@ export default function HighriseSearch({
                   disabled={isSelected(item) || selectedItems.length >= maxItems}
                   className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors duration-150 ${
                     isSelected(item)
-                      ? 'border-violet-500 opacity-50'
-                      : `${getRarityColor(item.rarity)} hover:border-violet-500/50`
+                      ? 'border-te-fuchsia opacity-50'
+                      : `${getRarityColor(item.rarity)} hover:border-te-fuchsia/50`
                   } disabled:cursor-not-allowed`}
                   title={`${item.name}\n${item.id}`}
                 >
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="w-full h-full object-contain bg-forge-bg"
+                    className="w-full h-full object-contain bg-te-bg"
                   />
                 </button>
               ))}
@@ -296,11 +277,11 @@ export default function HighriseSearch({
             
             {/* Load More Button */}
             {hasMore && (
-              <div className="p-2 border-t border-forge-border">
+              <div className="p-2 border-t border-te-border">
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-2 bg-forge-bg hover:bg-forge-border text-sm text-forge-text rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  className="w-full py-2 bg-te-bg hover:bg-te-border text-sm text-te-cream rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                 >
                   {loadingMore ? (
                     <>
@@ -322,17 +303,17 @@ export default function HighriseSearch({
 
       {/* No Bridge Warning */}
       {!bridgeConnected && query && items.length === 0 && !loading && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300">
-          <strong>Limited mode:</strong> Connect the AP bridge for full search.
-          You can paste item IDs directly (e.g., <code className="bg-black/20 px-1 rounded">shirt-n_coolhoodie2024</code>)
+        <div className="p-3 bg-te-fuchsia/10 border border-te-fuchsia/20 rounded-xl text-xs text-te-cream-muted">
+          <strong className="text-te-cream">Limited mode:</strong> Connect the AP bridge for full search.
+          You can paste item IDs directly (e.g., <code className="bg-black/30 px-1 rounded text-te-cream">shirt-n_coolhoodie2024</code>)
         </div>
       )}
 
       {/* Selected Items */}
       {selectedItems.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-forge-border">
+        <div className="space-y-2 pt-2 border-t border-te-border">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-forge-text-muted">
+            <span className="text-xs text-te-cream-muted">
               Selected ({selectedItems.length}/{maxItems})
             </span>
             <button
@@ -347,13 +328,13 @@ export default function HighriseSearch({
             {selectedItems.map((item) => (
               <div 
                 key={item.url} 
-                className="relative group bg-forge-surface border border-forge-border rounded-lg overflow-hidden"
+                className="relative group bg-te-panel border border-te-border rounded-lg overflow-hidden"
                 style={{ width: '85px' }}
               >
                 <img
                   src={item.url}
                   alt={item.name || 'Reference'}
-                  className="w-full h-14 object-contain bg-forge-bg"
+                  className="w-full h-14 object-contain bg-te-bg"
                 />
                 <button
                   onClick={() => removeItem(item.url)}
@@ -363,8 +344,8 @@ export default function HighriseSearch({
                 </button>
                 
                 {item.name && (
-                  <div className="px-1 py-0.5 border-t border-forge-border bg-forge-bg/50">
-                    <p className="text-[8px] text-forge-text truncate">{item.name}</p>
+                  <div className="px-1 py-0.5 border-t border-te-border bg-te-bg/50">
+                    <p className="text-[8px] text-te-cream truncate">{item.name}</p>
                   </div>
                 )}
                 
@@ -376,9 +357,9 @@ export default function HighriseSearch({
                     step="0.5"
                     value={item.strength}
                     onChange={e => updateStrength(item.url, parseFloat(e.target.value))}
-                    className="w-full h-1 accent-violet-500 cursor-pointer"
+                    className="w-full h-1 accent-fuchsia-500 cursor-pointer"
                   />
-                  <div className="text-[9px] text-center text-forge-text-muted">
+                  <div className="text-[9px] text-center text-te-cream-muted">
                     {item.strength > 0 ? '+' : ''}{item.strength}
                   </div>
                 </div>

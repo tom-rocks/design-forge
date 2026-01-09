@@ -10,19 +10,27 @@ const KREA_API_BASE = 'https://api.krea.ai';
  */
 async function uploadToKrea(imageUrl: string, apiKey: string): Promise<string | null> {
   try {
+    console.log(`[Krea] Fetching image from: ${imageUrl}`);
+    
     // Fetch the image
     const imageRes = await fetch(imageUrl);
     if (!imageRes.ok) {
-      console.log(`[Krea] Failed to fetch image: ${imageUrl}`);
+      console.log(`[Krea] Failed to fetch image: ${imageRes.status} ${imageRes.statusText}`);
       return null;
     }
     
-    const imageBlob = await imageRes.blob();
+    const contentType = imageRes.headers.get('content-type');
+    const imageBuffer = await imageRes.arrayBuffer();
+    console.log(`[Krea] Fetched image: ${imageBuffer.byteLength} bytes, type: ${contentType}`);
+    
+    // Create blob with proper type
+    const imageBlob = new Blob([imageBuffer], { type: contentType || 'image/png' });
     
     // Upload to Krea using FormData
     const form = new FormData();
     form.append('file', imageBlob, 'reference.png');
     
+    console.log(`[Krea] Uploading to ${KREA_API_BASE}/assets...`);
     const uploadRes = await fetch(`${KREA_API_BASE}/assets`, {
       method: 'POST',
       headers: {
@@ -31,17 +39,25 @@ async function uploadToKrea(imageUrl: string, apiKey: string): Promise<string | 
       body: form,
     });
     
+    const responseText = await uploadRes.text();
+    console.log(`[Krea] Upload response: ${uploadRes.status} - ${responseText}`);
+    
     if (!uploadRes.ok) {
-      const errorText = await uploadRes.text();
-      console.log(`[Krea] Asset upload failed: ${uploadRes.status} - ${errorText}`);
       return null;
     }
     
-    const uploadData = await uploadRes.json() as { url?: string; asset_url?: string; id?: string };
+    let uploadData: { url?: string; asset_url?: string; id?: string };
+    try {
+      uploadData = JSON.parse(responseText);
+    } catch {
+      console.log(`[Krea] Response not JSON`);
+      return null;
+    }
+    
     const kreaUrl = uploadData.url || uploadData.asset_url;
     
     if (kreaUrl) {
-      console.log(`[Krea] Uploaded asset: ${kreaUrl}`);
+      console.log(`[Krea] Success! Asset URL: ${kreaUrl}`);
       return kreaUrl;
     }
     
@@ -52,7 +68,7 @@ async function uploadToKrea(imageUrl: string, apiKey: string): Promise<string | 
       return constructedUrl;
     }
     
-    console.log(`[Krea] Upload response:`, uploadData);
+    console.log(`[Krea] No URL in response:`, uploadData);
     return null;
   } catch (e) {
     console.error(`[Krea] Upload error:`, e);
