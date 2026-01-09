@@ -230,11 +230,14 @@ router.post('/generate', async (req: Request, res: Response) => {
     let fullPrompt = prompt;
     
     // Add style context if we have references
-    // Google's example: contents=[prompt] + reference_images (text FIRST, images AFTER)
+    // Per docs: reference images are for "objects to include" - but we want STYLE TRANSFER
+    // Use explicit style transfer language from the docs
     if (imageParts.length > 0) {
-      fullPrompt = `Create: ${prompt}
+      fullPrompt = `Transform this request into the exact artistic style shown in the ${imageParts.length} reference images.
 
-Use these ${imageParts.length} reference images as style guide. Match their exact art style: same lines, shading, colors, proportions.`;
+Request: ${prompt}
+
+Render it with the same line weight, shading technique, color palette, and proportions as the references. The output should look like it was drawn by the same artist.`;
     }
     
     // Add negative prompt if provided
