@@ -257,21 +257,30 @@ export default function HighriseSearch({
               {items.map(item => {
                 const selected = isSelected(item)
                 return (
-                  <button
+                  <div
                     key={item.id}
+                    draggable={!selected}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('application/x-reference', JSON.stringify({
+                        id: `hr-${item.id}`,
+                        url: item.imageUrl,
+                        name: item.name,
+                        type: 'highrise',
+                      }))
+                      e.dataTransfer.effectAllowed = 'copy'
+                    }}
                     onClick={() => toggleItem(item)}
-                    disabled={!selected && selectedItems.length >= maxItems}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors duration-150 ${
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors duration-150 cursor-grab active:cursor-grabbing ${
                       selected
-                        ? 'border-te-fuchsia ring-2 ring-te-fuchsia/30'
+                        ? 'border-te-fuchsia ring-2 ring-te-fuchsia/30 cursor-pointer'
                         : `${getRarityColor(item.rarity)} hover:border-te-fuchsia/50`
-                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                    title={`${item.name}\n${item.id}${selected ? '\n(Click to remove)' : ''}`}
+                    } ${!selected && selectedItems.length >= maxItems ? 'opacity-40' : ''}`}
+                    title={`${item.name}\nDrag to add as reference${selected ? '\nClick to remove' : ''}`}
                   >
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="w-full h-full object-contain bg-te-bg"
+                      className="w-full h-full object-contain bg-te-bg pointer-events-none"
                     />
                     {selected && (
                       <div className="absolute inset-0 bg-te-fuchsia/20 flex items-center justify-center">
@@ -280,7 +289,12 @@ export default function HighriseSearch({
                         </div>
                       </div>
                     )}
-                  </button>
+                    {!selected && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-te-bg/90 to-transparent p-1 opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="text-[8px] text-te-cream font-mono">DRAG</span>
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>

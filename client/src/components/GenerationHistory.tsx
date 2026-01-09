@@ -104,11 +104,11 @@ export default function GenerationHistory({
     })
   }
 
+  // Add as reference (for click, not just drag)
   const handleUseAsRef = (gen: Generation, imageIndex: number) => {
     const imageUrl = `${API_URL}${gen.imageUrls[imageIndex]}`
     onUseAsReference(imageUrl)
   }
-
 
   if (loading && generations.length === 0) {
     return (
@@ -179,12 +179,21 @@ export default function GenerationHistory({
             <div className="p-4 pt-0">
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[400px] overflow-y-auto">
                 {generations.map((gen) => (
-                  gen.imageUrls.map((_, imgIndex) => (
-                    <motion.div
+                  gen.imageUrls.map((imgUrl, imgIndex) => (
+                    <div
                       key={`${gen.id}-${imgIndex}`}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="group relative aspect-square rounded-lg overflow-hidden border-2 border-te-border hover:border-te-fuchsia transition-all bg-te-panel-dark"
+                      draggable={!disabled}
+                      onDragStart={(e: React.DragEvent) => {
+                        e.dataTransfer.setData('application/x-reference', JSON.stringify({
+                          id: `gen-${gen.id}-${imgIndex}`,
+                          url: imgUrl,
+                          name: gen.prompt.slice(0, 30),
+                          type: 'generation',
+                          thumbnailUrl: imgIndex === 0 && gen.thumbnailUrl ? gen.thumbnailUrl : imgUrl,
+                        }))
+                        e.dataTransfer.effectAllowed = 'copy'
+                      }}
+                      className="group relative aspect-square rounded-lg overflow-hidden border-2 border-te-border hover:border-cyan-400 transition-all bg-te-panel-dark cursor-grab active:cursor-grabbing"
                     >
                       {/* Thumbnail */}
                       <img
@@ -193,31 +202,30 @@ export default function GenerationHistory({
                           : `${API_URL}${gen.imageUrls[imgIndex]}`
                         }
                         alt={gen.prompt}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                         loading="lazy"
                       />
                       
-                      {/* Hover overlay - simple, clear actions */}
-                      <div className="absolute inset-0 bg-te-bg/95 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                        {/* Clear text buttons */}
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-te-bg/95 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
                         <button
-                          onClick={() => handleUseAsRef(gen, imgIndex)}
+                          onClick={(e) => { e.stopPropagation(); handleUseAsRef(gen, imgIndex); }}
                           disabled={disabled}
                           className="w-full px-2 py-1.5 rounded bg-te-fuchsia text-white font-mono text-[10px] uppercase tracking-wider hover:bg-te-fuchsia/80 transition-colors disabled:opacity-50"
                         >
                           + REF
                         </button>
                         <button
-                          onClick={() => handleEdit(gen, imgIndex)}
+                          onClick={(e) => { e.stopPropagation(); handleEdit(gen, imgIndex); }}
                           disabled={disabled}
                           className="w-full px-2 py-1.5 rounded bg-cyan-500 text-white font-mono text-[10px] uppercase tracking-wider hover:bg-cyan-400 transition-colors disabled:opacity-50"
                         >
                           EDIT
                         </button>
                         <button
-                          onClick={() => handleDelete(gen.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(gen.id); }}
                           disabled={deletingId === gen.id}
-                          className="w-full px-2 py-1.5 rounded bg-red-500/80 text-white font-mono text-[10px] uppercase tracking-wider hover:bg-red-500 transition-colors disabled:opacity-50"
+                          className="w-full px-2 py-1 rounded bg-red-500/60 text-white font-mono text-[9px] uppercase hover:bg-red-500 transition-colors disabled:opacity-50"
                         >
                           {deletingId === gen.id ? '...' : 'DEL'}
                         </button>
@@ -229,7 +237,7 @@ export default function GenerationHistory({
                           +{gen.imageUrls.length - 1}
                         </div>
                       )}
-                    </motion.div>
+                    </div>
                   ))
                 ))}
               </div>

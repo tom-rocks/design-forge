@@ -7,6 +7,7 @@ import ImageDisplay from './components/ImageDisplay'
 import EditImageUpload from './components/EditImageUpload'
 import GenerationHistory from './components/GenerationHistory'
 import { EditImageRef } from './components/EditImageUpload'
+import ReferenceDropZone, { ReferenceItem } from './components/ReferenceDropZone'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
@@ -62,12 +63,15 @@ function App() {
     styleImages: [],
     references: [],
   })
+  const [references, setReferences] = useState<ReferenceItem[]>([])
   const [editImage, setEditImage] = useState<EditImageRef | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [historyKey, setHistoryKey] = useState(0)
+  
+  const maxRefs = settings.model === 'pro' ? 14 : 3
 
   // Switch mode - clear edit image when switching to create
   const handleModeChange = useCallback((newMode: GenerationMode) => {
@@ -92,6 +96,15 @@ function App() {
         parentId: editImage.generationId,
       } : {}
 
+      // Convert references to styleImages format for API
+      const styleImages = references.map(ref => ({
+        url: ref.url.startsWith('http') || ref.url.startsWith('data:') 
+          ? ref.url 
+          : `${API_URL}${ref.url}`,
+        strength: 1,
+        name: ref.name,
+      }))
+
       const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,8 +114,7 @@ function App() {
           resolution: settings.resolution,
           aspectRatio: settings.aspectRatio,
           numImages: settings.numImages > 1 ? settings.numImages : undefined,
-          styleImages: settings.styleImages?.length ? settings.styleImages : undefined,
-          references: settings.references?.length ? settings.references : undefined,
+          styleImages: styleImages.length > 0 ? styleImages : undefined,
           mode,
           ...editData,
         }),
@@ -164,18 +176,23 @@ function App() {
     } finally {
       setIsGenerating(false)
     }
-  }, [prompt, settings, isGenerating, editImage, mode])
+  }, [prompt, settings, isGenerating, editImage, mode, references])
 
-  // Use image as style reference (stays in FORGE mode)
-  const handleUseAsReference = useCallback((imageUrl: string) => {
-    const newRef: StyleImage = { url: imageUrl, strength: 1 }
-    const maxRefs = settings.model === 'pro' ? 14 : 3
+  // Add image as reference (from history or search)
+  const handleAddReference = useCallback((imageUrl: string) => {
+    if (references.length >= maxRefs) return
     
-    setSettings(prev => ({
-      ...prev,
-      styleImages: [...(prev.styleImages || []), newRef].slice(0, maxRefs)
-    }))
-  }, [settings.model])
+    const newRef: ReferenceItem = {
+      id: `ref-${Date.now()}`,
+      url: imageUrl,
+      type: imageUrl.includes('/api/generations/') ? 'generation' : 'highrise',
+    }
+    
+    // Avoid duplicates
+    if (!references.find(r => r.url === imageUrl)) {
+      setReferences(prev => [...prev, newRef].slice(0, maxRefs))
+    }
+  }, [references, maxRefs])
 
   // Edit an image (switches to EDIT mode)
   const handleEditImage = useCallback((ref: EditImageRef) => {
@@ -263,7 +280,7 @@ function App() {
             placeholder={mode === 'edit' ? 'Describe the changes you want...' : 'Describe what you want to create...'}
           />
 
-          {/* FORGE MODE: Style references */}
+          {/* FORGE MODE: References drop zone + browse panels */}
           <AnimatePresence mode="wait">
             {mode === 'create' && (
               <motion.div
@@ -272,25 +289,57 @@ function App() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-6"
+                className="space-y-4"
               >
-                <HighriseSearch
-                  selectedItems={settings.styleImages || []}
-                  onSelectionChange={(items) => setSettings({ ...settings, styleImages: items })}
+                {/* Main drop zone for all references */}
+                <ReferenceDropZone
+                  references={references}
+                  onReferencesChange={setReferences}
+                  maxRefs={maxRefs}
                   disabled={isGenerating}
-                  maxItems={settings.model === 'pro' ? 14 : 3}
                 />
+
+                {/* Browse panels - drag items from here */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Highrise items */}
+                  <HighriseSearch
+                    selectedItems={[]} // No longer manages selection
+                    onSelectionChange={() => {}} // Drag handles it
+                    disabled={isGenerating}
+                    maxItems={maxRefs}
+                  />
+
+                  {/* Past generations */}
+                  <GenerationHistory
+                    key={historyKey}
+                    onUseAsReference={handleAddReference}
+                    onEditImage={handleEditImage}
+                    disabled={isGenerating}
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* HISTORY - Simple: +REF or EDIT */}
-          <GenerationHistory
-            key={historyKey}
-            onUseAsReference={handleUseAsReference}
-            onEditImage={handleEditImage}
-            disabled={isGenerating}
-          />
+          {/* EDIT MODE: Just history for selecting what to edit */}
+          <AnimatePresence mode="wait">
+            {mode === 'edit' && (
+              <motion.div
+                key="edit-history"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <GenerationHistory
+                  key={historyKey}
+                  onUseAsReference={handleAddReference}
+                  onEditImage={handleEditImage}
+                  disabled={isGenerating}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* SETTINGS + GENERATE */}
           <div className="flex flex-col sm:flex-row gap-4 items-stretch">
