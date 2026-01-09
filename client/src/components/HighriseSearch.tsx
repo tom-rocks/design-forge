@@ -158,11 +158,6 @@ export default function HighriseSearch({
     setQuery('')
   }
 
-  const updateStrength = (url: string, strength: number) => {
-    onSelectionChange(selectedItems.map(s => 
-      s.url === url ? { ...s, strength } : s
-    ))
-  }
 
   const removeItem = (url: string) => {
     onSelectionChange(selectedItems.filter(s => s.url !== url))
@@ -362,21 +357,6 @@ export default function HighriseSearch({
                     <p className="text-[9px] text-te-cream truncate">{item.name}</p>
                   </div>
                 )}
-                
-                <div className="px-2 pb-1.5">
-                  <input
-                    type="range"
-                    min="-2"
-                    max="2"
-                    step="0.5"
-                    value={item.strength}
-                    onChange={e => updateStrength(item.url, parseFloat(e.target.value))}
-                    className="w-full h-1.5 accent-fuchsia-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-center text-te-cream-muted">
-                    {item.strength > 0 ? '+' : ''}{item.strength}
-                  </div>
-                </div>
               </div>
             ))}
           </div>
