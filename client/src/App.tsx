@@ -155,8 +155,8 @@ function App() {
     }
     
     const vizInterval = setInterval(() => {
-      const width = 32
-      const height = 6
+      const width = 72  // Wide to fill the panel
+      const height = 8
       const time = Date.now() / 1000
       const prog = progress.progress / 100
       const lines: string[] = []
@@ -167,15 +167,16 @@ function App() {
           const nx = x / width
           const ny = (y / height - 0.5) * 2
           
-          // Wave patterns
-          const wave1 = Math.sin(nx * 8 - time * 3 + ny * 2)
-          const wave2 = Math.sin(nx * 12 + time * 2)
+          // Wave patterns - horizontal traveling waves
+          const wave1 = Math.sin(nx * 12 - time * 4 + ny * 3)
+          const wave2 = Math.sin(nx * 20 + time * 2.5)
+          const wave3 = Math.cos(ny * 4 - time * 1.5)
           
-          // Progress mask - more visible as progress increases
-          const progressMask = nx < prog ? 1.2 : 0.3
+          // Progress mask - fills from left as progress increases
+          const progressMask = nx < prog ? 1.3 : 0.2
           
-          const combined = (wave1 + wave2) / 2 * progressMask
-          const idx = Math.floor((combined + 1) * 2)
+          const combined = (wave1 + wave2 + wave3) / 3 * progressMask
+          const idx = Math.floor((combined + 1) * 2.2)
           row += PIXELS[Math.max(0, Math.min(idx, PIXELS.length - 1))]
         }
         lines.push(row)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, ExternalLink, Monitor, ZoomIn, X, Grid, Square } from 'lucide-react'
+import { Download, Monitor, X, Grid, Square } from 'lucide-react'
 
 interface ImageDisplayProps {
   result: {
@@ -20,7 +20,6 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
   const [viewMode, setViewMode] = useState<'grid' | 'single'>('grid')
   const [pixelGrid, setPixelGrid] = useState<string[][]>([])
-  const [progressBar, setProgressBar] = useState<number[]>([])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const currentImage = selectedIndex !== null ? images[selectedIndex] : images[0]
@@ -30,10 +29,10 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
     if (isLoading) {
       setLoadedImages(new Set())
       
-      // Generate evolving pixel visualization
+      // Generate evolving pixel visualization - wide format
       const pixelInterval = setInterval(() => {
-        const width = 24
-        const height = 24
+        const width = 56  // Wide to fill the display
+        const height = 20
         const time = Date.now() / 1000
         const grid: string[][] = []
         
@@ -44,14 +43,14 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
             const nx = (x / width - 0.5) * 2
             const ny = (y / height - 0.5) * 2
             
-            // Distance from center
-            const dist = Math.sqrt(nx * nx + ny * ny)
+            // Distance from center (adjusted for aspect ratio)
+            const dist = Math.sqrt(nx * nx * 0.5 + ny * ny)
             
             // Multiple wave patterns creating interference
-            const wave1 = Math.sin(dist * 6 - time * 2)
-            const wave2 = Math.sin(nx * 4 + time * 1.5)
-            const wave3 = Math.cos(ny * 4 - time * 1.2)
-            const spiral = Math.sin(Math.atan2(ny, nx) * 3 + dist * 4 - time * 2)
+            const wave1 = Math.sin(dist * 8 - time * 2.5)
+            const wave2 = Math.sin(nx * 6 + time * 1.8)
+            const wave3 = Math.cos(ny * 5 - time * 1.4)
+            const spiral = Math.sin(Math.atan2(ny, nx * 0.7) * 4 + dist * 5 - time * 2)
             
             // Combine waves
             const combined = (wave1 + wave2 + wave3 + spiral) / 4
@@ -64,22 +63,6 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
         }
         
         setPixelGrid(grid)
-        
-        // Progress bar visualizer - waves traveling through segments
-        const barSegments = 40
-        const bar: number[] = []
-        for (let i = 0; i < barSegments; i++) {
-          const nx = (i / barSegments - 0.5) * 2
-          // Multiple traveling waves
-          const wave1 = Math.sin(nx * 8 - time * 3)
-          const wave2 = Math.sin(nx * 12 + time * 2)
-          const wave3 = Math.sin(nx * 4 - time * 4) * 0.5
-          const pulse = Math.sin(time * 2) * 0.3
-          // Combine with some noise
-          const combined = (wave1 + wave2 + wave3 + pulse) / 3
-          bar.push((combined + 1) / 2) // Normalize to 0-1
-        }
-        setProgressBar(bar)
       }, 50)
       
       return () => clearInterval(pixelInterval)
@@ -196,33 +179,9 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="aspect-square flex flex-col relative overflow-hidden"
+                className="min-h-[320px] flex flex-col relative overflow-hidden"
                 style={{ background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)' }}
               >
-                {/* Animated wave progress bar at TOP */}
-                <div className="relative z-10 px-3 pt-3 pb-2">
-                  <div className="flex gap-[1px] h-4 items-end">
-                    {progressBar.map((value, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-sm transition-all duration-75"
-                        style={{
-                          height: `${20 + value * 80}%`,
-                          background: `linear-gradient(to top, #701a75, ${value > 0.6 ? '#e879f9' : value > 0.3 ? '#d946ef' : '#a21caf'})`,
-                          boxShadow: value > 0.5 ? `0 0 ${4 + value * 4}px rgba(232, 121, 249, ${value * 0.8})` : 'none',
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Slow scanning line */}
-                <motion.div
-                  className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/60 to-transparent z-20"
-                  animate={{ top: ['10%', '100%'] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                />
-                
                 {/* The main pixel visualization */}
                 <div className="flex-1 flex items-center justify-center">
                   <div 
@@ -237,7 +196,7 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                         {row.map((char, x) => (
                           <span 
                             key={x} 
-                            className="inline-block w-[14px] text-center"
+                            className="inline-block w-[10px] text-center"
                             style={{
                               color: char === '█' ? '#e879f9' : 
                                      char === '▓' ? '#d946ef' :
@@ -253,21 +212,6 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                     ))}
                   </div>
                 </div>
-                
-                {/* Vignette overlay */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.7) 100%)',
-                  }}
-                />
-                
-                {/* Subtle CRT flicker */}
-                <motion.div
-                  className="absolute inset-0 bg-fuchsia-500/5 pointer-events-none"
-                  animate={{ opacity: [0, 0.1, 0] }}
-                  transition={{ duration: 0.1, repeat: Infinity, repeatDelay: 3 }}
-                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -298,34 +242,6 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
                   <div className="absolute top-2 left-2 px-2 py-1 bg-te-bg/90 border border-te-border rounded font-mono text-[10px] text-te-cream">
                     #{i + 1}
                   </div>
-                  
-                  {/* Hover actions */}
-                  <div className="absolute inset-0 bg-te-bg/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedIndex(i); setIsZoomed(true); }}
-                      className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
-                      title="Zoom"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDownload(url, i); }}
-                      className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
-                      title="Open"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
                 </motion.div>
               ))}
             </div>
@@ -336,48 +252,16 @@ export default function ImageDisplay({ result, isLoading }: ImageDisplayProps) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="relative group"
+              className="relative"
             >
               {!loadedImages.has(selectedIndex ?? 0) && <div className="aspect-square te-shimmer" />}
               <img
                 src={currentImage}
                 alt={result.prompt}
                 onLoad={() => handleImageLoad(selectedIndex ?? 0)}
-                className={`w-full h-auto ${loadedImages.has(selectedIndex ?? 0) ? 'block' : 'hidden'}`}
+                onClick={() => setIsZoomed(true)}
+                className={`w-full h-auto cursor-zoom-in ${loadedImages.has(selectedIndex ?? 0) ? 'block' : 'hidden'}`}
               />
-              
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-te-bg/95 via-te-bg/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 z-20">
-                <div className="flex-1 mr-4">
-                  <p className="font-mono text-xs text-te-cream uppercase tracking-wider truncate">{result.prompt}</p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsZoomed(true)}
-                    className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
-                    title="Zoom"
-                  >
-                    <ZoomIn className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDownload(currentImage!, selectedIndex ?? 0)}
-                    className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
-                    title="Download"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <a
-                    href={currentImage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2.5 bg-te-panel border-2 border-te-border hover:border-te-fuchsia hover:bg-te-fuchsia rounded-lg text-te-cream transition-all"
-                    title="Open"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-              </div>
             </motion.div>
           )}
         </div>
