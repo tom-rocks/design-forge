@@ -298,7 +298,7 @@ function App() {
             />
           </div>
 
-          {/* 5. CRUCIBLE + FORGE BUTTON - Side by side */}
+          {/* FORGE MODE: Crucible + Gutter + Output (connected, no gaps) */}
           <AnimatePresence mode="wait">
             {mode === 'create' && (
               <motion.div
@@ -308,8 +308,8 @@ function App() {
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
               >
+                {/* Crucible + Button row */}
                 <div className="flex gap-4 items-stretch">
-                  {/* Crucible - takes most space */}
                   <div className="flex-1">
                     <ReferenceDropZone
                       references={references}
@@ -320,7 +320,7 @@ function App() {
                     />
                   </div>
                   
-                  {/* FORGE button - next to crucible */}
+                  {/* FORGE button */}
                   <motion.button
                     onClick={handleGenerate}
                     disabled={!canGenerate || isGenerating}
@@ -339,7 +339,6 @@ function App() {
                       boxShadow: '0 4px 0 #1a1a1a',
                     }}
                   >
-                    {/* Heat glow when ready */}
                     {canGenerate && !isGenerating && (
                       <motion.div
                         className="absolute inset-0"
@@ -371,19 +370,38 @@ function App() {
                     )}
                   </motion.button>
                 </div>
+
+                {/* Gutter - directly connected, no margin */}
+                <div className="-mt-1">
+                  <ForgeGutter 
+                    isForging={isGenerating} 
+                    progress={progress?.progress || 0}
+                  />
+                </div>
+
+                {/* Output mold - directly connected */}
+                <div className="-mt-1">
+                  <ImageDisplay
+                    result={result}
+                    isLoading={isGenerating}
+                    heatLevel={heatLevel}
+                    onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* EDIT MODE: Edit button */}
+          {/* EDIT MODE: Edit button + Output */}
           <AnimatePresence mode="wait">
             {mode === 'edit' && (
               <motion.div
-                key="edit-button"
+                key="edit-section"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
+                className="space-y-4"
               >
                 <motion.button
                   onClick={handleGenerate}
@@ -410,15 +428,16 @@ function App() {
                     </div>
                   )}
                 </motion.button>
+
+                <ImageDisplay
+                  result={result}
+                  isLoading={isGenerating}
+                  heatLevel={heatLevel}
+                  onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
+                />
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* 6. GUTTER CHANNEL - Connects crucible to output */}
-          <ForgeGutter 
-            isForging={isGenerating && mode === 'create'} 
-            progress={progress?.progress || 0}
-          />
 
           {/* Error */}
           <AnimatePresence>
@@ -434,14 +453,6 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* 7. OUTPUT BLOCK - Receives the pour, edges heat up */}
-          <ImageDisplay
-            result={result}
-            isLoading={isGenerating}
-            heatLevel={heatLevel}
-            onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
-          />
         </main>
       </div>
       

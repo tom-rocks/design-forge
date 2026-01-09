@@ -329,41 +329,6 @@ export default function ReferenceDropZone({
         )}
       </div>
 
-      {/* Crucible bottom - molten pool glow */}
-      <div 
-        className="h-3 relative overflow-hidden"
-        style={{
-          background: effectiveHeat > 0.2 
-            ? `linear-gradient(90deg, 
-                transparent 0%, 
-                ${heatColors.border}66 20%, 
-                ${heatColors.border}aa 50%, 
-                ${heatColors.border}66 80%, 
-                transparent 100%
-              )`
-            : 'transparent',
-        }}
-      >
-        {effectiveHeat > 0.3 && (
-          <motion.div
-            className="absolute inset-0"
-            animate={{
-              backgroundPosition: ['0% 0%', '200% 0%'],
-            }}
-            transition={{ duration: isForging ? 1 : 3, repeat: Infinity, ease: 'linear' }}
-            style={{
-              background: `linear-gradient(90deg, 
-                transparent, 
-                rgba(255, 200, 0, 0.5), 
-                transparent, 
-                rgba(255, 100, 0, 0.5), 
-                transparent
-              )`,
-              backgroundSize: '50% 100%',
-            }}
-          />
-        )}
-      </div>
     </motion.div>
   )
 }
