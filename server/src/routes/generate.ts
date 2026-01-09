@@ -178,8 +178,9 @@ router.post('/generate', async (req: Request, res: Response) => {
   try {
     // Build the parts array for multimodal input
     const parts: any[] = [];
+    const imageParts: any[] = [];
     
-    // Fetch and add style images as base64
+    // Fetch style images as base64
     const effectiveStyleImages = styleImages?.slice(0, maxRefs) || [];
     if (effectiveStyleImages.length > 0) {
       send('progress', { 
@@ -193,9 +194,9 @@ router.post('/generate', async (req: Request, res: Response) => {
       for (const styleImg of effectiveStyleImages) {
         const imageData = await fetchImageAsBase64(styleImg.url);
         if (imageData) {
-          parts.push({
-            inline_data: {
-              mime_type: imageData.mimeType,
+          imageParts.push({
+            inlineData: {
+              mimeType: imageData.mimeType,
               data: imageData.data,
             }
           });
@@ -217,10 +218,12 @@ router.post('/generate', async (req: Request, res: Response) => {
     let fullPrompt = prompt;
     
     // Add strong style context if we have references
-    if (parts.length > 0) {
-      fullPrompt = `CRITICAL: Match the EXACT visual style of the ${parts.length} reference image(s). Same rendering, same aesthetic, same level of detail. Output MUST look like it belongs in the same game/collection.
+    if (imageParts.length > 0) {
+      fullPrompt = `Here are ${imageParts.length} reference image(s) showing the exact visual style I need.
 
-Generate: ${prompt}`;
+Generate a new image in this EXACT same style: ${prompt}
+
+IMPORTANT: The output must match the reference images' art style, rendering technique, and aesthetic perfectly.`;
     }
     
     // Add negative prompt if provided
@@ -228,8 +231,9 @@ Generate: ${prompt}`;
       fullPrompt += ` Avoid: ${negativePrompt.trim()}`;
     }
     
-    // Add the text prompt
+    // Add text prompt FIRST, then images (more natural for instruction-following)
     parts.push({ text: fullPrompt });
+    parts.push(...imageParts);
     
     // Build the request payload
     const payload: any = {

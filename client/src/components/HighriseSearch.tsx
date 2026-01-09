@@ -127,8 +127,13 @@ export default function HighriseSearch({
     }
   }, [loadingMore, hasMore, searchItems])
 
-  const addItem = (item: HighriseItem) => {
-    if (!selectedItems.some(s => s.url === item.imageUrl) && selectedItems.length < maxItems) {
+  const toggleItem = (item: HighriseItem) => {
+    const isCurrentlySelected = selectedItems.some(s => s.url === item.imageUrl)
+    if (isCurrentlySelected) {
+      // Remove item
+      onSelectionChange(selectedItems.filter(s => s.url !== item.imageUrl))
+    } else if (selectedItems.length < maxItems) {
+      // Add item
       onSelectionChange([...selectedItems, { url: item.imageUrl, strength: 1, name: item.name }])
     }
   }
@@ -254,25 +259,35 @@ export default function HighriseSearch({
               </div>
             )}
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 p-2">
-              {items.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => addItem(item)}
-                  disabled={isSelected(item) || selectedItems.length >= maxItems}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors duration-150 ${
-                    isSelected(item)
-                      ? 'border-te-fuchsia opacity-50'
-                      : `${getRarityColor(item.rarity)} hover:border-te-fuchsia/50`
-                  } disabled:cursor-not-allowed`}
-                  title={`${item.name}\n${item.id}`}
-                >
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="w-full h-full object-contain bg-te-bg"
-                  />
-                </button>
-              ))}
+              {items.map(item => {
+                const selected = isSelected(item)
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => toggleItem(item)}
+                    disabled={!selected && selectedItems.length >= maxItems}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors duration-150 ${
+                      selected
+                        ? 'border-te-fuchsia ring-2 ring-te-fuchsia/30'
+                        : `${getRarityColor(item.rarity)} hover:border-te-fuchsia/50`
+                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                    title={`${item.name}\n${item.id}${selected ? '\n(Click to remove)' : ''}`}
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-contain bg-te-bg"
+                    />
+                    {selected && (
+                      <div className="absolute inset-0 bg-te-fuchsia/20 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-te-fuchsia flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
             
             {/* Load More Button */}
