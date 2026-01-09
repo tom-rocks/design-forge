@@ -2,12 +2,12 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Zap, Pencil } from 'lucide-react'
 import PromptInput from './components/PromptInput'
-import SettingsPanel from './components/SettingsPanel'
 import ImageDisplay from './components/ImageDisplay'
 import EditImageUpload from './components/EditImageUpload'
 import GenerationHistory from './components/GenerationHistory'
 import { EditImageRef } from './components/EditImageUpload'
 import ReferenceDropZone, { ReferenceItem } from './components/ReferenceDropZone'
+import ForgeGutter from './components/ForgeGutter'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
@@ -53,7 +53,7 @@ interface GenerationResult {
 function App() {
   const [mode, setMode] = useState<GenerationMode>('create')
   const [prompt, setPrompt] = useState('')
-  const [settings, setSettings] = useState<GenerationSettings>({
+  const [settings] = useState<GenerationSettings>({
     model: 'pro',
     resolution: '1024',
     aspectRatio: '1:1',
@@ -201,6 +201,7 @@ function App() {
   }, [])
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage)
+  const heatLevel = progress ? progress.progress / 100 : 0
 
   return (
     <div className="min-h-screen bg-forge-bg">
@@ -210,33 +211,32 @@ function App() {
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-8">
         <Header />
         
-        <main className="mt-8 space-y-6">
-          {/* MODE SELECTOR - Big and clear */}
+        <main className="mt-8 space-y-4">
+          {/* 1. MODE SELECTOR */}
           <div className="te-panel p-2">
             <div className="flex gap-2">
               <button
                 onClick={() => handleModeChange('create')}
                 disabled={isGenerating}
                 className={`
-                  flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-lg font-mono text-sm uppercase tracking-wider
+                  flex-1 flex items-center justify-center gap-3 py-3 px-4 rounded-lg font-mono text-sm uppercase tracking-wider
                   transition-all duration-200
                   ${mode === 'create' 
-                    ? 'bg-gradient-to-b from-fuchsia-500 to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/30' 
+                    ? 'bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30' 
                     : 'bg-te-panel-dark text-te-cream-dim hover:bg-te-panel hover:text-te-cream'
                   }
                   ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}
               >
                 <Zap className="w-5 h-5" />
-                <span className="text-base font-bold">FORGE</span>
-                <span className="text-xs opacity-70">Create new</span>
+                <span className="font-bold">FORGE</span>
               </button>
               
               <button
                 onClick={() => handleModeChange('edit')}
                 disabled={isGenerating}
                 className={`
-                  flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-lg font-mono text-sm uppercase tracking-wider
+                  flex-1 flex items-center justify-center gap-3 py-3 px-4 rounded-lg font-mono text-sm uppercase tracking-wider
                   transition-all duration-200
                   ${mode === 'edit' 
                     ? 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30' 
@@ -246,13 +246,21 @@ function App() {
                 `}
               >
                 <Pencil className="w-5 h-5" />
-                <span className="text-base font-bold">EDIT</span>
-                <span className="text-xs opacity-70">Modify existing</span>
+                <span className="font-bold">EDIT</span>
               </button>
             </div>
           </div>
 
-          {/* EDIT MODE: Image to edit (only shown in edit mode) */}
+          {/* 2. PROMPT INPUT - Small, expandable */}
+          <PromptInput
+            value={prompt}
+            onChange={setPrompt}
+            onSubmit={handleGenerate}
+            disabled={isGenerating}
+            placeholder={mode === 'edit' ? 'Describe the changes...' : 'Describe what to forge...'}
+          />
+
+          {/* EDIT MODE: Image to edit */}
           <AnimatePresence mode="wait">
             {mode === 'edit' && (
               <motion.div
@@ -271,171 +279,146 @@ function App() {
             )}
           </AnimatePresence>
 
-          {/* PROMPT - Always visible */}
-          <PromptInput
-            value={prompt}
-            onChange={setPrompt}
-            onSubmit={handleGenerate}
-            disabled={isGenerating}
-            placeholder={mode === 'edit' ? 'Describe the changes you want...' : 'Describe what you want to create...'}
-          />
+          {/* 3 & 4. BROWSE PANELS - Highrise + History side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Highrise items */}
+            <HighriseSearch
+              selectedItems={[]}
+              onSelectionChange={() => {}}
+              disabled={isGenerating}
+              maxItems={maxRefs}
+            />
 
-          {/* FORGE MODE: References drop zone + browse panels */}
+            {/* Past generations */}
+            <GenerationHistory
+              key={historyKey}
+              onUseAsReference={handleAddReference}
+              onEditImage={handleEditImage}
+              disabled={isGenerating}
+            />
+          </div>
+
+          {/* 5. CRUCIBLE + FORGE BUTTON - Side by side */}
           <AnimatePresence mode="wait">
             {mode === 'create' && (
               <motion.div
-                key="forge-refs"
+                key="forge-section"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-4"
               >
-                {/* Main drop zone for all references - THE CRUCIBLE */}
-                <ReferenceDropZone
-                  references={references}
-                  onReferencesChange={setReferences}
-                  maxRefs={maxRefs}
-                  disabled={isGenerating}
-                  isForging={isGenerating && mode === 'create'}
-                />
-
-                {/* Browse panels - drag items from here */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Highrise items */}
-                  <HighriseSearch
-                    selectedItems={[]} // No longer manages selection
-                    onSelectionChange={() => {}} // Drag handles it
-                    disabled={isGenerating}
-                    maxItems={maxRefs}
-                  />
-
-                  {/* Past generations */}
-                  <GenerationHistory
-                    key={historyKey}
-                    onUseAsReference={handleAddReference}
-                    onEditImage={handleEditImage}
-                    disabled={isGenerating}
-                  />
+                <div className="flex gap-4 items-stretch">
+                  {/* Crucible - takes most space */}
+                  <div className="flex-1">
+                    <ReferenceDropZone
+                      references={references}
+                      onReferencesChange={setReferences}
+                      maxRefs={maxRefs}
+                      disabled={isGenerating}
+                      isForging={isGenerating}
+                    />
+                  </div>
+                  
+                  {/* FORGE button - next to crucible */}
+                  <motion.button
+                    onClick={handleGenerate}
+                    disabled={!canGenerate || isGenerating}
+                    whileTap={canGenerate && !isGenerating ? { scale: 0.95, y: 2 } : undefined}
+                    className={`
+                      relative w-32 rounded-xl font-mono text-base font-bold uppercase tracking-wider
+                      transition-all duration-200 overflow-hidden
+                      ${!canGenerate || isGenerating
+                        ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
+                        : 'bg-gradient-to-b from-orange-500 via-orange-600 to-red-700 text-white cursor-pointer'
+                      }
+                    `}
+                    style={canGenerate && !isGenerating ? {
+                      boxShadow: '0 0 30px rgba(255, 107, 53, 0.5), 0 4px 0 #7c2d12, inset 0 1px 0 rgba(255,255,255,0.2)',
+                    } : {
+                      boxShadow: '0 4px 0 #1a1a1a',
+                    }}
+                  >
+                    {/* Heat glow when ready */}
+                    {canGenerate && !isGenerating && (
+                      <motion.div
+                        className="absolute inset-0"
+                        animate={{
+                          boxShadow: [
+                            'inset 0 0 20px rgba(255, 107, 53, 0.3)',
+                            'inset 0 0 40px rgba(255, 107, 53, 0.5)',
+                            'inset 0 0 20px rgba(255, 107, 53, 0.3)',
+                          ]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                    )}
+                    
+                    {isGenerating ? (
+                      <div className="flex flex-col items-center justify-center gap-2 p-4 h-full">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-8 h-8 border-3 border-white/30 border-t-orange-300 rounded-full"
+                        />
+                        <span className="text-xs">FORGING</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 p-4 h-full">
+                        <Zap className="w-10 h-10" />
+                        <span>FORGE</span>
+                      </div>
+                    )}
+                  </motion.button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* EDIT MODE: Just history for selecting what to edit */}
+          {/* EDIT MODE: Edit button */}
           <AnimatePresence mode="wait">
             {mode === 'edit' && (
               <motion.div
-                key="edit-history"
+                key="edit-button"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <GenerationHistory
-                  key={historyKey}
-                  onUseAsReference={handleAddReference}
-                  onEditImage={handleEditImage}
-                  disabled={isGenerating}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* SETTINGS + GENERATE */}
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-            <div className="flex-1">
-              <SettingsPanel
-                settings={settings}
-                onChange={setSettings}
-                disabled={isGenerating}
-              />
-            </div>
-            
-            {/* Single generate button - color changes based on mode */}
-            <motion.button
-              onClick={handleGenerate}
-              disabled={!canGenerate || isGenerating}
-              whileTap={canGenerate && !isGenerating ? { scale: 0.98 } : undefined}
-              className={`
-                relative min-w-[180px] min-h-[100px] rounded-xl font-mono text-base font-bold uppercase tracking-wider
-                transition-all duration-200 overflow-hidden
-                ${!canGenerate || isGenerating
-                  ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
-                  : mode === 'create'
-                    ? 'bg-gradient-to-b from-fuchsia-500 to-fuchsia-600 text-white cursor-pointer shadow-lg shadow-fuchsia-500/30 hover:shadow-fuchsia-500/50'
-                    : 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white cursor-pointer shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50'
-                }
-              `}
-            >
-              {isGenerating ? (
-                <div className="flex flex-col items-center justify-center gap-2 p-4">
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span className="text-sm">{mode === 'create' ? 'FORGING...' : 'EDITING...'}</span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-2 p-4">
-                  {mode === 'create' ? (
-                    <>
-                      <Zap className="w-8 h-8" />
-                      <span>FORGE</span>
-                    </>
-                  ) : (
-                    <>
-                      <Pencil className="w-8 h-8" />
-                      <span>EDIT</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </motion.button>
-          </div>
-
-          {/* Progress */}
-          <AnimatePresence>
-            {progress && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="rounded-xl overflow-hidden"
-                style={{ 
-                  background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)', 
-                  border: `1px solid ${mode === 'create' ? '#a21caf' : '#0891b2'}` 
-                }}
-              >
-                <div className="flex items-center justify-between px-4 py-2">
-                  <span 
-                    className="font-mono text-xs uppercase tracking-wider"
-                    style={{ 
-                      color: mode === 'create' ? '#e879f9' : '#22d3ee', 
-                      textShadow: `0 0 8px ${mode === 'create' ? 'rgba(232, 121, 249, 0.5)' : 'rgba(34, 211, 238, 0.5)'}` 
-                    }}
-                  >
-                    {progress.message}
-                  </span>
-                  <span className="font-mono text-xs" style={{ color: mode === 'create' ? '#a855f7' : '#06b6d4' }}>
-                    {Math.floor(progress.progress)}%{progress.elapsed !== undefined && ` · ${progress.elapsed}s`}
-                  </span>
-                </div>
-                <pre 
-                  className="px-4 pb-3 font-mono text-sm select-none whitespace-pre overflow-hidden"
-                  style={{ 
-                    color: mode === 'create' ? '#e879f9' : '#22d3ee', 
-                    textShadow: `0 0 8px ${mode === 'create' ? 'rgba(232, 121, 249, 0.6)' : 'rgba(34, 211, 238, 0.6)'}`,
-                    letterSpacing: '0.05em',
-                  }}
+                <motion.button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate || isGenerating}
+                  whileTap={canGenerate && !isGenerating ? { scale: 0.98 } : undefined}
+                  className={`
+                    relative w-full py-4 rounded-xl font-mono text-base font-bold uppercase tracking-wider
+                    transition-all duration-200
+                    ${!canGenerate || isGenerating
+                      ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
+                      : 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white cursor-pointer shadow-lg shadow-cyan-500/30'
+                    }
+                  `}
                 >
-{(() => {
-  const width = 60
-  const filled = Math.floor((progress.progress / 100) * width)
-  const empty = width - filled
-  return '█'.repeat(filled) + '░'.repeat(empty)
-})()}
-                </pre>
+                  {isGenerating ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>EDITING...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-3">
+                      <Pencil className="w-6 h-6" />
+                      <span>EDIT IMAGE</span>
+                    </div>
+                  )}
+                </motion.button>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* 6. GUTTER CHANNEL - Connects crucible to output */}
+          <ForgeGutter 
+            isForging={isGenerating && mode === 'create'} 
+            progress={progress?.progress || 0}
+          />
 
           {/* Error */}
           <AnimatePresence>
@@ -452,10 +435,11 @@ function App() {
             )}
           </AnimatePresence>
 
-          {/* Output */}
+          {/* 7. OUTPUT BLOCK - Receives the pour, edges heat up */}
           <ImageDisplay
             result={result}
             isLoading={isGenerating}
+            heatLevel={heatLevel}
             onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
           />
         </main>

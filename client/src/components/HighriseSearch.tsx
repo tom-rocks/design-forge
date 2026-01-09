@@ -33,16 +33,19 @@ export default function HighriseSearch({
   maxItems = 15 
 }: HighriseSearchProps) {
   const [query, setQuery] = useState('')
-  const itemType = 'all' // Always search all item types
+  const itemType = 'all'
   const [items, setItems] = useState<HighriseItem[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [bridgeConnected, setBridgeConnected] = useState(false)
-  const [isOpen, setIsOpen] = useState(false)
+  const isOpen = true // Always open
   const [source, setSource] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [totalPages, setTotalPages] = useState(0)
+  
+  // Preview modal state
+  const [previewItem, setPreviewItem] = useState<HighriseItem | null>(null)
 
   // Check bridge status
   useEffect(() => {
@@ -101,55 +104,39 @@ export default function HighriseSearch({
     }
   }, [query, page, bridgeConnected])
 
-  // Debounced search - reset pagination on new search
+  // Debounced search
   useEffect(() => {
-    // Skip if no search criteria and bridge not connected
     if (!query.trim() && !bridgeConnected) return
     
     const timeout = setTimeout(() => {
-      searchItems(false) // false = fresh search, not append
+      searchItems(false)
     }, 300)
     return () => clearTimeout(timeout)
-  }, [query]) // Only trigger on query changes
+  }, [query])
 
-  // Initial load when bridge connects (one-time)
+  // Initial load
   useEffect(() => {
     if (bridgeConnected && items.length === 0) {
       searchItems(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bridgeConnected]) // Only run when bridge status changes
+  }, [bridgeConnected])
 
-  // Load more items
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
       searchItems(true)
     }
   }, [loadingMore, hasMore, searchItems])
 
-  const toggleItem = (item: HighriseItem) => {
-    const isCurrentlySelected = selectedItems.some(s => s.url === item.imageUrl)
-    if (isCurrentlySelected) {
-      // Remove item
-      onSelectionChange(selectedItems.filter(s => s.url !== item.imageUrl))
-    } else if (selectedItems.length < maxItems) {
-      // Add item
-      onSelectionChange([...selectedItems, { url: item.imageUrl, strength: 1, name: item.name }])
-    }
-  }
-
   const addItemById = async (id: string) => {
     const url = `${HIGHRISE_CDN}/${id}.png`
     if (selectedItems.some(s => s.url === url) || selectedItems.length >= maxItems) return
     
-    // Try to fetch actual item name from API
     try {
       const res = await fetch(`${API_URL}/api/highrise/items/${id}`)
       if (res.ok) {
         const item = await res.json()
         onSelectionChange([...selectedItems, { url: item.imageUrl || url, strength: 1, name: item.name || id }])
       } else {
-        // Fallback to ID if item not found
         onSelectionChange([...selectedItems, { url, strength: 1, name: id }])
       }
     } catch {
@@ -158,12 +145,6 @@ export default function HighriseSearch({
     setQuery('')
   }
 
-
-  const removeItem = (url: string) => {
-    onSelectionChange(selectedItems.filter(s => s.url !== url))
-  }
-
-  // Memoize selected URLs as a Set for O(1) lookups
   const selectedUrls = useMemo(() => new Set(selectedItems.map(s => s.url)), [selectedItems])
   
   const isSelected = useCallback((item: HighriseItem) => {
@@ -177,89 +158,83 @@ export default function HighriseSearch({
       case 'legendary': return 'border-yellow-500/60'
       case 'epic': return 'border-purple-500/60'
       case 'rare': return 'border-blue-500/60'
-      default: return 'border-te-border'
+      default: return 'border-gray-700'
     }
   }
 
   return (
-    <div className="space-y-3">
-      {/* Header with Bridge Status */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-medium text-te-cream">Style References</h3>
-          <p className="text-xs text-te-cream-muted">
-            Search Highrise items ({selectedItems.length}/{maxItems})
-          </p>
+    <>
+      <div className="te-panel overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+          <Search className="w-4 h-4 text-purple-400" />
+          <span className="font-mono text-xs uppercase tracking-wider text-gray-300">Highrise Items</span>
+          <div className="flex-1" />
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] ${
+            bridgeConnected 
+              ? 'bg-purple-500/10 text-purple-400' 
+              : 'bg-gray-700/50 text-gray-500'
+          }`}>
+            {bridgeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            {bridgeConnected ? 'Full' : 'Limited'}
+          </div>
+          <span className="font-mono text-[9px] text-gray-500">DRAG TO CRUCIBLE</span>
         </div>
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
-          bridgeConnected 
-            ? 'bg-fuchsia-500/10 text-fuchsia-400' 
-            : 'bg-te-cream-muted/10 text-te-cream-muted'
-        }`}>
-          {bridgeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-          {bridgeConnected ? 'Full Search' : 'Limited'}
-        </div>
-      </div>
 
-      {/* Search Bar */}
-      <div className="flex gap-2">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-te-cream-muted" />
-          <input
-            type="text"
-            placeholder={bridgeConnected ? "Search any item..." : "Paste item ID or search..."}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onFocus={() => setIsOpen(true)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && query.trim() && isItemId(query.trim())) {
-                e.preventDefault()
-                addItemById(query.trim())
-              }
-            }}
-            disabled={disabled}
-            className="w-full pl-10 pr-4 py-2.5 bg-te-panel border border-te-border rounded-xl text-sm text-te-cream placeholder-te-cream-dim/50 focus:outline-none focus:border-te-fuchsia/50 disabled:opacity-50"
-          />
-          {loading && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Loader2 className="w-4 h-4 text-te-fuchsia animate-spin" />
+        {/* Search Bar */}
+        <div className="p-3 border-b border-white/10">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder={bridgeConnected ? "Search items..." : "Paste item ID..."}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && query.trim() && isItemId(query.trim())) {
+                    e.preventDefault()
+                    addItemById(query.trim())
+                  }
+                }}
+                disabled={disabled}
+                className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
+              />
+              {loading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                </div>
+              )}
             </div>
-          )}
+
+            {query.trim() && isItemId(query.trim()) && (
+              <button
+                onClick={() => addItemById(query.trim())}
+                disabled={disabled || selectedItems.length >= maxItems}
+                className="px-3 bg-purple-500 hover:bg-purple-400 text-white rounded-lg disabled:opacity-50"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {query.trim() && isItemId(query.trim()) && (
-          <button
-            onClick={() => addItemById(query.trim())}
-            disabled={disabled || selectedItems.length >= maxItems}
-            className="px-4 bg-te-fuchsia hover:bg-te-fuchsia-dim text-white rounded-xl disabled:opacity-50"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Results Dropdown */}
-      <AnimatePresence>
+        {/* Results Grid */}
         {isOpen && items.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-te-panel border border-te-border rounded-xl shadow-xl max-h-80 overflow-y-auto"
-          >
+          <div className="max-h-[280px] overflow-y-auto">
             {source && (
-              <div className="px-3 py-1.5 border-b border-te-border text-[10px] text-te-cream-muted flex justify-between">
-                <span>Source: {source === 'bridge' ? '✓ Full catalog' : '⚠️ Limited'}</span>
-                {totalPages > 0 && <span>Page {page + 1} of {totalPages}</span>}
+              <div className="px-3 py-1.5 border-b border-white/5 text-[10px] text-gray-500 flex justify-between">
+                <span>{source === 'bridge' ? '✓ Full catalog' : '⚠️ Limited'}</span>
+                {totalPages > 0 && <span>Page {page + 1}/{totalPages}</span>}
               </div>
             )}
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 p-2">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 p-3">
               {items.map(item => {
                 const selected = isSelected(item)
                 return (
                   <div
                     key={item.id}
-                    draggable={!selected}
+                    draggable={!selected && !disabled}
                     onDragStart={(e) => {
                       e.dataTransfer.setData('application/x-reference', JSON.stringify({
                         id: `hr-${item.id}`,
@@ -269,29 +244,23 @@ export default function HighriseSearch({
                       }))
                       e.dataTransfer.effectAllowed = 'copy'
                     }}
-                    onClick={() => toggleItem(item)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors duration-150 cursor-grab active:cursor-grabbing ${
+                    onClick={() => setPreviewItem(item)}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing ${
                       selected
-                        ? 'border-te-fuchsia ring-2 ring-te-fuchsia/30 cursor-pointer'
-                        : `${getRarityColor(item.rarity)} hover:border-te-fuchsia/50`
+                        ? 'border-purple-500 ring-2 ring-purple-500/30 cursor-pointer'
+                        : `${getRarityColor(item.rarity)} hover:border-purple-500/50`
                     } ${!selected && selectedItems.length >= maxItems ? 'opacity-40' : ''}`}
-                    title={`${item.name}\nDrag to add as reference${selected ? '\nClick to remove' : ''}`}
                   >
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="w-full h-full object-contain bg-te-bg pointer-events-none"
+                      className="w-full h-full object-contain bg-gray-950 pointer-events-none"
                     />
                     {selected && (
-                      <div className="absolute inset-0 bg-te-fuchsia/20 flex items-center justify-center">
-                        <div className="w-5 h-5 rounded-full bg-te-fuchsia flex items-center justify-center">
+                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
                           <span className="text-white text-xs">✓</span>
                         </div>
-                      </div>
-                    )}
-                    {!selected && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-te-bg/90 to-transparent p-1 opacity-0 hover:opacity-100 transition-opacity">
-                        <span className="text-[8px] text-te-cream font-mono">DRAG</span>
                       </div>
                     )}
                   </div>
@@ -299,13 +268,13 @@ export default function HighriseSearch({
               })}
             </div>
             
-            {/* Load More Button */}
+            {/* Load More */}
             {hasMore && (
-              <div className="p-2 border-t border-te-border">
+              <div className="p-3 border-t border-white/5">
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-2 bg-te-bg hover:bg-te-border text-sm text-te-cream rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                 >
                   {loadingMore ? (
                     <>
@@ -315,67 +284,89 @@ export default function HighriseSearch({
                   ) : (
                     <>
                       <Plus className="w-4 h-4" />
-                      Load More ({items.length} shown)
+                      Load More
                     </>
                   )}
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {items.length === 0 && !loading && (
+          <div className="p-8 text-center text-gray-500">
+            <Search className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p className="font-mono text-xs">
+              {bridgeConnected ? 'Search for items' : 'Connect bridge for search'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Preview Modal - Tap to enlarge */}
+      <AnimatePresence>
+        {previewItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setPreviewItem(null)}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setPreviewItem(null)}
+              className="absolute top-4 right-4 p-2 bg-gray-900 border border-gray-700 hover:border-gray-500 rounded-lg text-gray-300 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Item preview */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative"
+            >
+              <div className="bg-gray-900 rounded-xl border-2 border-gray-700 p-4 max-w-sm">
+                <img
+                  src={previewItem.imageUrl}
+                  alt={previewItem.name}
+                  className="w-64 h-64 object-contain mx-auto bg-gray-950 rounded-lg"
+                />
+                
+                {/* Item info */}
+                <div className="mt-4 text-center">
+                  <h3 className="font-mono text-sm text-gray-200 truncate">{previewItem.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1 capitalize">
+                    {previewItem.category} · {previewItem.rarity || 'Common'}
+                  </p>
+                </div>
+
+                {/* Add button */}
+                <button
+                  onClick={() => {
+                    if (!isSelected(previewItem) && selectedItems.length < maxItems) {
+                      onSelectionChange([...selectedItems, { 
+                        url: previewItem.imageUrl, 
+                        strength: 1, 
+                        name: previewItem.name 
+                      }])
+                    }
+                    setPreviewItem(null)
+                  }}
+                  disabled={disabled || isSelected(previewItem) || selectedItems.length >= maxItems}
+                  className="w-full mt-4 py-3 bg-orange-500 hover:bg-orange-400 text-white font-mono text-sm uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSelected(previewItem) ? 'Already Added' : '+ Add to Crucible'}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* No Bridge Warning */}
-      {!bridgeConnected && query && items.length === 0 && !loading && (
-        <div className="p-3 bg-te-fuchsia/10 border border-te-fuchsia/20 rounded-xl text-xs text-te-cream-muted">
-          <strong className="text-te-cream">Limited mode:</strong> Connect the AP bridge for full search.
-          You can paste item IDs directly (e.g., <code className="bg-black/30 px-1 rounded text-te-cream">shirt-n_coolhoodie2024</code>)
-        </div>
-      )}
-
-      {/* Selected Items */}
-      {selectedItems.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-te-border">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-te-cream-muted">
-              Selected ({selectedItems.length}/{maxItems})
-            </span>
-            <button
-              onClick={() => onSelectionChange([])}
-              className="text-xs text-red-400 hover:text-red-300"
-            >
-              Clear all
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-            {selectedItems.map((item) => (
-              <div 
-                key={item.url} 
-                className="relative group bg-te-panel border border-te-border rounded-lg overflow-hidden"
-              >
-                <img
-                  src={item.url}
-                  alt={item.name || 'Reference'}
-                  className="w-full aspect-square object-contain bg-te-bg"
-                />
-                <button
-                  onClick={() => removeItem(item.url)}
-                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-3 h-3 text-white" />
-                </button>
-                
-                {item.name && (
-                  <div className="px-1.5 py-1 border-t border-te-border bg-te-bg/50">
-                    <p className="text-[9px] text-te-cream truncate">{item.name}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   )
 }
