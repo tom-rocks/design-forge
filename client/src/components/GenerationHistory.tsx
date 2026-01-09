@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { History, Trash2, Image as ImageIcon, ChevronDown, ChevronUp, Loader2, Pencil, Zap } from 'lucide-react'
+import { History, ChevronDown, ChevronUp, Loader2, Image as ImageIcon } from 'lucide-react'
 import { API_URL } from '../config'
 import { EditImageRef } from './EditImageUpload'
 
@@ -27,14 +27,12 @@ interface GenerationHistoryProps {
   onUseAsReference: (imageUrl: string) => void
   onEditImage: (ref: EditImageRef) => void
   disabled?: boolean
-  mode?: 'create' | 'edit' // Current app mode - affects which action is primary
 }
 
 export default function GenerationHistory({ 
   onUseAsReference, 
   onEditImage,
-  disabled,
-  mode = 'create'
+  disabled
 }: GenerationHistoryProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(true)
@@ -111,20 +109,6 @@ export default function GenerationHistory({
     onUseAsReference(imageUrl)
   }
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-    
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString()
-  }
 
   if (loading && generations.length === 0) {
     return (
@@ -213,77 +197,31 @@ export default function GenerationHistory({
                         loading="lazy"
                       />
                       
-                      {/* Hover overlay */}
-                      <div className="absolute inset-0 bg-te-bg/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                        {/* Action buttons - order based on current mode */}
-                        <div className="flex gap-1">
-                          {mode === 'create' ? (
-                            <>
-                              {/* FORGE mode: Reference is primary action */}
-                              <button
-                                onClick={() => handleUseAsRef(gen, imgIndex)}
-                                disabled={disabled}
-                                className="p-1.5 rounded bg-te-fuchsia/30 hover:bg-te-fuchsia/50 text-te-fuchsia transition-colors disabled:opacity-50"
-                                title="Use as style reference"
-                              >
-                                <Zap className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => handleEdit(gen, imgIndex)}
-                                disabled={disabled}
-                                className="p-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
-                                title="Edit this image"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {/* EDIT mode: Edit is primary action */}
-                              <button
-                                onClick={() => handleEdit(gen, imgIndex)}
-                                disabled={disabled}
-                                className="p-1.5 rounded bg-cyan-500/30 hover:bg-cyan-500/50 text-cyan-400 transition-colors disabled:opacity-50"
-                                title="Edit this image"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => handleUseAsRef(gen, imgIndex)}
-                                disabled={disabled}
-                                className="p-1.5 rounded bg-te-fuchsia/20 hover:bg-te-fuchsia/40 text-te-fuchsia transition-colors disabled:opacity-50"
-                                title="Use as style reference"
-                              >
-                                <ImageIcon className="w-3 h-3" />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleDelete(gen.id)}
-                            disabled={deletingId === gen.id}
-                            className="p-1.5 rounded bg-red-500/20 hover:bg-red-500/40 text-red-400 transition-colors disabled:opacity-50"
-                            title="Delete"
-                          >
-                            {deletingId === gen.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3 h-3" />
-                            )}
-                          </button>
-                        </div>
-                        
-                        {/* Timestamp */}
-                        <span className="font-mono text-[8px] text-te-cream-dim">
-                          {formatDate(gen.created_at)}
-                        </span>
-                      </div>
-                      
-                      {/* Edit chain indicator */}
-                      {gen.mode === 'edit' && (
-                        <div className="absolute top-1 left-1 px-1 py-0.5 rounded bg-cyan-500/80 font-mono text-[8px] text-white">
+                      {/* Hover overlay - simple, clear actions */}
+                      <div className="absolute inset-0 bg-te-bg/95 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                        {/* Clear text buttons */}
+                        <button
+                          onClick={() => handleUseAsRef(gen, imgIndex)}
+                          disabled={disabled}
+                          className="w-full px-2 py-1.5 rounded bg-te-fuchsia text-white font-mono text-[10px] uppercase tracking-wider hover:bg-te-fuchsia/80 transition-colors disabled:opacity-50"
+                        >
+                          + REF
+                        </button>
+                        <button
+                          onClick={() => handleEdit(gen, imgIndex)}
+                          disabled={disabled}
+                          className="w-full px-2 py-1.5 rounded bg-cyan-500 text-white font-mono text-[10px] uppercase tracking-wider hover:bg-cyan-400 transition-colors disabled:opacity-50"
+                        >
                           EDIT
-                        </div>
-                      )}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(gen.id)}
+                          disabled={deletingId === gen.id}
+                          className="w-full px-2 py-1.5 rounded bg-red-500/80 text-white font-mono text-[10px] uppercase tracking-wider hover:bg-red-500 transition-colors disabled:opacity-50"
+                        >
+                          {deletingId === gen.id ? '...' : 'DEL'}
+                        </button>
+                      </div>
                       
                       {/* Multi-image indicator */}
                       {gen.imageUrls.length > 1 && imgIndex === 0 && (

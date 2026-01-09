@@ -284,13 +284,12 @@ function App() {
             )}
           </AnimatePresence>
 
-          {/* HISTORY - Available in both modes with different actions */}
+          {/* HISTORY - Simple: +REF or EDIT */}
           <GenerationHistory
             key={historyKey}
             onUseAsReference={handleUseAsReference}
             onEditImage={handleEditImage}
             disabled={isGenerating}
-            mode={mode}
           />
 
           {/* SETTINGS + GENERATE */}
