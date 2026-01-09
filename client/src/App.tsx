@@ -197,45 +197,43 @@ function App() {
             />
           </motion.div>
 
-          {/* Progress indicator - Full width ASCII bar */}
+          {/* Progress indicator - Same ASCII style as canvas */}
           <AnimatePresence>
             {progress && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-4 rounded-xl overflow-hidden"
+                className="rounded-xl overflow-hidden"
                 style={{ background: 'linear-gradient(180deg, #0d0712 0%, #0a0510 100%)', border: '1px solid #2a1a3a' }}
               >
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between px-4 py-2">
                   <span 
-                    className="font-mono text-sm uppercase tracking-wider"
+                    className="font-mono text-xs uppercase tracking-wider"
                     style={{ color: '#e879f9', textShadow: '0 0 8px rgba(232, 121, 249, 0.5)' }}
                   >
                     {progress.message}
                   </span>
-                  <span className="font-mono text-sm" style={{ color: '#a855f7' }}>
+                  <span className="font-mono text-xs" style={{ color: '#a855f7' }}>
                     {Math.floor(progress.progress)}%{progress.elapsed !== undefined && ` · ${progress.elapsed}s`}
                   </span>
                 </div>
-                {/* Full-width progress bar using flex */}
-                <div 
-                  className="h-6 rounded overflow-hidden flex font-mono text-lg"
-                  style={{ background: '#1a0a1f', border: '1px solid #3d1a4a' }}
+                {/* ASCII progress - same characters as canvas: ·:;░▒▓█ */}
+                <pre 
+                  className="px-4 pb-3 font-mono text-sm select-none whitespace-pre overflow-hidden"
+                  style={{ 
+                    color: '#e879f9', 
+                    textShadow: '0 0 8px rgba(232, 121, 249, 0.6)',
+                    letterSpacing: '0.05em',
+                  }}
                 >
-                  <div 
-                    className="h-full flex items-center justify-center transition-all duration-300"
-                    style={{ 
-                      width: `${progress.progress}%`,
-                      background: 'linear-gradient(90deg, #7c3aed, #e879f9)',
-                      color: '#0d0712',
-                      textShadow: 'none',
-                      minWidth: progress.progress > 0 ? '2rem' : 0,
-                    }}
-                  >
-                    {progress.progress > 10 && '█'.repeat(Math.min(20, Math.floor(progress.progress / 5)))}
-                  </div>
-                </div>
+{(() => {
+  const width = 60
+  const filled = Math.floor((progress.progress / 100) * width)
+  const empty = width - filled
+  return '█'.repeat(filled) + '░'.repeat(empty)
+})()}
+                </pre>
               </motion.div>
             )}
           </AnimatePresence>

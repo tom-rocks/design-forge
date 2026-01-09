@@ -179,9 +179,9 @@ router.post('/generate', async (req: Request, res: Response) => {
   // Enhance prompt if we have style images - strongly instruct to match art style
   let enhancedPrompt = prompt;
   if (styleImages?.length) {
-    enhancedPrompt = `CRITICAL: Analyze the ${styleImages.length} reference image(s) and PRECISELY match their art style, rendering technique, line work, shading method, and level of detail. The output MUST look like it was created by the same artist using the same tools and techniques. Do NOT deviate from this style.
+    enhancedPrompt = `CRITICAL: Match the EXACT visual style of the ${styleImages.length} reference image(s). Same rendering, same aesthetic, same level of detail. Output MUST look like it belongs in the same game/collection.
 
-Now generate: ${prompt}`;
+Generate: ${prompt}`;
   }
   
   const payload: Record<string, unknown> = {
