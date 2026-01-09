@@ -329,18 +329,6 @@ export default function ReferenceDropZone({
         )}
       </div>
 
-      {/* Pour spout at bottom center - connects to gutter */}
-      <div className="relative flex justify-center">
-        <div 
-          className="w-2 h-2 relative"
-          style={{
-            background: heatColors.border, // Always match gutter color
-            clipPath: 'polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)',
-            boxShadow: effectiveHeat > 0.2 ? `0 4px 8px ${heatColors.glow}` : 'none',
-          }}
-        />
-      </div>
-
     </motion.div>
   )
 }

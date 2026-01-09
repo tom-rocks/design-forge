@@ -142,22 +142,9 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
 
   return (
     <>
-      {/* Receiving funnel - connects to gutter, matches its color */}
-      <div className="relative flex justify-center -mt-0.5 z-10">
-        <div 
-          className="w-2 h-2"
-          style={{
-            background: heatStyle.border, // Always match the gutter color
-            clipPath: 'polygon(0% 0%, 100% 0%, 70% 100%, 30% 100%)',
-            boxShadow: heatLevel > 0.2 ? `0 0 8px ${heatStyle.glow}` : 'none',
-            transition: 'all 0.3s ease',
-          }}
-        />
-      </div>
-
-      {/* OUTPUT MOLD - The receiving block */}
+      {/* OUTPUT MOLD */}
       <motion.div 
-        className="relative overflow-hidden rounded-xl -mt-0.5"
+        className="relative overflow-hidden rounded-xl"
         animate={{
           boxShadow: isLoading 
             ? `0 0 ${30 + heatLevel * 40}px ${heatStyle.glow}, inset 0 0 30px rgba(0,0,0,0.8)`
