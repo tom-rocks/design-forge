@@ -58,15 +58,17 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
     
     const buffer = Buffer.from(await response.arrayBuffer());
     
-    // Flatten transparency to gray background - prevents black background in output
+    // Resize to max 512px, flatten transparency, convert to JPEG
+    // Keeps payload size reasonable for API
     const processedBuffer = await sharp(buffer)
-      .flatten({ background: { r: 88, g: 89, b: 91 } }) // #58595b gray
-      .jpeg({ quality: 90 })
+      .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+      .flatten({ background: { r: 88, g: 89, b: 91 } })
+      .jpeg({ quality: 85 })
       .toBuffer();
     
     const base64 = processedBuffer.toString('base64');
     
-    console.log(`[Gemini] Image processed: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes`);
+    console.log(`[Gemini] Image: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes (resized to max 512px)`);
     return { data: base64, mimeType: 'image/jpeg' };
   } catch (e) {
     console.error(`[Gemini] Error fetching/processing image:`, e);
