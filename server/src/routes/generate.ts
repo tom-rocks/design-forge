@@ -58,17 +58,17 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
     
     const buffer = Buffer.from(await response.arrayBuffer());
     
-    // Resize to max 512px, flatten transparency, convert to JPEG
-    // Keeps payload size reasonable for API
+    // Resize to max 1024px, flatten transparency, convert to JPEG
+    // Keeps payload manageable while preserving style detail
     const processedBuffer = await sharp(buffer)
-      .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+      .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
       .flatten({ background: { r: 88, g: 89, b: 91 } })
       .jpeg({ quality: 85 })
       .toBuffer();
     
     const base64 = processedBuffer.toString('base64');
     
-    console.log(`[Gemini] Image: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes (resized to max 512px)`);
+    console.log(`[Gemini] Image: ${buffer.byteLength} -> ${processedBuffer.byteLength} bytes (max 1024px)`);
     return { data: base64, mimeType: 'image/jpeg' };
   } catch (e) {
     console.error(`[Gemini] Error fetching/processing image:`, e);
@@ -301,45 +301,61 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
     
     const startTime = Date.now();
     
-    // Make parallel API calls for variations
+    // Make API call with retry for 503 errors
     const generateOne = async (variationIndex: number): Promise<string[]> => {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify(payload),
-      });
+      const maxRetries = 3;
+      let lastError = '';
       
-      const responseText = await response.text();
-      let responseData: any = null;
-      
-      try {
-        responseData = JSON.parse(responseText);
-      } catch {
-        // Not JSON
-      }
-      
-      if (!response.ok) {
-        console.error(`[Gen ${id}] Variation ${variationIndex + 1} failed: ${response.status}`);
-        addLog('error', { id, variation: variationIndex + 1, status: response.status, response: responseText.slice(0, 500) });
-        return [];
-      }
-      
-      // Log successful response structure for debugging
-      const images = extractImagesFromResponse(responseData);
-      if (images.length === 0) {
-        addLog('info', { 
-          id, 
-          variation: variationIndex + 1, 
-          note: 'No images in response',
-          hasCandidate: !!responseData?.candidates?.[0],
-          partsCount: responseData?.candidates?.[0]?.content?.parts?.length || 0,
-          responsePreview: JSON.stringify(responseData).slice(0, 500)
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify(payload),
         });
+        
+        const responseText = await response.text();
+        let responseData: any = null;
+        
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          // Not JSON
+        }
+        
+        // Retry on 503 (model overloaded)
+        if (response.status === 503 && attempt < maxRetries) {
+          const delay = attempt * 5000; // 5s, 10s, 15s
+          console.log(`[Gen ${id}] 503 overloaded, retry ${attempt}/${maxRetries} in ${delay/1000}s`);
+          send('progress', { status: 'retrying', message: `MODEL BUSY, RETRYING (${attempt}/${maxRetries})...`, progress: 40, id });
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        
+        if (!response.ok) {
+          console.error(`[Gen ${id}] Variation ${variationIndex + 1} failed: ${response.status}`);
+          addLog('error', { id, variation: variationIndex + 1, status: response.status, response: responseText.slice(0, 500) });
+          return [];
+        }
+        
+        // Log successful response structure for debugging
+        const images = extractImagesFromResponse(responseData);
+        if (images.length === 0) {
+          addLog('info', { 
+            id, 
+            variation: variationIndex + 1, 
+            note: 'No images in response',
+            hasCandidate: !!responseData?.candidates?.[0],
+            partsCount: responseData?.candidates?.[0]?.content?.parts?.length || 0,
+            responsePreview: JSON.stringify(responseData).slice(0, 500)
+          });
+        }
+        return images;
       }
-      return images;
+      
+      return [];
     };
     
     // Run all variations in parallel
