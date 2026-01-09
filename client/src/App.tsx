@@ -296,7 +296,7 @@ function App() {
             />
           </div>
 
-          {/* FORGE MODE: Crucible + Gutter + Output (connected, no gaps) */}
+          {/* FORGE MODE: Crucible + Output */}
           <AnimatePresence mode="wait">
             {mode === 'create' && (
               <motion.div
@@ -305,6 +305,7 @@ function App() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
+                className="space-y-6"
               >
                 {/* Crucible + Button row */}
                 <div className="flex gap-4 items-stretch">
