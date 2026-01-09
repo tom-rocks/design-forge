@@ -194,9 +194,10 @@ router.post('/generate', async (req: Request, res: Response) => {
       for (const styleImg of effectiveStyleImages) {
         const imageData = await fetchImageAsBase64(styleImg.url);
         if (imageData) {
+          // REST API uses snake_case (not camelCase like the SDK)
           imageParts.push({
-            inlineData: {
-              mimeType: imageData.mimeType,
+            inline_data: {
+              mime_type: imageData.mimeType,
               data: imageData.data,
             }
           });
