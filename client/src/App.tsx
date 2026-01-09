@@ -4,6 +4,7 @@ import PromptInput from './components/PromptInput'
 import SettingsPanel from './components/SettingsPanel'
 import ImageDisplay from './components/ImageDisplay'
 import GenerateButton from './components/GenerateButton'
+import EditImageUpload from './components/EditImageUpload'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
@@ -20,6 +21,7 @@ export interface Reference {
 }
 
 export type GeminiModel = 'flash' | 'pro'
+export type GenerationMode = 'create' | 'edit'
 
 export interface GenerationSettings {
   model: GeminiModel
@@ -57,15 +59,19 @@ function App() {
     styleImages: [],
     references: [],
   })
+  const [editImage, setEditImage] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [loadingMode, setLoadingMode] = useState<GenerationMode | null>(null)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (mode: GenerationMode) => {
     if (!prompt.trim() || isGenerating) return
+    if (mode === 'edit' && !editImage) return
 
     setIsGenerating(true)
+    setLoadingMode(mode)
     setError(null)
     setProgress({ status: 'connecting', message: 'Connecting...', progress: 0 })
 
@@ -81,6 +87,8 @@ function App() {
           numImages: settings.numImages > 1 ? settings.numImages : undefined,
           styleImages: settings.styleImages?.length ? settings.styleImages : undefined,
           references: settings.references?.length ? settings.references : undefined,
+          mode,
+          editImage: mode === 'edit' ? editImage : undefined,
         }),
       })
 
@@ -123,6 +131,7 @@ function App() {
                 })
                 setProgress(null)
                 setIsGenerating(false)
+                setLoadingMode(null)
                 return
               } else if (currentEvent === 'error') {
                 throw new Error(data.error)
@@ -139,8 +148,9 @@ function App() {
       setProgress(null)
     } finally {
       setIsGenerating(false)
+      setLoadingMode(null)
     }
-  }, [prompt, settings, isGenerating])
+  }, [prompt, settings, isGenerating, editImage])
 
   return (
     <div className="min-h-screen bg-forge-bg">
@@ -159,12 +169,25 @@ function App() {
             <PromptInput
               value={prompt}
               onChange={setPrompt}
-              onSubmit={handleGenerate}
+              onSubmit={() => handleGenerate(editImage ? 'edit' : 'create')}
               disabled={isGenerating}
             />
           </motion.div>
 
-          {/* Highrise Item Search */}
+          {/* Edit Image Upload */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+          >
+            <EditImageUpload
+              image={editImage}
+              onImageChange={setEditImage}
+              disabled={isGenerating}
+            />
+          </motion.div>
+
+          {/* Highrise Item Search - Style References */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -194,6 +217,8 @@ function App() {
               onClick={handleGenerate}
               isLoading={isGenerating}
               disabled={!prompt.trim()}
+              editDisabled={!editImage}
+              loadingMode={loadingMode}
             />
           </motion.div>
 

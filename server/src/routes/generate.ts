@@ -29,6 +29,8 @@ interface GenerateRequest {
   styleImages?: StyleImage[];
   negativePrompt?: string;
   seed?: string;
+  mode?: 'create' | 'edit';
+  editImage?: string; // base64 data URL of image to edit
 }
 
 interface DebugLog {
@@ -140,6 +142,95 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
 }
 
 /**
+ * Upload a base64 data URL image to Gemini Files API
+ */
+async function uploadBase64ToGeminiFiles(dataUrl: string, apiKey: string): Promise<{ fileUri: string; mimeType: string } | null> {
+  try {
+    // Parse base64 data URL
+    const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      console.log(`[Gemini Files] Invalid base64 data URL`);
+      return null;
+    }
+    
+    const [, originalMimeType, base64Data] = matches;
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    console.log(`[Gemini Files] Processing base64 image: ${buffer.byteLength} bytes, ${originalMimeType}`);
+    
+    // Process image: flatten transparency to gray background, output as PNG
+    const processedBuffer = await sharp(buffer)
+      .flatten({ background: { r: 88, g: 89, b: 91 } })
+      .png()
+      .toBuffer();
+    
+    const mimeType = 'image/png';
+    const numBytes = processedBuffer.byteLength;
+    const displayName = `edit-target-${Date.now()}`;
+    
+    console.log(`[Gemini Files] Uploading edit target: ${numBytes} bytes...`);
+    
+    // Step 1: Start resumable upload
+    const startResponse = await fetch(`${GEMINI_UPLOAD_BASE}/files`, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': apiKey,
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': String(numBytes),
+        'X-Goog-Upload-Header-Content-Type': mimeType,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ file: { display_name: displayName } }),
+    });
+    
+    if (!startResponse.ok) {
+      const errText = await startResponse.text();
+      console.log(`[Gemini Files] Start upload failed: ${startResponse.status}`, errText);
+      return null;
+    }
+    
+    const uploadUrl = startResponse.headers.get('x-goog-upload-url');
+    if (!uploadUrl) {
+      console.log(`[Gemini Files] No upload URL in response`);
+      return null;
+    }
+    
+    // Step 2: Upload the actual bytes
+    const uint8Array = new Uint8Array(processedBuffer);
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Length': String(numBytes),
+        'X-Goog-Upload-Offset': '0',
+        'X-Goog-Upload-Command': 'upload, finalize',
+      },
+      body: uint8Array,
+    });
+    
+    if (!uploadResponse.ok) {
+      const errText = await uploadResponse.text();
+      console.log(`[Gemini Files] Upload failed: ${uploadResponse.status}`, errText);
+      return null;
+    }
+    
+    const fileInfo = await uploadResponse.json();
+    const fileUri = fileInfo.file?.uri;
+    
+    if (!fileUri) {
+      console.log(`[Gemini Files] No file URI in response`);
+      return null;
+    }
+    
+    console.log(`[Gemini Files] Edit target uploaded: ${fileUri}`);
+    return { fileUri, mimeType };
+  } catch (e) {
+    console.error(`[Gemini Files] Error uploading base64:`, e);
+    return null;
+  }
+}
+
+/**
  * Parse Gemini response and extract generated images
  * Note: Gemini API uses camelCase (inlineData, mimeType) not snake_case
  */
@@ -188,6 +279,8 @@ router.post('/generate', async (req: Request, res: Response) => {
     styleImages,
     negativePrompt,
     seed,
+    mode = 'create',
+    editImage,
   } = req.body as GenerateRequest;
   
   // Set up SSE headers
@@ -209,7 +302,9 @@ router.post('/generate', async (req: Request, res: Response) => {
     resolution, 
     aspectRatio, 
     numImages, 
-    styleImagesCount: styleImages?.length || 0 
+    styleImagesCount: styleImages?.length || 0,
+    mode,
+    hasEditImage: !!editImage,
   });
   
   const apiKey = process.env.GEMINI_API_KEY;
@@ -251,13 +346,39 @@ router.post('/generate', async (req: Request, res: Response) => {
     // Build the parts array for multimodal input
     const parts: any[] = [];
     const imageParts: any[] = [];
+    let editImagePart: any = null;
+    
+    // EDIT MODE: Upload the image to edit first
+    if (mode === 'edit' && editImage) {
+      send('progress', { 
+        status: 'uploading', 
+        message: 'UPLOADING IMAGE TO EDIT...', 
+        progress: 5, 
+        id 
+      });
+      
+      const editData = await uploadBase64ToGeminiFiles(editImage, apiKey);
+      if (editData) {
+        editImagePart = {
+          file_data: {
+            mime_type: editData.mimeType,
+            file_uri: editData.fileUri,
+          }
+        };
+        console.log(`[Gen ${id}] Edit image uploaded: ${editData.fileUri}`);
+      } else {
+        send('error', { error: 'Failed to upload edit image', id });
+        res.end();
+        return;
+      }
+    }
     
     // Upload style images to Gemini Files API (proper way for references)
     const effectiveStyleImages = styleImages?.slice(0, maxRefs) || [];
     if (effectiveStyleImages.length > 0) {
       send('progress', { 
         status: 'uploading', 
-        message: `UPLOADING ${effectiveStyleImages.length} REFERENCE IMAGE${effectiveStyleImages.length > 1 ? 'S' : ''}...`, 
+        message: `UPLOADING ${effectiveStyleImages.length} STYLE REFERENCE${effectiveStyleImages.length > 1 ? 'S' : ''}...`, 
         progress: 10, 
         id 
       });
@@ -284,21 +405,29 @@ router.post('/generate', async (req: Request, res: Response) => {
         }
       }
       
-      addLog('info', { id, uploadedImages: uploaded, maxRefs, model: modelType });
+      addLog('info', { id, uploadedImages: uploaded, maxRefs, model: modelType, mode });
     }
     
-    // Build the prompt text
-    // Per Google's Gemini 3 prompting guide:
-    // - Be concise (Gemini 3 may over-analyze verbose prompts)
-    // - Place instructions AFTER context/data
-    // - Use "Based on the above..." pattern
+    // Build the prompt text based on mode
     let fullPrompt = prompt;
     
-    // Add style context if we have references
-    // Per docs: reference images are for "objects to include" - but we want STYLE TRANSFER
-    // Be VERY explicit about the style characteristics
-    if (imageParts.length > 0) {
-      fullPrompt = `Look at these ${imageParts.length} reference images carefully. They are digital art assets with:
+    if (mode === 'edit') {
+      // EDIT MODE: Modify the uploaded image
+      if (imageParts.length > 0) {
+        // Edit with style references
+        fullPrompt = `Edit the first image according to this instruction: ${prompt}
+
+Use the style from the ${imageParts.length} reference image${imageParts.length > 1 ? 's' : ''} (digital art assets with NO outlines, soft gradient shading, 3/4 perspective angle, stylized proportions).
+
+Output a modified version of the first image that follows the instruction while matching the reference style.`;
+      } else {
+        // Simple edit without style references
+        fullPrompt = `Edit this image: ${prompt}`;
+      }
+    } else {
+      // CREATE MODE: Generate new image
+      if (imageParts.length > 0) {
+        fullPrompt = `Look at these ${imageParts.length} reference images carefully. They are digital art assets with:
 - NO outlines or black lines
 - Soft gradient shading
 - A specific 3/4 perspective angle
@@ -307,6 +436,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 Create: ${prompt}
 
 CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading. Same proportions.`;
+      }
     }
     
     // Add negative prompt if provided
@@ -314,8 +444,13 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
       fullPrompt += ` Avoid: ${negativePrompt.trim()}`;
     }
     
-    // Text FIRST, then images (per Google's example)
+    // Build parts array: Text FIRST, then images
     parts.push({ text: fullPrompt });
+    
+    // In edit mode, add the edit target image first, then style references
+    if (editImagePart) {
+      parts.push(editImagePart);
+    }
     parts.push(...imageParts);
     
     // Build the request payload

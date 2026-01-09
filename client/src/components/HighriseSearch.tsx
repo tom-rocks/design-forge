@@ -339,32 +339,31 @@ export default function HighriseSearch({
             </button>
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
             {selectedItems.map((item) => (
               <div 
                 key={item.url} 
                 className="relative group bg-te-panel border border-te-border rounded-lg overflow-hidden"
-                style={{ width: '85px' }}
               >
                 <img
                   src={item.url}
                   alt={item.name || 'Reference'}
-                  className="w-full h-14 object-contain bg-te-bg"
+                  className="w-full aspect-square object-contain bg-te-bg"
                 />
                 <button
                   onClick={() => removeItem(item.url)}
-                  className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="w-2.5 h-2.5 text-white" />
+                  <X className="w-3 h-3 text-white" />
                 </button>
                 
                 {item.name && (
-                  <div className="px-1 py-0.5 border-t border-te-border bg-te-bg/50">
-                    <p className="text-[8px] text-te-cream truncate">{item.name}</p>
+                  <div className="px-1.5 py-1 border-t border-te-border bg-te-bg/50">
+                    <p className="text-[9px] text-te-cream truncate">{item.name}</p>
                   </div>
                 )}
                 
-                <div className="px-1.5 pb-1">
+                <div className="px-2 pb-1.5">
                   <input
                     type="range"
                     min="-2"
@@ -372,9 +371,9 @@ export default function HighriseSearch({
                     step="0.5"
                     value={item.strength}
                     onChange={e => updateStrength(item.url, parseFloat(e.target.value))}
-                    className="w-full h-1 accent-fuchsia-500 cursor-pointer"
+                    className="w-full h-1.5 accent-fuchsia-500 cursor-pointer"
                   />
-                  <div className="text-[9px] text-center text-te-cream-muted">
+                  <div className="text-[10px] text-center text-te-cream-muted">
                     {item.strength > 0 ? '+' : ''}{item.strength}
                   </div>
                 </div>
