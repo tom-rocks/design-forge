@@ -1,46 +1,18 @@
 import { useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Pencil } from 'lucide-react'
-import PromptInput from './components/PromptInput'
-import ImageDisplay from './components/ImageDisplay'
-import EditImageUpload from './components/EditImageUpload'
-import GenerationHistory from './components/GenerationHistory'
-import { EditImageRef } from './components/EditImageUpload'
-import ReferenceDropZone, { ReferenceItem } from './components/ReferenceDropZone'
-import Header from './components/Header'
-import DebugPanel from './components/DebugPanel'
-import HighriseSearch from './components/HighriseSearch'
+import { Zap, Pencil, Search, History, Monitor, Plus, X } from 'lucide-react'
 import { API_URL } from './config'
 
-export interface StyleImage {
+/* ============================================
+   TYPES
+   ============================================ */
+
+type Mode = 'create' | 'edit'
+
+interface Reference {
+  id: string
   url: string
-  strength: number
-}
-
-export interface Reference {
-  name: string
-  images: { url: string }[]
-}
-
-export type GeminiModel = 'flash' | 'pro'
-export type GenerationMode = 'create' | 'edit'
-
-export interface GenerationSettings {
-  model: GeminiModel
-  resolution: '1024' | '2048' | '4096'
-  aspectRatio: string
-  negativePrompt: string
-  seed: string
-  numImages: number
-  styleImages?: StyleImage[]
-  references?: Reference[]
-}
-
-export interface GenerationProgress {
-  status: string
-  message: string
-  progress: number
-  elapsed?: number
+  name?: string
+  type: 'file' | 'highrise' | 'generation'
 }
 
 interface GenerationResult {
@@ -49,84 +21,49 @@ interface GenerationResult {
   prompt: string
 }
 
-function App() {
-  const [mode, setMode] = useState<GenerationMode>('create')
+/* ============================================
+   APP
+   ============================================ */
+
+export default function App() {
+  const [mode, setMode] = useState<Mode>('create')
   const [prompt, setPrompt] = useState('')
-  const [settings] = useState<GenerationSettings>({
-    model: 'pro',
-    resolution: '1024',
-    aspectRatio: '1:1',
-    negativePrompt: '',
-    seed: '',
-    numImages: 1,
-    styleImages: [],
-    references: [],
-  })
-  const [references, setReferences] = useState<ReferenceItem[]>([])
-  const [editImage, setEditImage] = useState<EditImageRef | null>(null)
+  const [references, setReferences] = useState<Reference[]>([])
+  const [editImage, setEditImage] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [_progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [historyKey, setHistoryKey] = useState(0)
-  
-  const maxRefs = settings.model === 'pro' ? 14 : 3
 
-  // Switch mode - clear edit image when switching to create
-  const handleModeChange = useCallback((newMode: GenerationMode) => {
-    setMode(newMode)
-    if (newMode === 'create') {
-      setEditImage(null)
-    }
-  }, [])
+  const canGenerate = prompt.trim() && (mode === 'create' || editImage)
 
   const handleGenerate = useCallback(async () => {
-    if (!prompt.trim() || isGenerating) return
-    if (mode === 'edit' && !editImage) return
-
+    if (!canGenerate || isGenerating) return
+    
     setIsGenerating(true)
     setError(null)
-    setProgress({ status: 'connecting', message: 'Connecting...', progress: 0 })
 
     try {
-      const editData = mode === 'edit' && editImage ? {
-        editImageType: editImage.type,
-        editImageValue: editImage.value,
-        parentId: editImage.generationId,
-      } : {}
-
-      // Convert references to styleImages format for API
-      const styleImages = references.map(ref => ({
-        url: ref.url.startsWith('http') || ref.url.startsWith('data:') 
-          ? ref.url 
-          : `${API_URL}${ref.url}`,
-        strength: 1,
-        name: ref.name,
-      }))
-
       const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          model: settings.model,
-          resolution: settings.resolution,
-          aspectRatio: settings.aspectRatio,
-          numImages: settings.numImages > 1 ? settings.numImages : undefined,
-          styleImages: styleImages.length > 0 ? styleImages : undefined,
+          model: 'pro',
+          resolution: '1024',
+          aspectRatio: '1:1',
+          styleImages: references.map(r => ({ url: r.url, strength: 1 })),
           mode,
-          ...editData,
+          ...(mode === 'edit' && editImage ? { editImageValue: editImage, editImageType: 'url' } : {}),
         }),
       })
 
       const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response')
+
       const decoder = new TextDecoder()
-
-      if (!reader) throw new Error('No response stream')
-
       let buffer = ''
       let currentEvent = ''
-      
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -139,312 +76,242 @@ function App() {
           if (line.startsWith('event: ')) {
             currentEvent = line.slice(7).trim()
           } else if (line.startsWith('data: ') && currentEvent) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              
-              if (currentEvent === 'progress') {
-                setProgress({
-                  status: data.status,
-                  message: data.message,
-                  progress: data.progress || 0,
-                  elapsed: data.elapsed,
-                })
-              } else if (currentEvent === 'complete') {
-                setResult({ 
-                  imageUrl: data.imageUrl, 
-                  imageUrls: data.imageUrls,
-                  prompt: prompt.trim() 
-                })
-                setProgress(null)
-                setIsGenerating(false)
-                setHistoryKey(k => k + 1)
-                return
-              } else if (currentEvent === 'error') {
-                throw new Error(data.error)
-              }
-            } catch (parseError) {
-              console.error('Failed to parse SSE data:', parseError)
+            const data = JSON.parse(line.slice(6))
+            if (currentEvent === 'complete') {
+              setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: prompt.trim() })
+              setIsGenerating(false)
+              return
+            } else if (currentEvent === 'error') {
+              throw new Error(data.error)
             }
             currentEvent = ''
           }
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setProgress(null)
+      setError(err instanceof Error ? err.message : 'Error')
     } finally {
       setIsGenerating(false)
     }
-  }, [prompt, settings, isGenerating, editImage, mode, references])
+  }, [prompt, references, mode, editImage, canGenerate, isGenerating])
 
-  // Add image as reference (from history or search)
-  const handleAddReference = useCallback((imageUrl: string) => {
-    if (references.length >= maxRefs) return
-    
-    const newRef: ReferenceItem = {
-      id: `ref-${Date.now()}`,
-      url: imageUrl,
-      type: imageUrl.includes('/api/generations/') ? 'generation' : 'highrise',
+  const addReference = (ref: Reference) => {
+    if (references.length >= 14 || references.find(r => r.id === ref.id)) return
+    setReferences([...references, ref])
+  }
+
+  const removeReference = (id: string) => {
+    setReferences(references.filter(r => r.id !== id))
+  }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    const data = e.dataTransfer.getData('application/x-reference')
+    if (data) {
+      try {
+        addReference(JSON.parse(data))
+      } catch {}
     }
-    
-    // Avoid duplicates
-    if (!references.find(r => r.url === imageUrl)) {
-      setReferences(prev => [...prev, newRef].slice(0, maxRefs))
-    }
-  }, [references, maxRefs])
+  }, [references])
 
-  // Edit an image (switches to EDIT mode)
-  const handleEditImage = useCallback((ref: EditImageRef) => {
-    setEditImage(ref)
-    setMode('edit')
-  }, [])
-
-  const canGenerate = prompt.trim() && (mode === 'create' || editImage)
+  const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
 
   return (
-    <div className="min-h-screen bg-forge-bg">
-      <div className="fixed inset-0 bg-gradient-to-br from-forge-bg via-forge-surface to-forge-bg opacity-50" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/10 via-transparent to-transparent" />
-      
-      <div className="relative z-10 max-w-5xl mx-auto px-6 py-8">
-        <Header />
+    <div className="min-h-screen p-8" style={{ background: 'var(--bg)' }}>
+      <div className="max-w-5xl mx-auto space-y-6">
         
-        <main className="mt-8 space-y-4">
-          {/* 1. MODE SELECTOR */}
-          <div className="te-panel p-2">
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleModeChange('create')}
-                disabled={isGenerating}
-                className={`
-                  flex-1 flex items-center justify-center gap-3 py-3 px-4 rounded-lg font-mono text-sm uppercase tracking-wider
-                  transition-all duration-200
-                  ${mode === 'create' 
-                    ? 'bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30' 
-                    : 'bg-te-panel-dark text-te-cream-dim hover:bg-te-panel hover:text-te-cream'
-                  }
-                  ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <Zap className="w-5 h-5" />
-                <span className="font-bold">FORGE</span>
-              </button>
-              
-              <button
-                onClick={() => handleModeChange('edit')}
-                disabled={isGenerating}
-                className={`
-                  flex-1 flex items-center justify-center gap-3 py-3 px-4 rounded-lg font-mono text-sm uppercase tracking-wider
-                  transition-all duration-200
-                  ${mode === 'edit' 
-                    ? 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30' 
-                    : 'bg-te-panel-dark text-te-cream-dim hover:bg-te-panel hover:text-te-cream'
-                  }
-                  ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <Pencil className="w-5 h-5" />
-                <span className="font-bold">EDIT</span>
-              </button>
+        {/* HEADER */}
+        <header className="text-center py-4">
+          <h1 className="text-2xl font-bold tracking-tight">DESIGN FORGE</h1>
+          <p className="text-dim text-sm mt-1">Concept Art Generator</p>
+        </header>
+
+        {/* MODE SELECTOR */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMode('create')}
+            className={`btn flex-1 ${mode === 'create' ? 'btn-primary' : ''}`}
+          >
+            <Zap className="w-4 h-4" />
+            Forge
+          </button>
+          <button
+            onClick={() => setMode('edit')}
+            className={`btn flex-1 ${mode === 'edit' ? 'btn-primary' : ''}`}
+          >
+            <Pencil className="w-4 h-4" />
+            Edit
+          </button>
+        </div>
+
+        {/* PROMPT */}
+        <div className="panel">
+          <div className="panel-body">
+            <textarea
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              placeholder="Describe what you want to create..."
+              rows={3}
+              disabled={isGenerating}
+            />
+          </div>
+        </div>
+
+        {/* EDIT MODE: Image to edit */}
+        {mode === 'edit' && (
+          <div className="panel">
+            <div className="panel-header">
+              <Pencil />
+              <span>Image to Edit</span>
+            </div>
+            <div className="panel-body">
+              {editImage ? (
+                <div className="relative inline-block">
+                  <img src={editImage} alt="Edit" className="max-h-40 rounded" />
+                  <button 
+                    onClick={() => setEditImage(null)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-dim text-sm">Drop an image here or select from history</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* BROWSE PANELS */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Highrise Items */}
+          <div className="panel">
+            <div className="panel-header">
+              <Search />
+              <span>Highrise Items</span>
+            </div>
+            <div className="panel-body">
+              <input type="text" placeholder="Search items..." className="mb-4" />
+              <div className="text-dim text-sm text-center py-8">
+                Search for items above
+              </div>
             </div>
           </div>
 
-          {/* 2. PROMPT INPUT - Small, expandable */}
-          <PromptInput
-            value={prompt}
-            onChange={setPrompt}
-            onSubmit={handleGenerate}
-            disabled={isGenerating}
-            placeholder={mode === 'edit' ? 'Describe the changes...' : 'Describe what to forge...'}
-          />
-
-          {/* EDIT MODE: Image to edit */}
-          <AnimatePresence mode="wait">
-            {mode === 'edit' && (
-              <motion.div
-                key="edit-upload"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <EditImageUpload
-                  image={editImage}
-                  onImageChange={setEditImage}
-                  disabled={isGenerating}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* 3 & 4. BROWSE PANELS - Highrise + History side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Highrise items */}
-            <HighriseSearch
-              selectedItems={[]}
-              onSelectionChange={() => {}}
-              disabled={isGenerating}
-              maxItems={maxRefs}
-            />
-
-            {/* Past generations */}
-            <GenerationHistory
-              key={historyKey}
-              onUseAsReference={handleAddReference}
-              onEditImage={handleEditImage}
-              disabled={isGenerating}
-            />
+          {/* History */}
+          <div className="panel">
+            <div className="panel-header">
+              <History />
+              <span>History</span>
+            </div>
+            <div className="panel-body">
+              <div className="text-dim text-sm text-center py-8">
+                Past generations will appear here
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* FORGE MODE: Crucible + Output */}
-          <AnimatePresence mode="wait">
-            {mode === 'create' && (
-              <motion.div
-                key="forge-section"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                {/* Crucible + Button row */}
-                <div className="flex gap-4 items-stretch">
-                  <div className="flex-1">
-                    <ReferenceDropZone
-                      references={references}
-                      onReferencesChange={setReferences}
-                      maxRefs={maxRefs}
-                      disabled={isGenerating}
-                    />
-                  </div>
-                  
-                  {/* FORGE button */}
-                  <motion.button
-                    onClick={handleGenerate}
-                    disabled={!canGenerate || isGenerating}
-                    whileTap={canGenerate && !isGenerating ? { scale: 0.95, y: 2 } : undefined}
-                    className={`
-                      relative w-32 rounded-xl font-mono text-base font-bold uppercase tracking-wider
-                      transition-all duration-200 overflow-hidden
-                      ${!canGenerate || isGenerating
-                        ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
-                        : 'bg-gradient-to-b from-orange-500 via-orange-600 to-red-700 text-white cursor-pointer'
-                      }
-                    `}
-                    style={canGenerate && !isGenerating ? {
-                      boxShadow: '0 0 30px rgba(255, 107, 53, 0.5), 0 4px 0 #7c2d12, inset 0 1px 0 rgba(255,255,255,0.2)',
-                    } : {
-                      boxShadow: '0 4px 0 #1a1a1a',
-                    }}
-                  >
-                    {canGenerate && !isGenerating && (
-                      <motion.div
-                        className="absolute inset-0"
-                        animate={{
-                          boxShadow: [
-                            'inset 0 0 20px rgba(255, 107, 53, 0.3)',
-                            'inset 0 0 40px rgba(255, 107, 53, 0.5)',
-                            'inset 0 0 20px rgba(255, 107, 53, 0.3)',
-                          ]
-                        }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                      />
-                    )}
-                    
-                    {isGenerating ? (
-                      <div className="flex flex-col items-center justify-center gap-2 p-4 h-full">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          className="w-8 h-8 border-3 border-white/30 border-t-orange-300 rounded-full"
-                        />
-                        <span className="text-xs">FORGING</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-2 p-4 h-full">
-                        <Zap className="w-10 h-10" />
-                        <span>FORGE</span>
-                      </div>
-                    )}
-                  </motion.button>
+        {/* CRUCIBLE (References) */}
+        {mode === 'create' && (
+          <div 
+            className="panel"
+            onDragOver={e => e.preventDefault()}
+            onDrop={handleDrop}
+          >
+            <div className="panel-header">
+              <Plus />
+              <span>Crucible</span>
+              <span className="ml-auto">{references.length}/14</span>
+            </div>
+            <div className="panel-body min-h-[100px]">
+              {references.length === 0 ? (
+                <div className="text-dim text-sm text-center py-8">
+                  Drop references here from Highrise or History
                 </div>
-
-                {/* Output */}
-                <ImageDisplay
-                  result={result}
-                  isLoading={isGenerating}
-                  onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* EDIT MODE: Edit button + Output */}
-          <AnimatePresence mode="wait">
-            {mode === 'edit' && (
-              <motion.div
-                key="edit-section"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4"
-              >
-                <motion.button
-                  onClick={handleGenerate}
-                  disabled={!canGenerate || isGenerating}
-                  whileTap={canGenerate && !isGenerating ? { scale: 0.98 } : undefined}
-                  className={`
-                    relative w-full py-4 rounded-xl font-mono text-base font-bold uppercase tracking-wider
-                    transition-all duration-200
-                    ${!canGenerate || isGenerating
-                      ? 'bg-te-panel-dark text-te-cream-dim cursor-not-allowed'
-                      : 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white cursor-pointer shadow-lg shadow-cyan-500/30'
-                    }
-                  `}
-                >
-                  {isGenerating ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>EDITING...</span>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {references.map(ref => (
+                    <div key={ref.id} className="relative w-16 h-16">
+                      <img 
+                        src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
+                        alt={ref.name || 'Ref'}
+                        className="w-full h-full object-cover rounded"
+                      />
+                      <button
+                        onClick={() => removeReference(ref.id)}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-2 h-2 text-white" />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-3">
-                      <Pencil className="w-6 h-6" />
-                      <span>EDIT IMAGE</span>
-                    </div>
-                  )}
-                </motion.button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-                <ImageDisplay
-                  result={result}
-                  isLoading={isGenerating}
-                  onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+        {/* GENERATE BUTTON */}
+        <button
+          onClick={handleGenerate}
+          disabled={!canGenerate || isGenerating}
+          className="btn btn-primary w-full py-4 text-base"
+        >
+          {isGenerating ? (
+            <>
+              <div className="spinner" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Zap className="w-5 h-5" />
+              {mode === 'create' ? 'Forge' : 'Edit'}
+            </>
+          )}
+        </button>
 
-          {/* Error */}
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
-              >
-                <div className="font-medium mb-1">Generation Error</div>
-                <div className="text-red-300/80 text-xs font-mono break-all">{error}</div>
-              </motion.div>
+        {/* ERROR */}
+        {error && (
+          <div className="panel" style={{ borderColor: '#ef4444' }}>
+            <div className="panel-body text-red-400 text-sm">
+              {error}
+            </div>
+          </div>
+        )}
+
+        {/* OUTPUT */}
+        <div className="panel">
+          <div className="panel-header">
+            <Monitor />
+            <span>Output</span>
+            <div className={`status-dot ml-auto ${isGenerating ? 'active' : result ? 'success' : ''}`} />
+          </div>
+          <div className="panel-body">
+            {isGenerating ? (
+              <div className="aspect-square flex items-center justify-center">
+                <div className="spinner" style={{ width: 40, height: 40 }} />
+              </div>
+            ) : images.length > 0 ? (
+              <div className={`grid gap-4 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {images.map((url, i) => (
+                  <img 
+                    key={i}
+                    src={url}
+                    alt={`Output ${i + 1}`}
+                    className="w-full rounded"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="aspect-square flex items-center justify-center text-dim text-sm">
+                Output will appear here
+              </div>
             )}
-          </AnimatePresence>
-        </main>
+          </div>
+        </div>
+
       </div>
-      
-      <DebugPanel />
     </div>
   )
 }
-
-export default App
