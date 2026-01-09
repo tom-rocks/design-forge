@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, X, Grid, Square } from 'lucide-react'
+import { Download, X, Grid, Square, Monitor } from 'lucide-react'
 
 // Chisel icon for edit/refine actions
 const ChiselIcon = ({ className }: { className?: string }) => (
@@ -13,16 +13,6 @@ const ChiselIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-// Anvil/mold icon
-const MoldIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="8" width="18" height="12" rx="2" />
-    <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="16" />
-    <line x1="9" y1="14" x2="15" y2="14" />
-  </svg>
-)
-
 interface ImageDisplayProps {
   result: {
     imageUrl: string
@@ -30,7 +20,7 @@ interface ImageDisplayProps {
     prompt: string
   } | null
   isLoading: boolean
-  heatLevel?: number // 0-1, based on generation progress
+  heatLevel?: number
   onEditImage?: (imageUrl: string) => void
 }
 
@@ -62,7 +52,7 @@ function generateAsciiWave(width: number, height: number, time: number): string[
   return lines
 }
 
-export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditImage }: ImageDisplayProps) {
+export default function ImageDisplay({ result, isLoading, onEditImage }: ImageDisplayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
@@ -72,17 +62,6 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const currentImage = selectedIndex !== null ? images[selectedIndex] : images[0]
   
-  // Heat colors - MUST MATCH ReferenceDropZone and ForgeGutter
-  const getHeatStyle = (level: number) => {
-    if (level < 0.2) return { border: '#3a3a3a', glow: 'transparent', bg: '#0a0a0a' }
-    if (level < 0.4) return { border: '#8b4513', glow: 'rgba(139, 69, 19, 0.4)', bg: '#2a1a10' }
-    if (level < 0.6) return { border: '#d2691e', glow: 'rgba(210, 105, 30, 0.5)', bg: '#3a2010' }
-    if (level < 0.8) return { border: '#ff6b35', glow: 'rgba(255, 107, 53, 0.6)', bg: '#4a2515' }
-    return { border: '#ff4500', glow: 'rgba(255, 69, 0, 0.7)', bg: '#5a2a1a' }
-  }
-  
-  const heatStyle = getHeatStyle(heatLevel)
-  
   // ASCII wave animation
   useEffect(() => {
     if (isLoading) {
@@ -90,7 +69,7 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
       
       const interval = setInterval(() => {
         const time = Date.now() / 1000
-        setAsciiLines(generateAsciiWave(80, 50, time))
+        setAsciiLines(generateAsciiWave(80, 40, time))
       }, 50)
       
       return () => clearInterval(interval)
@@ -140,211 +119,84 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
     return 'grid-cols-3'
   }
 
+  // Empty state - no result and not loading
+  if (!result && !isLoading) {
+    return (
+      <div className="te-panel">
+        <div className="te-module-header">
+          <Monitor className="w-3.5 h-3.5 text-te-fuchsia" />
+          <span>OUTPUT</span>
+          <div className="flex-1" />
+          <div className="w-2 h-2 rounded-full bg-te-border" />
+        </div>
+        <div className="aspect-square flex flex-col items-center justify-center bg-te-lcd">
+          <Monitor className="w-12 h-12 mb-3 text-te-cream-dim/20" />
+          <p className="font-mono text-xs text-te-cream-dim uppercase tracking-wider">Awaiting generation</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
-      {/* OUTPUT MOLD */}
-      <motion.div 
-        className="relative overflow-hidden rounded-xl"
-        animate={{
-          boxShadow: isLoading 
-            ? `0 0 ${30 + heatLevel * 40}px ${heatStyle.glow}, inset 0 0 30px rgba(0,0,0,0.8)`
-            : 'inset 0 0 30px rgba(0,0,0,0.5)',
-        }}
-        style={{
-          background: isLoading 
-            ? `linear-gradient(180deg, ${heatStyle.bg} 0%, #0a0a0a 100%)`
-            : 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
-          border: `4px solid ${isLoading ? heatStyle.border : '#2a2a2a'}`,
-          transition: 'all 0.3s ease',
-        }}
-      >
-        {/* Hot edges glow when loading */}
-        {isLoading && heatLevel > 0.1 && (
-          <motion.div
-            className="absolute inset-0 pointer-events-none rounded-lg z-20"
-            animate={{
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              background: `radial-gradient(ellipse at center, transparent 40%, ${heatStyle.glow} 100%)`,
-            }}
-          />
-        )}
-        
-        {/* Sparks when receiving molten metal */}
-        {isLoading && heatLevel > 0.3 && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-            {[...Array(Math.floor(heatLevel * 10))].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 rounded-full"
-                initial={{ 
-                  x: '50%',
-                  y: 0,
-                  opacity: 0,
-                }}
-                animate={{
-                  x: [`50%`, `${20 + Math.random() * 60}%`],
-                  y: [0, `${10 + Math.random() * 30}%`],
-                  opacity: [0, 1, 0],
-                }}
-                transition={{
-                  duration: 0.5 + Math.random() * 0.3,
-                  repeat: Infinity,
-                  delay: Math.random() * 0.5,
-                  ease: 'easeOut',
-                }}
-                style={{
-                  background: `hsl(${25 + Math.random() * 20}, 100%, ${55 + Math.random() * 30}%)`,
-                  boxShadow: '0 0 4px #ff6b35',
-                }}
-              />
-            ))}
-          </div>
-        )}
-
+      <div className="te-panel overflow-hidden">
         {/* Module Header */}
-        <div 
-          className="relative z-10 px-4 py-3 border-b transition-colors"
-          style={{ borderColor: isLoading ? `${heatStyle.border}66` : 'rgba(255,255,255,0.1)' }}
-        >
-          <div className="flex items-center gap-3">
-            <MoldIcon 
-              className={`w-5 h-5 transition-colors ${isLoading && heatLevel > 0.3 ? 'text-orange-500' : 'text-gray-500'}`}
-            />
-            <span 
-              className="font-mono text-sm uppercase tracking-wider font-bold transition-colors"
-              style={{ 
-                color: isLoading && heatLevel > 0.3 ? '#ff6b35' : '#888',
-                textShadow: isLoading && heatLevel > 0.5 ? '0 0 10px rgba(255, 107, 53, 0.5)' : 'none',
-              }}
-            >
-              OUTPUT MOLD
+        <div className="te-module-header">
+          <Monitor className="w-3.5 h-3.5 text-te-fuchsia" />
+          <span>OUTPUT</span>
+          <div className="flex-1" />
+          
+          {/* View toggle for multiple images */}
+          {images.length > 1 && !isLoading && (
+            <div className="flex gap-1 mr-3">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1 rounded transition-colors ${viewMode === 'grid' ? 'bg-te-fuchsia text-te-bg' : 'text-te-cream-dim hover:text-te-cream'}`}
+              >
+                <Grid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('single')}
+                className={`p-1 rounded transition-colors ${viewMode === 'single' ? 'bg-te-fuchsia text-te-bg' : 'text-te-cream-dim hover:text-te-cream'}`}
+              >
+                <Square className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          
+          {images.length > 1 && !isLoading && (
+            <span className="font-mono text-[10px] text-te-cream-dim mr-2">
+              {images.length} VARIATIONS
             </span>
-            <div className="flex-1" />
-            
-            {/* View toggle for multiple images */}
-            {images.length > 1 && !isLoading && (
-              <div className="flex gap-1 mr-3">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-1 rounded transition-colors ${viewMode === 'grid' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                  <Grid className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('single')}
-                  className={`p-1 rounded transition-colors ${viewMode === 'single' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                  <Square className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-            
-            {images.length > 1 && !isLoading && (
-              <span className="font-mono text-[10px] text-gray-500 mr-2">
-                {images.length} VARIATIONS
-              </span>
-            )}
-            
-            {/* Status indicator */}
-            <div 
-              className="w-2.5 h-2.5 rounded-full transition-all"
-              style={{
-                backgroundColor: isLoading 
-                  ? `hsl(${30 - heatLevel * 20}, 100%, ${50 + heatLevel * 20}%)`
-                  : result ? '#22c55e' : '#333',
-                boxShadow: isLoading && heatLevel > 0.3 
-                  ? `0 0 8px hsl(${30 - heatLevel * 20}, 100%, 50%)`
-                  : 'none',
-              }}
-            />
-          </div>
+          )}
+          
+          <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-te-orange animate-pulse' : result ? 'bg-green-500' : 'bg-te-border'}`} />
         </div>
 
         {/* Display Area */}
-        <div className="relative z-10">
-          {/* Loading State - Molten receiving animation */}
+        <div className="relative bg-te-lcd">
+          {/* Loading State - ASCII Wave */}
           <AnimatePresence>
             {isLoading && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="aspect-square w-full relative overflow-hidden"
-                style={{ backgroundColor: heatStyle.bg }}
+                className="aspect-square w-full flex items-center justify-center overflow-hidden"
               >
-                {/* ASCII wave background */}
                 <pre 
-                  className="absolute inset-0 font-mono select-none whitespace-pre overflow-hidden flex items-center justify-center"
+                  className="font-mono text-te-fuchsia/70 select-none whitespace-pre text-center"
                   style={{ 
-                    color: `hsl(${30 - heatLevel * 10}, 100%, ${40 + heatLevel * 30}%)`,
-                    textShadow: `0 0 ${8 + heatLevel * 10}px rgba(255, ${100 + heatLevel * 55}, 53, ${0.4 + heatLevel * 0.4})`,
-                    fontSize: 'min(2vw, 14px)',
-                    lineHeight: '1.1',
-                    opacity: 0.8,
+                    fontSize: 'min(1.5vw, 10px)',
+                    lineHeight: '1.15',
+                    textShadow: '0 0 8px rgba(217, 70, 239, 0.4)',
                   }}
                 >
                   {asciiLines.join('\n')}
                 </pre>
-                
-                {/* Center message */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <motion.div
-                    animate={{ 
-                      scale: [1, 1.05, 1],
-                      opacity: [0.7, 1, 0.7],
-                    }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="text-center"
-                  >
-                    <p 
-                      className="font-mono text-lg uppercase tracking-widest font-bold"
-                      style={{ 
-                        color: `hsl(${30 - heatLevel * 10}, 100%, ${50 + heatLevel * 30}%)`,
-                        textShadow: `0 0 20px rgba(255, ${100 + heatLevel * 55}, 53, 0.8)`,
-                      }}
-                    >
-                      {heatLevel < 0.3 ? 'HEATING...' : heatLevel < 0.7 ? 'POURING...' : 'FORMING...'}
-                    </p>
-                    <p 
-                      className="font-mono text-sm mt-2"
-                      style={{ color: `hsl(${30 - heatLevel * 10}, 80%, ${40 + heatLevel * 20}%)` }}
-                    >
-                      {Math.floor(heatLevel * 100)}%
-                    </p>
-                  </motion.div>
-                </div>
-
-                {/* Molten pool at bottom building up */}
-                <motion.div
-                  className="absolute bottom-0 left-0 right-0"
-                  animate={{
-                    height: `${heatLevel * 30}%`,
-                  }}
-                  style={{
-                    background: `linear-gradient(180deg, 
-                      transparent 0%,
-                      rgba(255, 107, 53, ${0.1 + heatLevel * 0.3}) 30%,
-                      rgba(255, 69, 0, ${0.2 + heatLevel * 0.4}) 70%,
-                      rgba(255, 140, 0, ${0.3 + heatLevel * 0.5}) 100%
-                    )`,
-                    boxShadow: `0 0 ${20 + heatLevel * 30}px rgba(255, 107, 53, ${0.3 + heatLevel * 0.4})`,
-                  }}
-                />
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Empty state */}
-          {!result && !isLoading && (
-            <div className="aspect-square flex flex-col items-center justify-center p-12">
-              <MoldIcon className="w-16 h-16 mb-4 text-gray-700 opacity-30" />
-              <p className="font-mono text-sm text-gray-600 uppercase tracking-wider">EMPTY MOLD</p>
-              <p className="font-mono text-[10px] mt-2 text-gray-700">AWAITING MOLTEN INPUT</p>
-            </div>
-          )}
 
           {/* Grid View */}
           {result && !isLoading && viewMode === 'grid' && images.length > 1 && (
@@ -355,10 +207,10 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.1 }}
-                  className="relative group aspect-square bg-black rounded-lg overflow-hidden border-2 border-gray-800 hover:border-orange-500/50 transition-colors"
+                  className="relative group aspect-square bg-te-bg rounded-lg overflow-hidden border-2 border-te-border hover:border-te-fuchsia transition-colors"
                 >
                   {!loadedImages.has(i) && (
-                    <div className="absolute inset-0 bg-gray-900 animate-pulse" />
+                    <div className="absolute inset-0 bg-te-lcd animate-pulse" />
                   )}
                   <img
                     src={url}
@@ -368,17 +220,17 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
                     className={`w-full h-full object-contain cursor-pointer ${loadedImages.has(i) ? 'block' : 'invisible'}`}
                   />
                   
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/80 rounded font-mono text-[10px] text-gray-300">
+                  {/* Variation badge */}
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-te-bg/90 border border-te-border rounded font-mono text-[10px] text-te-cream">
                     #{i + 1}
                   </div>
                   
+                  {/* Edit button on hover */}
                   {onEditImage && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEditImage(url)
-                      }}
-                      className="absolute bottom-2 right-2 p-2 rounded-lg bg-gray-900/90 border border-gray-700 hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); onEditImage(url); }}
+                      className="absolute bottom-2 right-2 p-2 rounded-lg bg-te-panel border border-te-border hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Edit this image"
                     >
                       <ChiselIcon className="w-4 h-4" />
                     </button>
@@ -395,7 +247,9 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
               animate={{ opacity: 1 }}
               className="relative"
             >
-              {!loadedImages.has(selectedIndex ?? 0) && <div className="aspect-square bg-gray-900 animate-pulse" />}
+              {!loadedImages.has(selectedIndex ?? 0) && (
+                <div className="aspect-square bg-te-lcd animate-pulse" />
+              )}
               <img
                 src={currentImage}
                 alt={result.prompt}
@@ -404,30 +258,32 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
                 className={`w-full h-auto cursor-zoom-in ${loadedImages.has(selectedIndex ?? 0) ? 'block' : 'hidden'}`}
               />
               
+              {/* Edit button */}
               {onEditImage && currentImage && (
                 <button
                   onClick={() => onEditImage(currentImage)}
-                  className="absolute bottom-4 right-4 px-4 py-3 rounded-lg bg-gray-900/90 border-2 border-gray-700 hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300 transition-all flex items-center gap-2"
+                  className="absolute bottom-4 right-4 px-4 py-2 rounded-lg bg-te-panel border-2 border-te-border hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300 transition-all flex items-center gap-2"
+                  title="Edit this image"
                 >
                   <ChiselIcon className="w-5 h-5" />
-                  <span className="font-mono text-sm font-bold tracking-wider">REFINE</span>
+                  <span className="font-mono text-sm font-bold uppercase">Edit</span>
                 </button>
               )}
             </motion.div>
           )}
         </div>
 
-        {/* Thumbnail strip */}
+        {/* Thumbnail strip for single view */}
         {images.length > 1 && viewMode === 'single' && !isLoading && (
-          <div className="flex gap-2 justify-center p-3 border-t border-gray-800 bg-black/50">
+          <div className="flex gap-2 justify-center p-3 border-t border-te-border bg-te-panel-dark">
             {images.map((url, i) => (
               <button
                 key={i}
                 onClick={() => setSelectedIndex(i)}
-                className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
                   (selectedIndex ?? 0) === i 
-                    ? 'border-orange-500 ring-2 ring-orange-500/30' 
-                    : 'border-gray-700 hover:border-orange-500/50'
+                    ? 'border-te-fuchsia ring-2 ring-te-fuchsia/30' 
+                    : 'border-te-border hover:border-te-fuchsia/50'
                 }`}
               >
                 <img src={url} alt={`Variation ${i + 1}`} className="w-full h-full object-cover" />
@@ -436,19 +292,19 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
           </div>
         )}
 
-        {/* Download all */}
-        {images.length > 1 && viewMode === 'grid' && !isLoading && (
-          <div className="flex justify-center p-3 border-t border-gray-800 bg-black/50">
+        {/* Download button */}
+        {images.length > 0 && !isLoading && (
+          <div className="flex justify-center p-3 border-t border-te-border bg-te-panel-dark">
             <button
-              onClick={handleDownloadAll}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 border-2 border-gray-700 hover:border-orange-500 hover:bg-orange-500/10 rounded-lg text-gray-300 hover:text-orange-400 font-mono text-xs uppercase transition-all"
+              onClick={images.length > 1 ? handleDownloadAll : () => handleDownload(images[0], 0)}
+              className="flex items-center gap-2 px-4 py-2 bg-te-panel border-2 border-te-border hover:border-te-fuchsia rounded-lg text-te-cream font-mono text-xs uppercase transition-all"
             >
               <Download className="w-4 h-4" />
-              Download All ({images.length})
+              {images.length > 1 ? `Download All (${images.length})` : 'Download'}
             </button>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Zoom Modal */}
       <AnimatePresence>
@@ -458,11 +314,11 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsZoomed(false)}
-            className="fixed inset-0 z-50 bg-black/98 backdrop-blur-sm flex items-center justify-center p-8 cursor-zoom-out"
+            className="fixed inset-0 z-50 bg-te-bg/98 backdrop-blur-sm flex items-center justify-center p-8 cursor-zoom-out"
           >
             <button
               onClick={() => setIsZoomed(false)}
-              className="absolute top-6 right-6 p-3 bg-gray-900 border-2 border-gray-700 hover:border-orange-500 rounded-lg text-gray-300 transition-colors"
+              className="absolute top-6 right-6 p-3 bg-te-panel border-2 border-te-border hover:border-te-fuchsia rounded-lg text-te-cream transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -475,8 +331,8 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
                     onClick={(e) => { e.stopPropagation(); setSelectedIndex(i); }}
                     className={`w-3 h-3 rounded-full transition-all ${
                       (selectedIndex ?? 0) === i 
-                        ? 'bg-orange-500 scale-125' 
-                        : 'bg-gray-600 hover:bg-gray-400'
+                        ? 'bg-te-fuchsia scale-125' 
+                        : 'bg-te-border hover:bg-te-cream'
                     }`}
                   />
                 ))}
@@ -490,7 +346,7 @@ export default function ImageDisplay({ result, isLoading, heatLevel = 0, onEditI
               exit={{ scale: 0.9, opacity: 0 }}
               src={currentImage}
               alt={result?.prompt}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg border-2 border-gray-800"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg border-2 border-te-border"
             />
           </motion.div>
         )}

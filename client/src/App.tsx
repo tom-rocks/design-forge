@@ -7,7 +7,6 @@ import EditImageUpload from './components/EditImageUpload'
 import GenerationHistory from './components/GenerationHistory'
 import { EditImageRef } from './components/EditImageUpload'
 import ReferenceDropZone, { ReferenceItem } from './components/ReferenceDropZone'
-import ForgeGutter from './components/ForgeGutter'
 import Header from './components/Header'
 import DebugPanel from './components/DebugPanel'
 import HighriseSearch from './components/HighriseSearch'
@@ -66,7 +65,7 @@ function App() {
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [editImage, setEditImage] = useState<EditImageRef | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [progress, setProgress] = useState<GenerationProgress | null>(null)
+  const [_progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [historyKey, setHistoryKey] = useState(0)
@@ -201,7 +200,6 @@ function App() {
   }, [])
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage)
-  const heatLevel = progress ? progress.progress / 100 : 0
 
   return (
     <div className="min-h-screen bg-forge-bg">
@@ -370,14 +368,10 @@ function App() {
                   </motion.button>
                 </div>
 
-                {/* Gutter line */}
-                <ForgeGutter isForging={isGenerating} heatLevel={heatLevel} />
-
                 {/* Output */}
                 <ImageDisplay
                   result={result}
                   isLoading={isGenerating}
-                  heatLevel={heatLevel}
                   onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
                 />
               </motion.div>
@@ -424,7 +418,6 @@ function App() {
                 <ImageDisplay
                   result={result}
                   isLoading={isGenerating}
-                  heatLevel={heatLevel}
                   onEditImage={(imageUrl) => handleEditImage({ type: 'storage', value: imageUrl })}
                 />
               </motion.div>
