@@ -415,6 +415,25 @@ body {
   gap: 8px;
 }
 
+/* Active references section */
+.active-refs {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.active-refs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .thumb {
   position: relative;
   width: 76px;

@@ -395,8 +395,8 @@ export default function App() {
                     className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => setRefSource('drop')}
                   >
-                    <span className={`led led-inline ${references.length > 0 ? 'on' : ''}`} />
-                    Active
+                    <Monitor className="w-3 h-3" />
+                    Drop
                   </button>
                   <button 
                     className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
@@ -422,24 +422,9 @@ export default function App() {
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                   >
-                    {references.length === 0 ? (
-                      <span className="dropzone-text">
-                        {isDragging ? 'Drop to add' : 'Drop images or select from Items'}
-                      </span>
-                    ) : (
-                      <div className="thumb-grid">
-                        <AnimatePresence mode="popLayout">
-                          {references.map((ref) => (
-                            <Thumb
-                              key={ref.id}
-                              src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
-                              alt={ref.name}
-                              onRemove={() => removeReference(ref.id)}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    )}
+                    <span className="dropzone-text">
+                      {isDragging ? 'Drop to add' : 'Drop images here'}
+                    </span>
                   </div>
                 ) : refSource === 'items' ? (
                   <HighriseSearch
@@ -461,6 +446,28 @@ export default function App() {
                     disabled={isGenerating}
                     isActive={refSource === 'history'}
                   />
+                )}
+
+                {/* Always visible: Selected references */}
+                {references.length > 0 && (
+                  <div className="active-refs">
+                    <div className="active-refs-header">
+                      <span className="led on" />
+                      <span>Active ({references.length}/14)</span>
+                    </div>
+                    <div className="thumb-grid">
+                      <AnimatePresence mode="popLayout">
+                        {references.map((ref) => (
+                          <Thumb
+                            key={ref.id}
+                            src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
+                            alt={ref.name}
+                            onRemove={() => removeReference(ref.id)}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </div>
                 )}
               </PanelBody>
             </Panel>
