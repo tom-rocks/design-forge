@@ -15,74 +15,86 @@ const RECONNECT_DELAY = 3000;
 
 /**
  * Search items using AP's internal API
- * Uses GetNextjsItemsRequest for text search, GetItemsRequest for browsing
+ * Uses GetItemsRequest with disp_name and disp_id filters
  */
 const searchItems = async ({ query, category, limit = 20, offset = 0 }) => {
     const trimmedQuery = query?.trim() || "";
     
-    // If we have a search query, use GetNextjsItemsRequest for relevance
-    if (trimmedQuery) {
-        let type = "all";
+    // No query = browse mode
+    if (!trimmedQuery) {
+        const filters = [];
         if (category && category !== "all") {
-            if (category === "clothing") type = "clothing";
-            else if (category === "furniture") type = "furniture";
-            else type = category;
+            filters.push(["category", category]);
         }
-
-        const page = Math.floor(offset / limit);
-
+        
         const payload = {
-            _type: "GetNextjsItemsRequest",
-            page,
+            _type: "GetItemsRequest",
             limit,
-            sort: "relevance_descending",
-            query: trimmedQuery,
-            type,
-            rarity: [],
+            offset,
+            filters,
+            sorts: [["created_at", -1]],
         };
-
-        console.log("[Bridge] Text search with payload:", payload);
-
+        
+        console.log("[Bridge] Browse:", JSON.stringify(payload));
         const response = await fetch(API_BASE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-
-        if (!response.ok) {
-            throw new Error(`Search failed: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`Browse failed: ${response.status}`);
         return response.json();
     }
     
-    // No query - use GetItemsRequest for browsing
-    const filters = [];
-    if (category && category !== "all") {
-        filters.push(["category", category]);
-    }
-
-    const payload = {
+    // Search by disp_name
+    const namePayload = {
         _type: "GetItemsRequest",
-        limit,
+        limit: 20,
         offset,
-        filters,
-        sorts: [["created_at", -1]], // Latest first
+        filters: [["disp_name", trimmedQuery]],
+        sorts: [["created_at", -1]],
     };
-
-    console.log("[Bridge] Browse with payload:", payload);
-
-    const response = await fetch(API_BASE, {
+    
+    console.log("[Bridge] Search disp_name:", JSON.stringify(namePayload));
+    const nameRes = await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(namePayload),
     });
-
-    if (!response.ok) {
-        throw new Error(`Browse failed: ${response.status}`);
+    if (!nameRes.ok) throw new Error(`Name search failed: ${nameRes.status}`);
+    const nameData = await nameRes.json();
+    
+    // Search by disp_id
+    const idPayload = {
+        _type: "GetItemsRequest",
+        limit: 20,
+        offset,
+        filters: [["disp_id", trimmedQuery]],
+        sorts: [["created_at", -1]],
+    };
+    
+    console.log("[Bridge] Search disp_id:", JSON.stringify(idPayload));
+    const idRes = await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(idPayload),
+    });
+    if (!idRes.ok) throw new Error(`ID search failed: ${idRes.status}`);
+    const idData = await idRes.json();
+    
+    // Merge and dedupe by _id
+    const seen = new Set();
+    const items = [];
+    for (const item of [...(nameData.items || []), ...(idData.items || [])]) {
+        if (!seen.has(item._id)) {
+            seen.add(item._id);
+            items.push(item);
+        }
     }
-
-    return response.json();
+    
+    return {
+        items,
+        pages: Math.max(nameData.pages || 0, idData.pages || 0),
+    };
 };
 
 /**
@@ -108,7 +120,6 @@ const getItem = async (dispId) => {
     }
 
     const data = await response.json();
-    // Return first item if found
     return { item: data.items?.[0] || null };
 };
 

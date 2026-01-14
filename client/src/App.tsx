@@ -1,6 +1,18 @@
-import { useState, useCallback } from 'react'
-import { Zap, Pencil, Search, History, Monitor, Plus, X } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { Search, History, Monitor, Plus, Upload, Flame, Hammer, MessageSquare, Wifi, WifiOff } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
+import { 
+  Button, 
+  Panel, PanelHeader, PanelBody, 
+  ModeSwitch, 
+  Textarea,
+  Thumb,
+  MoltenPipe,
+  LCDFire,
+  HighriseSearch
+} from './components'
+
 
 /* ============================================
    TYPES
@@ -25,6 +37,8 @@ interface GenerationResult {
    APP
    ============================================ */
 
+type RefSource = 'drop' | 'items' | 'history'
+
 export default function App() {
   const [mode, setMode] = useState<Mode>('create')
   const [prompt, setPrompt] = useState('')
@@ -33,14 +47,81 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [refSource, setRefSource] = useState<RefSource>('drop')
+  
+  // Track image loading states
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  
+  // Pipe fill state (0-1)
+  const [pipeFill, setPipeFill] = useState(0)
+  // Output frame hot state (delayed after pipe fills)
+  const [outputHot, setOutputHot] = useState(false)
+  
+  // Bridge connection status
+  const [bridgeConnected, setBridgeConnected] = useState(false)
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage)
+  
+  // Check bridge status
+  useEffect(() => {
+    const checkBridge = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/bridge/status`)
+        const data = await res.json()
+        setBridgeConnected(data.connected)
+      } catch {
+        setBridgeConnected(false)
+      }
+    }
+    checkBridge()
+    const interval = setInterval(checkBridge, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Animate pipe when forging
+  useEffect(() => {
+    if (isGenerating) {
+      // Small delay to let CSS register the reset state before heating up
+      const pipeTimer = setTimeout(() => setPipeFill(1), 400)
+      // Output heats up after pipe fills
+      const outputTimer = setTimeout(() => setOutputHot(true), 2000)
+      return () => {
+        clearTimeout(pipeTimer)
+        clearTimeout(outputTimer)
+      }
+    } else if (result) {
+      const timer = setTimeout(() => {
+        setPipeFill(0)
+        setOutputHot(false)
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [isGenerating, result])
 
   const handleGenerate = useCallback(async () => {
     if (!canGenerate || isGenerating) return
     
+    // Reset all states immediately
     setIsGenerating(true)
     setError(null)
+    setResult(null)
+    setLoadedImages(new Set())
+    setFailedImages(new Set())
+    setPipeFill(0)
+    setOutputHot(false)
+
+    if (window.location.hostname === 'localhost') {
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      setResult({
+        imageUrl: 'https://picsum.photos/512/512',
+        imageUrls: ['https://picsum.photos/512/512?r=1', 'https://picsum.photos/512/512?r=2'],
+        prompt: prompt.trim()
+      })
+      setIsGenerating(false)
+      return
+    }
 
     try {
       const response = await fetch(`${API_URL}/api/generate`, {
@@ -96,222 +177,379 @@ export default function App() {
   }, [prompt, references, mode, editImage, canGenerate, isGenerating])
 
   const addReference = (ref: Reference) => {
-    if (references.length >= 14 || references.find(r => r.id === ref.id)) return
-    setReferences([...references, ref])
+    setReferences(prev => {
+      if (prev.length >= 14 || prev.find(r => r.id === ref.id)) return prev
+      return [...prev, ref]
+    })
   }
 
   const removeReference = (id: string) => {
     setReferences(references.filter(r => r.id !== id))
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
+    setIsDragging(false)
+    
     const data = e.dataTransfer.getData('application/x-reference')
     if (data) {
       try {
         addReference(JSON.parse(data))
+        return
       } catch {}
     }
+    
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const url = ev.target?.result as string
+        addReference({
+          id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          url,
+          name: file.name,
+          type: 'file'
+        })
+      }
+      reader.readAsDataURL(file)
+    })
   }, [references])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
+  const validImages = images.filter(url => !failedImages.has(url))
+  // Check if all images have been processed (loaded or failed)
+  const allProcessed = images.length > 0 && (loadedImages.size + failedImages.size) >= images.length
+  const isLoadingImages = images.length > 0 && !allProcessed && !isGenerating
+
+  // Preload images when result changes
+  useEffect(() => {
+    if (!result || images.length === 0) return
+    
+    images.forEach(url => {
+      const img = new Image()
+      img.onload = () => setLoadedImages(prev => new Set(prev).add(url))
+      img.onerror = () => setFailedImages(prev => new Set(prev).add(url))
+      img.src = url
+    })
+  }, [result, images.length])
 
   return (
-    <div className="min-h-screen p-8" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-5xl mx-auto space-y-6">
-        
-        {/* HEADER */}
-        <header className="text-center py-4">
-          <h1 className="text-2xl font-bold tracking-tight">DESIGN FORGE</h1>
-          <p className="text-dim text-sm mt-1">Concept Art Generator</p>
-        </header>
+    <div className="app">
+      {/* HEADER */}
+      <header className="app-header">
+        <img src="/forge_logo.svg" alt="Design Forge" className="app-logo" />
+      </header>
 
-        {/* MODE SELECTOR */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setMode('create')}
-            className={`btn flex-1 ${mode === 'create' ? 'btn-primary' : ''}`}
+      {/* MAIN FORGE AREA - Single column vertical flow */}
+      <main className="forge-main">
+
+        {/* INPUT BLOCK */}
+        <div className="forge-block forge-input-block">
+          <Panel>
+            <PanelHeader>
+              <MessageSquare className="w-4 h-4" />
+              Prompt
+              <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
+            </PanelHeader>
+            <PanelBody>
+              <Textarea
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder="Describe what you want to create..."
+                rows={2}
+                disabled={isGenerating}
+              />
+            </PanelBody>
+          </Panel>
+
+          <motion.div
+            className="edit-panel-wrapper"
+            animate={{ 
+              gridTemplateRows: mode === 'edit' ? '1fr' : '0fr',
+              marginTop: mode === 'edit' ? 12 : 0
+            }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <Zap className="w-4 h-4" />
-            Forge
-          </button>
-          <button
-            onClick={() => setMode('edit')}
-            className={`btn flex-1 ${mode === 'edit' ? 'btn-primary' : ''}`}
-          >
-            <Pencil className="w-4 h-4" />
-            Edit
-          </button>
-        </div>
-
-        {/* PROMPT */}
-        <div className="panel">
-          <div className="panel-body">
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              placeholder="Describe what you want to create..."
-              rows={3}
-              disabled={isGenerating}
-            />
-          </div>
-        </div>
-
-        {/* EDIT MODE: Image to edit */}
-        {mode === 'edit' && (
-          <div className="panel">
-            <div className="panel-header">
-              <Pencil />
-              <span>Image to Edit</span>
-            </div>
-            <div className="panel-body">
-              {editImage ? (
-                <div className="relative inline-block">
-                  <img src={editImage} alt="Edit" className="max-h-40 rounded" />
-                  <button 
-                    onClick={() => setEditImage(null)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                </div>
-              ) : (
-                <div className="text-dim text-sm">Drop an image here or select from history</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* BROWSE PANELS */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Highrise Items */}
-          <div className="panel">
-            <div className="panel-header">
-              <Search />
-              <span>Highrise Items</span>
-            </div>
-            <div className="panel-body">
-              <input type="text" placeholder="Search items..." className="mb-4" />
-              <div className="text-dim text-sm text-center py-8">
-                Search for items above
-              </div>
-            </div>
-          </div>
-
-          {/* History */}
-          <div className="panel">
-            <div className="panel-header">
-              <History />
-              <span>History</span>
-            </div>
-            <div className="panel-body">
-              <div className="text-dim text-sm text-center py-8">
-                Past generations will appear here
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CRUCIBLE (References) */}
-        {mode === 'create' && (
-          <div 
-            className="panel"
-            onDragOver={e => e.preventDefault()}
-            onDrop={handleDrop}
-          >
-            <div className="panel-header">
-              <Plus />
-              <span>Crucible</span>
-              <span className="ml-auto">{references.length}/14</span>
-            </div>
-            <div className="panel-body min-h-[100px]">
-              {references.length === 0 ? (
-                <div className="text-dim text-sm text-center py-8">
-                  Drop references here from Highrise or History
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {references.map(ref => (
-                    <div key={ref.id} className="relative w-16 h-16">
-                      <img 
-                        src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
-                        alt={ref.name || 'Ref'}
-                        className="w-full h-full object-cover rounded"
-                      />
-                      <button
-                        onClick={() => removeReference(ref.id)}
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
-                      >
-                        <X className="w-2 h-2 text-white" />
-                      </button>
+            <div className="edit-panel-inner">
+              <Panel>
+                <PanelHeader>
+                  <Hammer className="w-4 h-4" />
+                  Edit Image
+                </PanelHeader>
+                <PanelBody>
+                  {editImage ? (
+                    <div className="edit-image-preview">
+                      <img src={editImage} alt="Edit" />
+                      <button onClick={() => setEditImage(null)} className="thumb-remove">×</button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ) : (
+                    <div className="edit-dropzone">
+                      <span className="dropzone-text">Drop image to edit</span>
+                    </div>
+                  )}
+                </PanelBody>
+              </Panel>
             </div>
-          </div>
-        )}
+          </motion.div>
 
-        {/* GENERATE BUTTON */}
-        <button
-          onClick={handleGenerate}
-          disabled={!canGenerate || isGenerating}
-          className="btn btn-primary w-full py-4 text-base"
-        >
-          {isGenerating ? (
-            <>
-              <div className="spinner" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Zap className="w-5 h-5" />
-              {mode === 'create' ? 'Forge' : 'Edit'}
-            </>
-          )}
-        </button>
-
-        {/* ERROR */}
-        {error && (
-          <div className="panel" style={{ borderColor: '#ef4444' }}>
-            <div className="panel-body text-red-400 text-sm">
-              {error}
-            </div>
-          </div>
-        )}
-
-        {/* OUTPUT */}
-        <div className="panel">
-          <div className="panel-header">
-            <Monitor />
-            <span>Output</span>
-            <div className={`status-dot ml-auto ${isGenerating ? 'active' : result ? 'success' : ''}`} />
-          </div>
-          <div className="panel-body">
-            {isGenerating ? (
-              <div className="aspect-square flex items-center justify-center">
-                <div className="spinner" style={{ width: 40, height: 40 }} />
-              </div>
-            ) : images.length > 0 ? (
-              <div className={`grid gap-4 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                {images.map((url, i) => (
-                  <img 
-                    key={i}
-                    src={url}
-                    alt={`Output ${i + 1}`}
-                    className="w-full rounded"
+          {/* CRUCIBLE - References panel with hot border when forging */}
+          <motion.div 
+            className="crucible-frame"
+            animate={{
+              background: pipeFill > 0 
+                ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
+                : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
+              boxShadow: pipeFill > 0
+                ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
+                : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            transition={{ duration: pipeFill > 0 ? 1.2 : 2.5, ease: 'easeOut' }}
+          >
+            {/* LCD Status Display */}
+            <div className="lcd-screen">
+              <LCDFire active={isGenerating} columns={42} rows={3} />
+              <div className="lcd-refs">
+                {[...Array(14)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`lcd-ref-dot ${i < references.length ? 'filled' : ''}`}
                   />
                 ))}
               </div>
-            ) : (
-              <div className="aspect-square flex items-center justify-center text-dim text-sm">
-                Output will appear here
+              <div className="lcd-bridge">
+                <WifiOff className={`lcd-bridge-icon ${!bridgeConnected ? 'active' : ''}`} />
+                <Wifi className={`lcd-bridge-icon ${bridgeConnected ? 'active' : ''}`} />
               </div>
+              <div className="lcd-labels">
+                <span className={`lcd-label ${!isGenerating ? 'active' : ''}`}>IDLE</span>
+                <span className={`lcd-label ${isGenerating ? 'active' : ''}`}>FORGING</span>
+              </div>
+            </div>
+            <Panel>
+              <PanelHeader led={references.length > 0 ? 'on' : 'off'}>
+                <Plus className="w-4 h-4" />
+                References
+              </PanelHeader>
+              <PanelBody>
+                {/* Reference source tabs */}
+                <div className="ref-tabs">
+                  <button 
+                    className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => setRefSource('drop')}
+                  >
+                    <Upload className="w-3 h-3" />
+                    Drop
+                  </button>
+                  <button 
+                    className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => setRefSource('items')}
+                  >
+                    <Search className="w-3 h-3" />
+                    Items
+                  </button>
+                  <button 
+                    className={`btn ${refSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => setRefSource('history')}
+                  >
+                    <History className="w-3 h-3" />
+                    History
+                  </button>
+                </div>
+
+                {/* Reference content based on source */}
+                {refSource === 'drop' ? (
+                  <div 
+                    className={`dropzone dropzone-refs ${isDragging ? 'active' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    {references.length === 0 ? (
+                      <span className="dropzone-text">
+                        {isDragging ? 'Drop to add' : 'Drop reference images'}
+                      </span>
+                    ) : (
+                      <div className="thumb-grid">
+                        <AnimatePresence mode="popLayout">
+                          {references.map((ref) => (
+                            <Thumb
+                              key={ref.id}
+                              src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
+                              alt={ref.name}
+                              onRemove={() => removeReference(ref.id)}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
+                ) : refSource === 'items' ? (
+                  <HighriseSearch
+                    references={references}
+                    onAddReference={addReference}
+                    onRemoveReference={removeReference}
+                    maxRefs={14}
+                    disabled={isGenerating}
+                    bridgeConnected={bridgeConnected}
+                  />
+                ) : (
+                  <div className="ref-content-area">
+                    <span className="ref-empty-text">No generations yet</span>
+                  </div>
+                )}
+              </PanelBody>
+            </Panel>
+          </motion.div>
+
+          {/* FORGE BUTTON */}
+          <Button
+            variant="accent"
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            isLoading={isGenerating}
+            className="w-full forge-button"
+          >
+            {isGenerating ? (
+              <>
+                {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
+                {mode === 'create' ? 'Forging...' : 'Editing...'}
+              </>
+            ) : !canGenerate ? (
+              !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage ? 'Add image' : 'Ready'
+            ) : (
+              <>
+                {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
+                {mode === 'create' ? 'Forge' : 'Edit'}
+              </>
             )}
-          </div>
+          </Button>
         </div>
 
-      </div>
+        {/* PIPE - Connects crucible to output */}
+        <div className="forge-pipe-wrapper">
+          <MoltenPipe fill={pipeFill} />
+        </div>
+
+        {/* OUTPUT BLOCK */}
+        <div className="forge-block forge-output-block">
+          <motion.div 
+            className="output-frame"
+            animate={{
+              background: outputHot 
+                ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
+                : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
+              boxShadow: outputHot
+                ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
+                : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            transition={{ duration: outputHot ? 1.2 : 2.5, ease: 'easeOut' }}
+          >
+            <Panel>
+              <PanelHeader led={isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : 'off'}>
+                <Monitor className="w-4 h-4" />
+                Output
+              </PanelHeader>
+            <PanelBody>
+              <motion.div 
+                className="output-container"
+                layout="position"
+              >
+                <AnimatePresence mode="popLayout">
+                  {isGenerating || isLoadingImages ? (
+                    <motion.div 
+                      key="waiting"
+                      className="output-waiting"
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <div className="output-loader">
+                        <div className="loader-label">{isGenerating ? 'RECEIVING' : 'LOADING'}</div>
+                        <div className="loader-track">
+                          {[...Array(12)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              className="loader-segment"
+                              animate={{ 
+                                opacity: [0.2, 1, 0.2],
+                                backgroundColor: ['#4a4540', '#ff5722', '#4a4540']
+                              }}
+                              transition={{
+                                duration: 1.2,
+                                delay: i * 0.08,
+                                repeat: Infinity,
+                                ease: 'easeInOut'
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : validImages.length > 0 && loadedImages.size > 0 ? (
+                    <motion.div 
+                      key="images"
+                      className={`output-grid ${validImages.length > 1 ? 'cols-2' : 'cols-1'}`}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {validImages.filter(url => loadedImages.has(url)).map((url, i) => (
+                        <motion.img 
+                          key={url}
+                          src={url}
+                          alt={`Output ${i + 1}`}
+                          className="output-image"
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: i * 0.15, duration: 0.4 }}
+                        />
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key="empty"
+                      className="output-empty"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <span>Output appears here</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </PanelBody>
+          </Panel>
+          </motion.div>
+        </div>
+
+        {/* ERROR */}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              className="forge-error"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   )
 }

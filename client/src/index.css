@@ -3,18 +3,49 @@
 @tailwind utilities;
 
 /* ============================================
-   DESIGN FORGE - STRUCTURAL FOUNDATION
-   No decoration. Just clean blocks.
+   DESIGN FORGE - TEENAGE ENGINEERING INSPIRED
+   Industrial hardware aesthetic
    ============================================ */
 
 :root {
-  /* Single color palette - monochrome for now */
-  --bg: #0a0a0a;
-  --panel: #141414;
-  --border: #2a2a2a;
-  --text: #e5e5e5;
-  --text-dim: #666666;
-  --accent: #a855f7; /* purple - only accent */
+  /* Base surface - matte industrial grey */
+  --bg: #d8d4d0;
+  --surface: #e4e0dc;
+  --surface-raised: #eae6e2;
+  --surface-inset: #c8c4c0;
+  
+  /* Shadows - hard directional, light from top-left */
+  --shadow-hard: rgba(0, 0, 0, 0.25);
+  --shadow-soft: rgba(0, 0, 0, 0.1);
+  --highlight: rgba(255, 255, 255, 0.7);
+  
+  /* Text */
+  --text: #1a1918;
+  --text-dim: #6b6560;
+  --text-light: #8a8580;
+  
+  /* Accent - Vibrant TE orange */
+  --accent: #ff5722;
+  --accent-bright: #ff6d00;
+  --accent-hover: #ff7539;
+  --accent-active: #e64a19;
+  --accent-glow: rgba(255, 87, 34, 0.6);
+  
+  /* Button surfaces */
+  --btn-dark: #2a2928;
+  --btn-dark-hover: #3a3938;
+  --btn-dark-active: #1a1918;
+  
+  /* LED colors */
+  --led-off: #4a4540;
+  --led-red: #ff3b30;
+  --led-orange: #ff5722;
+  --led-green: #4caf50;
+  
+  /* Spacing */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
 }
 
 * {
@@ -26,144 +57,1025 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 /* ============================================
-   PANEL - The only building block we need
+   TYPOGRAPHY
    ============================================ */
 
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.label-small {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+/* ============================================
+   LED INDICATOR
+   ============================================ */
+
+.led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--led-off);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+}
+
+.led.on {
+  background: var(--led-orange);
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 8px var(--led-orange);
+}
+
+.led.success {
+  background: var(--led-green);
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 8px var(--led-green);
+}
+
+.led.error {
+  background: var(--led-red);
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 8px var(--led-red);
+}
+
+/* ============================================
+   BUTTONS - Physical depth with hard shadows
+   ============================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  position: relative;
+}
+
+/* Dark button - like TE number keys */
+.btn-dark {
+  background: linear-gradient(180deg, #3a3938 0%, #2a2928 100%);
+  color: #e8e4e0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 0 #1a1918,
+    0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-dark:hover {
+  background: linear-gradient(180deg, #4a4948 0%, #3a3938 100%);
+}
+
+.btn-dark:active {
+  background: linear-gradient(180deg, #2a2928 0%, #1a1918 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 1px 0 #1a1918,
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateY(2px);
+}
+
+.btn-dark:disabled {
+  background: linear-gradient(180deg, #3a3938 0%, #2a2928 100%);
+  color: #6a6560;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Orange accent button - like TE COMMIT/RECORD */
+.btn-accent {
+  background: linear-gradient(180deg, #ff6d00 0%, #ff5722 100%);
+  color: white;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 2px 0 #bf360c,
+    0 2px 6px rgba(255, 87, 34, 0.25);
+}
+
+.btn-accent:hover {
+  background: linear-gradient(180deg, #ff8a30 0%, #ff6d00 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 3px 0 #bf360c,
+    0 3px 12px rgba(255, 87, 34, 0.4);
+}
+
+.btn-accent:active {
+  background: linear-gradient(180deg, #e64a19 0%, #d84315 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 1px 0 #bf360c,
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateY(2px);
+}
+
+.btn-accent:disabled {
+  background: linear-gradient(180deg, #b8b4b0 0%, #a8a4a0 100%);
+  color: #6a6560;
+  text-shadow: none;
+  cursor: not-allowed;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 2px 0 #908c88,
+    0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Ghost button - minimal, for secondary actions */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+.btn-ghost:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   PANELS - Raised surfaces with depth
+   ============================================ */
+
+.edit-panel-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+
+.edit-panel-inner {
+  overflow: hidden;
+}
+
+.edit-panel-inner .panel {
+  margin-bottom: 8px;
+}
+
+.edit-image-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.edit-image-preview img {
+  max-height: 96px;
+  border-radius: var(--radius-md);
+}
+
+.edit-image-preview .thumb-remove {
+  opacity: 1;
+}
+
+.edit-dropzone {
+  padding: 24px;
+  text-align: center;
+  background: var(--surface-inset);
+  border: 2px dashed rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-lg);
+  transition: all 0.15s ease;
+}
+
 .panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    /* Inner top-left highlight */
+    inset 1px 1px 0 var(--highlight),
+    /* Inner bottom-right shadow */
+    inset -1px -1px 0 rgba(0, 0, 0, 0.08),
+    /* Hard drop shadow */
+    0 4px 0 rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   color: var(--text-dim);
-}
-
-.panel-header svg {
-  width: 14px;
-  height: 14px;
-  color: var(--accent);
 }
 
 .panel-body {
   padding: 16px;
 }
 
+/* Inset panel - recessed area */
+.panel-inset {
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
 /* ============================================
-   FORM ELEMENTS
+   INPUTS
    ============================================ */
 
-input, textarea {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 16px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
+.input-search {
+  margin-bottom: 12px;
+}
+
+.input, .textarea {
   width: 100%;
-  outline: none;
-}
-
-input:focus, textarea:focus {
-  border-color: var(--accent);
-}
-
-input::placeholder, textarea::placeholder {
-  color: var(--text-dim);
-}
-
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 14px 16px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  background: var(--surface-inset);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(0, 0, 0, 0.06);
   transition: all 0.15s ease;
 }
 
-.btn:hover:not(:disabled) {
-  border-color: var(--accent);
+.input:focus, .textarea:focus {
+  outline: none;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(0, 0, 0, 0.08),
+    0 0 0 2px var(--accent);
 }
 
-.btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.input::placeholder, .textarea::placeholder {
+  color: var(--text-light);
 }
 
-.btn-primary {
+.textarea {
+  resize: none;
+  line-height: 1.5;
+}
+
+/* ============================================
+   MODE SWITCH - Toggle between modes
+   ============================================ */
+
+.mode-switch {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px;
+  background: var(--surface-inset);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.mode-switch .btn {
+  padding: 8px 24px;
+  font-size: 12px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.mode-switch .btn-dark {
+  background: transparent;
+  color: var(--text-dim);
+  box-shadow: none;
+}
+
+.mode-switch .btn-dark:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+.mode-switch .btn-accent {
   background: var(--accent);
-  border-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.mode-switch .btn:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.mode-switch .btn-accent:disabled {
+  background: var(--accent);
   color: white;
 }
 
-.btn-primary:hover:not(:disabled) {
-  filter: brightness(1.1);
+/* ============================================
+   THUMBNAIL GRID
+   ============================================ */
+
+.thumb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-inset);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.15),
+    0 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.thumb:hover .thumb-remove {
+  opacity: 1;
+}
+
+/* Add button styled as thumb */
+.thumb-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-inset);
+  border: 2px dashed rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.thumb-add:hover {
+  border-color: var(--accent);
+  background: rgba(255, 109, 58, 0.05);
+}
+
+.thumb-add svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-light);
+}
+
+/* ============================================
+   DROPZONE
+   ============================================ */
+
+.dropzone {
+  padding: 24px;
+  border: 2px dashed rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-lg);
+  background: var(--surface-inset);
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.dropzone-refs {
+  min-height: 120px;
+}
+
+.dropzone.active {
+  border-color: var(--accent);
+  background: rgba(255, 109, 58, 0.08);
+}
+
+.dropzone-text {
+  font-size: 12px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================
+   OUTPUT DISPLAY
+   ============================================ */
+
+.output-container {
+  min-height: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.output-empty,
+.output-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.output-empty span {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+/* Physical LED loader */
+.output-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loader-label {
+  font-family: 'SF Mono', 'Monaco', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-light);
+}
+
+.loader-track {
+  display: flex;
+  gap: 3px;
+  padding: 6px 10px;
+  background: var(--surface-inset);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.loader-segment {
+  width: 8px;
+  height: 16px;
+  background: #4a4540;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.output-grid {
+  display: grid;
+  gap: 8px;
+  min-height: 200px;
+}
+
+.output-grid.cols-1 { grid-template-columns: 1fr; }
+.output-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+
+.output-image {
+  width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   FORGING STATE - Button animation
+   ============================================ */
+
+.btn-forging {
+  cursor: wait;
+}
+
+/* Override disabled styles when forging - clearly different, no animation */
+.btn-accent.btn-forging,
+.btn-accent.btn-forging:disabled {
+  background: linear-gradient(180deg, #ffab00 0%, #ff8f00 100%) !important;
+  color: #2a1a10 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 0 rgba(255, 200, 100, 0.4) !important;
+  cursor: wait !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 3px 0 #c65100,
+    0 0 20px rgba(255, 140, 0, 0.5) !important;
+}
+
+/* ============================================
+   LAYOUT - Sidebar + Vertical Forge Flow
+   ============================================ */
+
+.app {
+  min-height: 100vh;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.app-logo {
+  height: 56px;
+  width: auto;
+  filter: invert(1) brightness(0.5);
+}
+
+/* Sidebar */
+/* Reference source tabs */
+.ref-tabs {
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px;
+  background: var(--surface-inset);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
+}
+
+.ref-tabs .btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.ref-tabs .btn-dark {
+  background: transparent;
+  color: var(--text-dim);
+  box-shadow: none;
+}
+
+.ref-tabs .btn-dark:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+.ref-tabs .btn-accent {
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.ref-content-area {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  min-height: 120px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ref-content-area .input {
+  width: 100%;
+  background: var(--surface);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ref-empty-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Main forge area - vertical flow */
+.forge-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.forge-block {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.forge-button {
+  padding: 14px 24px !important;
+  font-size: 14px !important;
+}
+
+/* Crucible frame - carved channel around references */
+.crucible-frame {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  /* Base styles - Framer Motion handles animation */
+}
+
+/* LCD Screen - TE style display */
+.lcd-screen {
+  background: #1a1918;
+  border-radius: 3px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.lcd-grid-fire {
+  display: flex;
+  gap: 1px;
+  flex: 1;
+}
+
+.lcd-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.lcd-pixel {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #2a2928;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* Fire animation - bottom pixels light first (flames rise) */
+
+.lcd-refs {
+  display: flex;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.lcd-ref-dot {
+  width: 5px;
+  height: 17px;
+  border-radius: 1px;
+  background: #2a2928;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.lcd-ref-dot.filled {
+  background: #ff5722;
+  box-shadow: 0 0 4px rgba(255, 87, 34, 0.6);
+}
+
+.lcd-bridge {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.lcd-bridge-icon {
+  width: 12px;
+  height: 12px;
+  color: #3a3835;
+  transition: color 0.3s, filter 0.3s;
+}
+
+.lcd-bridge-icon.active {
+  color: #ff5722;
+  filter: drop-shadow(0 0 4px rgba(255, 87, 34, 0.6));
+}
+
+.lcd-labels {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.lcd-label {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #3a3835;
+  text-shadow: none;
+  white-space: nowrap;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.lcd-label.active {
+  color: #ff5722;
+  text-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+}
+
+/* .hot state handled by Framer Motion */
+
+.crucible-frame .panel {
+  border-radius: var(--radius-md);
+}
+
+/* Output frame - similar to crucible */
+.output-frame {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  /* Base styles - Framer Motion handles animation */
+}
+
+.output-frame .panel {
+  border-radius: var(--radius-md);
+}
+
+/* Pipe wrapper - centered between blocks */
+.forge-pipe-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.molten-pipe {
+  width: 6px;
+  height: 40px;
+  border-radius: 1px;
+  background: linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%);
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.15),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.3),
+    1px 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.molten-pipe-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%);
+}
+
+.molten-pipe-fill.active {
+  box-shadow:
+    0 0 8px rgba(255, 87, 34, 0.6),
+    0 0 16px rgba(255, 87, 34, 0.3);
+}
+
+.forge-error {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border-radius: var(--radius-md);
+  color: #dc2626;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 16px;
+  }
+  
+  .forge-block {
+    max-width: 100%;
+  }
 }
 
 /* ============================================
    UTILITY
    ============================================ */
 
-.text-dim {
-  color: var(--text-dim);
+/* ============================================
+   HIGHRISE SEARCH
+   ============================================ */
+
+.highrise-search {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.text-accent {
+.highrise-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.highrise-search-bar .search-icon {
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.highrise-search-bar .input {
+  padding-left: 32px;
+  padding-right: 36px;
+}
+
+.highrise-search-bar .search-loader {
+  position: absolute;
+  right: 12px;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+
+.highrise-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.highrise-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+}
+
+.highrise-item {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg);
+  cursor: pointer;
+  position: relative;
+  border: 3px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.highrise-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.highrise-item:hover {
+  border-color: var(--accent);
+}
+
+.highrise-item.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(255, 87, 34, 0.4);
+}
+
+.highrise-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.highrise-item.rarity-legendary {
+  border-color: #ffc107;
+}
+
+.highrise-item.rarity-epic {
+  border-color: #9c27b0;
+}
+
+.highrise-item.rarity-rare {
+  border-color: #2196f3;
+}
+
+.highrise-item.selected.rarity-legendary,
+.highrise-item.selected.rarity-epic,
+.highrise-item.selected.rarity-rare {
+  border-color: var(--accent);
+}
+
+.highrise-item-check {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 87, 34, 0.25);
+}
+
+.highrise-item-check span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.highrise-load-more {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.highrise-loading,
+.highrise-empty,
+.highrise-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+}
+
+.highrise-notice {
+  flex-direction: row;
+  padding: 12px 16px;
+  background: rgba(255, 87, 34, 0.1);
   color: var(--accent);
 }
 
-/* Status indicator */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-}
-
-.status-dot.active {
-  background: var(--accent);
-}
-
-.status-dot.success {
-  background: #22c55e;
-}
-
-/* Simple loading spinner */
 @keyframes spin {
+  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
+/* ============================================
+   UTILITY
+   ============================================ */
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.w-full { width: 100%; }
+.ml-auto { margin-left: auto; }
