@@ -1,0 +1,116 @@
+import { Router } from 'express';
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { findOrCreateUser, getUserById, User } from '../db.js';
+
+const router = Router();
+
+// Extend Express types
+declare global {
+  namespace Express {
+    interface User {
+      id: string;
+      google_id: string;
+      email: string;
+      name: string | null;
+      avatar_url: string | null;
+    }
+  }
+}
+
+// Configure Google OAuth strategy
+export function setupPassport() {
+  const clientID = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback';
+
+  if (!clientID || !clientSecret) {
+    console.warn('⚠️ Google OAuth not configured - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET required');
+    return false;
+  }
+
+  passport.use(new GoogleStrategy({
+    clientID,
+    clientSecret,
+    callbackURL,
+  }, async (_accessToken, _refreshToken, profile, done) => {
+    try {
+      const email = profile.emails?.[0]?.value;
+      if (!email) {
+        return done(new Error('No email found in Google profile'), undefined);
+      }
+
+      const user = await findOrCreateUser({
+        googleId: profile.id,
+        email,
+        name: profile.displayName,
+        avatarUrl: profile.photos?.[0]?.value,
+      });
+
+      done(null, user);
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  }));
+
+  passport.serializeUser((user, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await getUserById(id);
+      done(null, user);
+    } catch (err) {
+      done(err, null);
+    }
+  });
+
+  console.log('✅ Google OAuth configured');
+  return true;
+}
+
+// Start Google OAuth flow
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+}));
+
+// Google OAuth callback
+router.get('/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/?auth=failed',
+  }),
+  (_req, res) => {
+    // Successful authentication
+    res.redirect('/?auth=success');
+  }
+);
+
+// Get current user
+router.get('/me', (req, res) => {
+  if (req.isAuthenticated() && req.user) {
+    res.json({
+      authenticated: true,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.name,
+        avatarUrl: req.user.avatar_url,
+      },
+    });
+  } else {
+    res.json({ authenticated: false, user: null });
+  }
+});
+
+// Logout
+router.post('/logout', (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.json({ success: true });
+  });
+});
+
+export default router;

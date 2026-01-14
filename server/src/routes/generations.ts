@@ -1,11 +1,20 @@
 import { Router, Request, Response } from 'express';
-import { getGenerations, getGeneration, deleteGeneration, getEditChain } from '../db.js';
+import { getGenerations, getGenerationsByUser, getGeneration, deleteGeneration, getEditChain } from '../db.js';
 import { getImagePath, getThumbnailPath, fileExists, deleteImages, readImageAsBase64 } from '../storage.js';
 import fs from 'fs/promises';
 
 const router = Router();
 
-// List all generations (paginated)
+// Helper to add URLs to generations
+function addUrls(generations: any[]) {
+  return generations.map(gen => ({
+    ...gen,
+    thumbnailUrl: gen.thumbnail_path ? `/api/generations/${gen.id}/thumbnail` : null,
+    imageUrls: gen.image_paths.map((_: any, i: number) => `/api/generations/${gen.id}/image/${i}`),
+  }));
+}
+
+// List all generations (paginated) - admin/global view
 router.get('/', async (req: Request, res: Response) => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
@@ -13,15 +22,8 @@ router.get('/', async (req: Request, res: Response) => {
     
     const { generations, total } = await getGenerations(limit, offset);
     
-    // Add URLs for images
-    const generationsWithUrls = generations.map(gen => ({
-      ...gen,
-      thumbnailUrl: gen.thumbnail_path ? `/api/generations/${gen.id}/thumbnail` : null,
-      imageUrls: gen.image_paths.map((_, i) => `/api/generations/${gen.id}/image/${i}`),
-    }));
-    
     res.json({
-      generations: generationsWithUrls,
+      generations: addUrls(generations),
       total,
       limit,
       offset,
@@ -30,6 +32,32 @@ router.get('/', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('[Generations] List error:', err);
     res.status(500).json({ error: 'Failed to list generations' });
+  }
+});
+
+// List current user's generations (paginated)
+router.get('/my', async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+    
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+    
+    const { generations, total } = await getGenerationsByUser(req.user.id, limit, offset);
+    
+    res.json({
+      generations: addUrls(generations),
+      total,
+      limit,
+      offset,
+      hasMore: offset + limit < total,
+    });
+  } catch (err) {
+    console.error('[Generations] My generations error:', err);
+    res.status(500).json({ error: 'Failed to list your generations' });
   }
 });
 

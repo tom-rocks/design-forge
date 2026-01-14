@@ -608,8 +608,10 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
           thumbnailPath = await createThumbnail(imagePaths[0], genId);
         }
         
-        // Save to database
+        // Save to database (include user ID if authenticated)
+        const userId = req.user?.id;
         savedGeneration = await saveGeneration({
+          userId,
           prompt,
           model: modelType,
           resolution: finalResolution,

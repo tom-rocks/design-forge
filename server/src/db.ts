@@ -12,9 +12,27 @@ const pool = new Pool({
 export async function initDatabase() {
   const client = await pool.connect();
   try {
+    // Users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        google_id VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        avatar_url TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        last_login TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    `);
+    
+    // Generations table
     await client.query(`
       CREATE TABLE IF NOT EXISTS generations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         prompt TEXT NOT NULL,
         model VARCHAR(50),
         resolution VARCHAR(10),
@@ -29,7 +47,9 @@ export async function initDatabase() {
       
       CREATE INDEX IF NOT EXISTS idx_generations_created_at ON generations(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_generations_parent_id ON generations(parent_id);
+      CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id);
     `);
+    
     console.log('[DB] Database schema initialized');
   } catch (err) {
     console.error('[DB] Failed to initialize schema:', err);
@@ -39,8 +59,19 @@ export async function initDatabase() {
   }
 }
 
+export interface User {
+  id: string;
+  google_id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  created_at: Date;
+  last_login: Date;
+}
+
 export interface Generation {
   id: string;
+  user_id: string | null;
   prompt: string;
   model: string;
   resolution: string;
@@ -57,6 +88,7 @@ export interface Generation {
 }
 
 export interface SaveGenerationParams {
+  userId?: string;
   prompt: string;
   model: string;
   resolution: string;
@@ -68,18 +100,63 @@ export interface SaveGenerationParams {
   settings?: Generation['settings'];
 }
 
-// Save a new generation
-export async function saveGeneration(params: SaveGenerationParams): Promise<Generation> {
-  const { prompt, model, resolution, aspectRatio, mode, parentId, imagePaths, thumbnailPath, settings } = params;
+// Find or create user by Google profile
+export async function findOrCreateUser(profile: {
+  googleId: string;
+  email: string;
+  name?: string;
+  avatarUrl?: string;
+}): Promise<User> {
+  const { googleId, email, name, avatarUrl } = profile;
   
-  const result = await pool.query<Generation>(
-    `INSERT INTO generations (prompt, model, resolution, aspect_ratio, mode, parent_id, image_paths, thumbnail_path, settings)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING *`,
-    [prompt, model, resolution, aspectRatio, mode, parentId || null, imagePaths, thumbnailPath || null, settings || {}]
+  // Try to find existing user
+  const existing = await pool.query<User>(
+    'SELECT * FROM users WHERE google_id = $1',
+    [googleId]
   );
   
-  console.log(`[DB] Saved generation ${result.rows[0].id}`);
+  if (existing.rows[0]) {
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login = NOW(), name = COALESCE($2, name), avatar_url = COALESCE($3, avatar_url) WHERE id = $1',
+      [existing.rows[0].id, name, avatarUrl]
+    );
+    return existing.rows[0];
+  }
+  
+  // Create new user
+  const result = await pool.query<User>(
+    `INSERT INTO users (google_id, email, name, avatar_url)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [googleId, email, name || null, avatarUrl || null]
+  );
+  
+  console.log(`[DB] Created new user: ${result.rows[0].email}`);
+  return result.rows[0];
+}
+
+// Get user by ID
+export async function getUserById(id: string): Promise<User | null> {
+  const result = await pool.query<User>(
+    'SELECT * FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+// Save a new generation
+export async function saveGeneration(params: SaveGenerationParams): Promise<Generation> {
+  const { userId, prompt, model, resolution, aspectRatio, mode, parentId, imagePaths, thumbnailPath, settings } = params;
+  
+  const result = await pool.query<Generation>(
+    `INSERT INTO generations (user_id, prompt, model, resolution, aspect_ratio, mode, parent_id, image_paths, thumbnail_path, settings)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING *`,
+    [userId || null, prompt, model, resolution, aspectRatio, mode, parentId || null, imagePaths, thumbnailPath || null, settings || {}]
+  );
+  
+  console.log(`[DB] Saved generation ${result.rows[0].id} for user ${userId || 'anonymous'}`);
   return result.rows[0];
 }
 
@@ -91,6 +168,19 @@ export async function getGenerations(limit = 50, offset = 0): Promise<{ generati
   const result = await pool.query<Generation>(
     `SELECT * FROM generations ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
     [limit, offset]
+  );
+  
+  return { generations: result.rows, total };
+}
+
+// Get generations by user ID (paginated, newest first)
+export async function getGenerationsByUser(userId: string, limit = 50, offset = 0): Promise<{ generations: Generation[]; total: number }> {
+  const countResult = await pool.query('SELECT COUNT(*) FROM generations WHERE user_id = $1', [userId]);
+  const total = parseInt(countResult.rows[0].count, 10);
+  
+  const result = await pool.query<Generation>(
+    `SELECT * FROM generations WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
   );
   
   return { generations: result.rows, total };

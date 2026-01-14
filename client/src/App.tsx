@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Monitor, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LayoutGrid } from 'lucide-react'
+import { Search, History, Monitor, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LayoutGrid, LogIn, LogOut, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
+import { useAuth } from './hooks/useAuth'
 import { 
   Button, 
   Panel, PanelHeader, PanelBody, 
@@ -10,7 +11,8 @@ import {
   Thumb,
   MoltenPipe,
   LCDFire,
-  HighriseSearch
+  HighriseSearch,
+  HistoryGrid
 } from './components'
 
 
@@ -40,6 +42,10 @@ interface GenerationResult {
 type RefSource = 'drop' | 'items' | 'history'
 
 export default function App() {
+  // Auth
+  const { loading: authLoading, authenticated, user, login, logout } = useAuth()
+  
+  // State
   const [mode, setMode] = useState<Mode>('create')
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
@@ -248,6 +254,29 @@ export default function App() {
       {/* HEADER */}
       <header className="app-header">
         <img src="/forge_logo.svg" alt="Design Forge" className="app-logo" />
+        
+        <div className="app-auth">
+          {authLoading ? (
+            <span className="auth-loading">...</span>
+          ) : authenticated && user ? (
+            <div className="auth-user">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name || ''} className="auth-avatar" />
+              ) : (
+                <User className="auth-avatar-icon" />
+              )}
+              <span className="auth-name">{user.name || user.email}</span>
+              <button onClick={logout} className="btn btn-ghost auth-logout" title="Sign out">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={login} className="btn btn-dark auth-login">
+              <LogIn className="w-4 h-4" />
+              Sign in with Google
+            </button>
+          )}
+        </div>
       </header>
 
       {/* MAIN FORGE AREA - Single column vertical flow */}
@@ -403,9 +432,15 @@ export default function App() {
                     bridgeConnected={bridgeConnected}
                   />
                 ) : (
-                  <div className="ref-content-area">
-                    <span className="ref-empty-text">No generations yet</span>
-                  </div>
+                  <HistoryGrid
+                    authenticated={authenticated}
+                    onLogin={login}
+                    references={references}
+                    onAddReference={addReference}
+                    onRemoveReference={removeReference}
+                    maxRefs={14}
+                    disabled={isGenerating}
+                  />
                 )}
               </PanelBody>
             </Panel>
