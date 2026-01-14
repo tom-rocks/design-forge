@@ -1364,11 +1364,12 @@ body {
 }
 
 .lightbox-content {
+  position: relative;
   max-width: 90vw;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   background: var(--surface);
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -1384,11 +1385,12 @@ body {
 
 .lightbox-footer {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 12px;
 }
 
 .lightbox-prompt {
+  flex: 1;
   font-size: 14px;
   color: var(--text-dim);
   margin: 0;
@@ -1406,10 +1408,46 @@ body {
   font-size: 13px;
 }
 
-.lightbox-actions {
+.lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  z-index: 10;
+}
+
+.lightbox-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.lightbox-download {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.lightbox-download:hover {
+  background: var(--accent);
+  color: white;
 }
 
 .history-loading,

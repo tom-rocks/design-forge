@@ -294,6 +294,12 @@ export default function HighriseSearch({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
+              <button
+                className="lightbox-close"
+                onClick={() => setLightbox(null)}
+              >
+                <X className="w-5 h-5" />
+              </button>
               <img
                 src={lightbox.imageUrl}
                 alt={lightbox.name}
@@ -303,20 +309,13 @@ export default function HighriseSearch({
                   <strong>{lightbox.name}</strong>
                   <span className="lightbox-meta"> · {lightbox.category} · {lightbox.rarity}</span>
                 </p>
-                <div className="lightbox-actions">
-                  <button
-                    className="btn btn-dark"
-                    onClick={() => downloadImage(lightbox)}
-                  >
-                    <Download className="w-4 h-4" /> Download
-                  </button>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => setLightbox(null)}
-                  >
-                    <X className="w-4 h-4" /> Close
-                  </button>
-                </div>
+                <button
+                  className="lightbox-download"
+                  onClick={() => downloadImage(lightbox)}
+                  title="Download"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
               </div>
             </motion.div>
           </motion.div>

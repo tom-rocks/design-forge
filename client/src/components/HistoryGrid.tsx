@@ -265,26 +265,25 @@ export default function HistoryGrid({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
+              <button
+                className="lightbox-close"
+                onClick={() => setLightbox(null)}
+              >
+                <X className="w-5 h-5" />
+              </button>
               <img
                 src={`${API_URL}${lightbox.imageUrls[0]}`}
                 alt={lightbox.prompt}
               />
               <div className="lightbox-footer">
                 <p className="lightbox-prompt">{lightbox.prompt}</p>
-                <div className="lightbox-actions">
-                  <button
-                    className="btn btn-dark"
-                    onClick={() => downloadImage(lightbox)}
-                  >
-                    <Download className="w-4 h-4" /> Download
-                  </button>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => setLightbox(null)}
-                  >
-                    <X className="w-4 h-4" /> Close
-                  </button>
-                </div>
+                <button
+                  className="lightbox-download"
+                  onClick={() => downloadImage(lightbox)}
+                  title="Download"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
               </div>
             </motion.div>
           </motion.div>
