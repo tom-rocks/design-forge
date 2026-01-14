@@ -459,7 +459,7 @@ export default function App() {
                     onRemoveReference={removeReference}
                     maxRefs={14}
                     disabled={isGenerating}
-                    isActive={refMode === 'history'}
+                    isActive={refSource === 'history'}
                   />
                 )}
               </PanelBody>
