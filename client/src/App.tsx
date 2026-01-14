@@ -266,8 +266,7 @@ export default function App() {
       <div className="login-screen">
         <div className="login-card">
           <img src="/forge_logo.svg" alt="Design Forge" className="login-logo" />
-          <h1 className="login-title">Design Forge</h1>
-          <p className="login-subtitle">AI-powered asset generation for Highrise</p>
+          <p className="login-subtitle">Asset creation and refinement for Highrise</p>
           <button onClick={login} className="btn btn-accent login-btn">
             <LogIn className="w-5 h-5" />
             Sign in with Google
