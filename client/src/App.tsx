@@ -249,6 +249,35 @@ export default function App() {
     })
   }, [result, images.length])
 
+  // Show login screen if not authenticated
+  if (authLoading) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <img src="/forge_logo.svg" alt="Design Forge" className="login-logo" />
+          <span className="login-loading">Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <img src="/forge_logo.svg" alt="Design Forge" className="login-logo" />
+          <h1 className="login-title">Design Forge</h1>
+          <p className="login-subtitle">AI-powered asset generation for Highrise</p>
+          <button onClick={login} className="btn btn-accent login-btn">
+            <LogIn className="w-5 h-5" />
+            Sign in with Google
+          </button>
+          <p className="login-note">Highrise team members only</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       {/* HEADER */}
@@ -256,26 +285,17 @@ export default function App() {
         <img src="/forge_logo.svg" alt="Design Forge" className="app-logo" />
         
         <div className="app-auth">
-          {authLoading ? (
-            <span className="auth-loading">...</span>
-          ) : authenticated && user ? (
-            <div className="auth-user">
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.name || ''} className="auth-avatar" />
-              ) : (
-                <User className="auth-avatar-icon" />
-              )}
-              <span className="auth-name">{user.name || user.email}</span>
-              <button onClick={logout} className="btn btn-ghost auth-logout" title="Sign out">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <button onClick={login} className="btn btn-dark auth-login">
-              <LogIn className="w-4 h-4" />
-              Sign in with Google
+          <div className="auth-user">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.name || ''} className="auth-avatar" />
+            ) : (
+              <User className="auth-avatar-icon" />
+            )}
+            <span className="auth-name">{user?.name || user?.email}</span>
+            <button onClick={logout} className="btn btn-ghost auth-logout" title="Sign out">
+              <LogOut className="w-4 h-4" />
             </button>
-          )}
+          </div>
         </div>
       </header>
 
