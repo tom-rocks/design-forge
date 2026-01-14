@@ -80,15 +80,19 @@ router.get('/google/callback',
   passport.authenticate('google', {
     failureRedirect: '/?auth=failed',
   }),
-  (_req, res) => {
+  (req, res) => {
     // Successful authentication
+    console.log(`[Auth] OAuth callback success for user: ${req.user?.email}`);
+    console.log(`[Auth] Session ID: ${req.sessionID}`);
     res.redirect('/?auth=success');
   }
 );
 
 // Get current user
 router.get('/me', (req, res) => {
+  console.log(`[Auth] /me check - isAuthenticated: ${req.isAuthenticated()}, hasUser: ${!!req.user}, sessionID: ${req.sessionID}`);
   if (req.isAuthenticated() && req.user) {
+    console.log(`[Auth] /me returning user: ${req.user.email}`);
     res.json({
       authenticated: true,
       user: {
@@ -99,6 +103,7 @@ router.get('/me', (req, res) => {
       },
     });
   } else {
+    console.log(`[Auth] /me returning not authenticated`);
     res.json({ authenticated: false, user: null });
   }
 });

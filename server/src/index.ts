@@ -58,18 +58,26 @@ app.use(cors({
 // Increase JSON body limit for base64 images
 app.use(express.json({ limit: '50mb' }));
 
+// Trust proxy for Railway (needed for secure cookies)
+const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-session-secret-change-in-prod',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
   },
 }));
+
+console.log(`🔐 Session config: secure=${isProduction}, sameSite=${isProduction ? 'none' : 'lax'}`);
 
 // Initialize Passport
 app.use(passport.initialize());
