@@ -410,7 +410,7 @@ export default function App() {
                     onClick={() => setRefSource('history')}
                   >
                     <History className="w-3 h-3" />
-                    History
+                    Works
                   </button>
                 </div>
 
