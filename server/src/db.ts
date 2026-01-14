@@ -27,24 +27,41 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     `);
+    console.log('[DB] Users table ready');
     
-    // Generations table
+    // Generations table (base)
     await client.query(`
       CREATE TABLE IF NOT EXISTS generations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         prompt TEXT NOT NULL,
         model VARCHAR(50),
         resolution VARCHAR(10),
         aspect_ratio VARCHAR(10),
         mode VARCHAR(10) DEFAULT 'create',
-        parent_id UUID REFERENCES generations(id) ON DELETE SET NULL,
+        parent_id UUID,
         image_paths TEXT[] NOT NULL DEFAULT '{}',
         thumbnail_path TEXT,
         settings JSONB DEFAULT '{}',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-      
+    `);
+    
+    // Add user_id column if it doesn't exist (migration for existing tables)
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'generations' AND column_name = 'user_id'
+        ) THEN
+          ALTER TABLE generations ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+    console.log('[DB] Generations table ready');
+    
+    // Create indexes
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_generations_created_at ON generations(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_generations_parent_id ON generations(parent_id);
       CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id);
