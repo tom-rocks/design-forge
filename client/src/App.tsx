@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Monitor, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LayoutGrid, LogIn, LogOut, User } from 'lucide-react'
+import { Search, History, Monitor, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -395,8 +395,8 @@ export default function App() {
                     className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => setRefSource('drop')}
                   >
-                    <LayoutGrid className="w-3 h-3" />
-                    References
+                    <span className={`led led-inline ${references.length > 0 ? 'on' : ''}`} />
+                    Active
                   </button>
                   <button 
                     className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}

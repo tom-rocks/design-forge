@@ -117,6 +117,12 @@ body {
     0 0 8px var(--led-red);
 }
 
+.led.led-inline {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+}
+
 /* ============================================
    BUTTONS - Physical depth with hard shadows
    ============================================ */
