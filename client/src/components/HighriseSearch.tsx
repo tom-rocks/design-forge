@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Search, Loader2, WifiOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
@@ -41,6 +41,8 @@ export default function HighriseSearch({
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const loaderRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
 
   // Search items
   const searchItems = useCallback(async (append = false) => {
@@ -105,6 +107,25 @@ export default function HighriseSearch({
     }
   }, [loadingMore, hasMore, searchItems])
 
+  // Infinite scroll with IntersectionObserver
+  useEffect(() => {
+    const loader = loaderRef.current
+    const grid = gridRef.current
+    if (!loader || !grid) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore()
+        }
+      },
+      { root: grid, threshold: 0.1 }
+    )
+
+    observer.observe(loader)
+    return () => observer.disconnect()
+  }, [hasMore, loadingMore, loadMore])
+
   // Toggle item selection
   const toggleItem = (item: HighriseItem) => {
     const existingRef = references.find(r => r.url === item.imageUrl)
@@ -159,7 +180,7 @@ export default function HighriseSearch({
             exit={{ opacity: 0 }}
             className="highrise-results"
           >
-            <div className="highrise-grid">
+            <div className="highrise-grid" ref={gridRef}>
               {items.map(item => {
                 const selected = isSelected(item)
                 return (
@@ -184,25 +205,14 @@ export default function HighriseSearch({
                   </motion.div>
                 )
               })}
+              
+              {/* Infinite scroll sentinel */}
+              {hasMore && (
+                <div ref={loaderRef} className="highrise-loader-sentinel">
+                  {loadingMore && <Loader2 className="w-5 h-5 animate-spin" />}
+                </div>
+              )}
             </div>
-
-            {/* Load More */}
-            {hasMore && (
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="btn btn-dark highrise-load-more"
-              >
-                {loadingMore ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  `Load More (${items.length} shown)`
-                )}
-              </button>
-            )}
           </motion.div>
         ) : loading ? (
           <motion.div

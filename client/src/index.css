@@ -1036,12 +1036,13 @@ body {
   font-weight: 600;
 }
 
-.highrise-load-more {
-  width: 100%;
+.highrise-loader-sentinel {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  padding: 16px;
+  color: var(--text-dim);
 }
 
 .highrise-loading,
