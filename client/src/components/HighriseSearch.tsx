@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Search, Loader2, WifiOff } from 'lucide-react'
+import { Search, Loader2, WifiOff, Expand, Download, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -41,6 +41,7 @@ export default function HighriseSearch({
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   // Search items
@@ -151,6 +152,24 @@ export default function HighriseSearch({
     }
   }
 
+  // Download image
+  const downloadImage = async (item: HighriseItem) => {
+    try {
+      const res = await fetch(item.imageUrl)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.name.replace(/[^a-z0-9]/gi, '-')}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('Failed to download:', e)
+    }
+  }
+
   return (
     <div className="highrise-search">
       {/* Search Bar */}
@@ -199,6 +218,17 @@ export default function HighriseSearch({
                         <span>✓</span>
                       </div>
                     )}
+                    {/* Expand button on hover */}
+                    <button
+                      className="highrise-item-expand"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setLightbox(item)
+                      }}
+                      title="View full size"
+                    >
+                      <Expand className="w-4 h-4" />
+                    </button>
                   </motion.div>
                 )
               })}
@@ -243,6 +273,52 @@ export default function HighriseSearch({
           >
             <Search className="w-5 h-5" />
             <span>Search Highrise items above</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            className="lightbox-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightbox(null)}
+          >
+            <motion.div
+              className="lightbox-content"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={lightbox.imageUrl}
+                alt={lightbox.name}
+              />
+              <div className="lightbox-footer">
+                <p className="lightbox-prompt">
+                  <strong>{lightbox.name}</strong>
+                  <span className="lightbox-meta"> · {lightbox.category} · {lightbox.rarity}</span>
+                </p>
+                <div className="lightbox-actions">
+                  <button
+                    className="btn btn-dark"
+                    onClick={() => downloadImage(lightbox)}
+                  >
+                    <Download className="w-4 h-4" /> Download
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => setLightbox(null)}
+                  >
+                    <X className="w-4 h-4" /> Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

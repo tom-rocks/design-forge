@@ -1162,6 +1162,34 @@ body {
   font-weight: 600;
 }
 
+/* Expand button - appears on hover */
+.highrise-item-expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 2;
+}
+
+.highrise-item:hover .highrise-item-expand {
+  opacity: 1;
+}
+
+.highrise-item-expand:hover {
+  background: var(--accent);
+}
+
 .highrise-loader-sentinel {
   grid-column: 1 / -1;
   display: flex;
@@ -1361,6 +1389,15 @@ body {
   line-height: 1.4;
   max-height: 60px;
   overflow-y: auto;
+}
+
+.lightbox-prompt strong {
+  color: var(--text);
+}
+
+.lightbox-meta {
+  color: var(--text-light);
+  font-size: 13px;
 }
 
 .lightbox-actions {
