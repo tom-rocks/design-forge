@@ -958,15 +958,19 @@ body {
 }
 
 .highrise-item {
-  aspect-ratio: 1;
-  min-height: 0;
+  position: relative;
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--bg);
   cursor: pointer;
-  position: relative;
   border: 3px solid transparent;
   transition: border-color 0.15s ease;
+}
+
+.highrise-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;
 }
 
 .highrise-item img {
