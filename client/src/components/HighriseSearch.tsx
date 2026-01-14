@@ -41,7 +41,6 @@ export default function HighriseSearch({
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
-  const loaderRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   // Search items
@@ -107,23 +106,21 @@ export default function HighriseSearch({
     }
   }, [loadingMore, hasMore, searchItems])
 
-  // Infinite scroll with IntersectionObserver
+  // Infinite scroll with scroll event
   useEffect(() => {
-    const loader = loaderRef.current
     const grid = gridRef.current
-    if (!loader || !grid) return
+    if (!grid) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          loadMore()
-        }
-      },
-      { root: grid, threshold: 0.1 }
-    )
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = grid
+      // Load more when within 100px of bottom
+      if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !loadingMore) {
+        loadMore()
+      }
+    }
 
-    observer.observe(loader)
-    return () => observer.disconnect()
+    grid.addEventListener('scroll', handleScroll)
+    return () => grid.removeEventListener('scroll', handleScroll)
   }, [hasMore, loadingMore, loadMore])
 
   // Toggle item selection
@@ -206,10 +203,10 @@ export default function HighriseSearch({
                 )
               })}
               
-              {/* Infinite scroll sentinel */}
-              {hasMore && (
-                <div ref={loaderRef} className="highrise-loader-sentinel">
-                  {loadingMore && <Loader2 className="w-5 h-5 animate-spin" />}
+              {/* Loading indicator */}
+              {loadingMore && (
+                <div className="highrise-loader-sentinel">
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 </div>
               )}
             </div>
