@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Monitor, Plus, Upload, Flame, Hammer, MessageSquare, Wifi, WifiOff, LayoutGrid } from 'lucide-react'
+import { Search, History, Monitor, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LayoutGrid } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { 
