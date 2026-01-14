@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Monitor, Plus, Upload, Flame, Hammer, MessageSquare, Wifi, WifiOff } from 'lucide-react'
+import { Search, History, Monitor, Plus, Upload, Flame, Hammer, MessageSquare, Wifi, WifiOff, LayoutGrid } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { 
@@ -347,8 +347,8 @@ export default function App() {
                     className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => setRefSource('drop')}
                   >
-                    <Upload className="w-3 h-3" />
-                    Drop
+                    <LayoutGrid className="w-3 h-3" />
+                    All
                   </button>
                   <button 
                     className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
@@ -376,7 +376,7 @@ export default function App() {
                   >
                     {references.length === 0 ? (
                       <span className="dropzone-text">
-                        {isDragging ? 'Drop to add' : 'Drop reference images'}
+                        {isDragging ? 'Drop to add' : 'Drop images or select from Items'}
                       </span>
                     ) : (
                       <div className="thumb-grid">
