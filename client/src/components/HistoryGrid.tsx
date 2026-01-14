@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ImageOff, LogIn } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Loader2, ImageOff, LogIn, Expand, Download, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
 interface Generation {
@@ -27,6 +27,7 @@ interface HistoryGridProps {
   onRemoveReference: (id: string) => void
   maxRefs?: number
   disabled?: boolean
+  isActive?: boolean // Triggers refresh when tab becomes active
 }
 
 export default function HistoryGrid({
@@ -37,13 +38,16 @@ export default function HistoryGrid({
   onRemoveReference,
   maxRefs = 14,
   disabled,
+  isActive = false,
 }: HistoryGridProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
+  const [lightbox, setLightbox] = useState<Generation | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  const lastFetchRef = useRef<number>(0)
 
   // Fetch user's generations
   const fetchGenerations = useCallback(async (append = false) => {
@@ -72,6 +76,7 @@ export default function HistoryGrid({
       }
       
       setHasMore(data.hasMore || false)
+      lastFetchRef.current = Date.now()
     } catch (e) {
       console.error('Failed to fetch history:', e)
     } finally {
@@ -86,6 +91,13 @@ export default function HistoryGrid({
       fetchGenerations(false)
     }
   }, [authenticated])
+
+  // Refresh when tab becomes active (if stale > 5s)
+  useEffect(() => {
+    if (isActive && authenticated && Date.now() - lastFetchRef.current > 5000) {
+      fetchGenerations(false)
+    }
+  }, [isActive, authenticated, fetchGenerations])
 
   // Infinite scroll
   useEffect(() => {
@@ -130,6 +142,27 @@ export default function HistoryGrid({
     return references.some(r => r.url === fullUrl)
   }
 
+  // Download image
+  const downloadImage = async (gen: Generation) => {
+    const imageUrl = gen.imageUrls[0]
+    if (!imageUrl) return
+    
+    try {
+      const res = await fetch(`${API_URL}${imageUrl}`)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `generation-${gen.id}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('Failed to download:', e)
+    }
+  }
+
   // Not authenticated
   if (!authenticated) {
     return (
@@ -164,43 +197,99 @@ export default function HistoryGrid({
   }
 
   return (
-    <div className="history-grid" ref={gridRef}>
-      {generations.map(gen => {
-        const selected = isSelected(gen)
-        return (
+    <>
+      <div className="history-grid" ref={gridRef}>
+        {generations.map(gen => {
+          const selected = isSelected(gen)
+          return (
+            <motion.div
+              key={gen.id}
+              className={`history-item ${selected ? 'selected' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
+              onClick={() => !disabled && toggleGeneration(gen)}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              title={gen.prompt}
+            >
+              {gen.thumbnailUrl ? (
+                <img
+                  src={`${API_URL}${gen.thumbnailUrl}`}
+                  alt={gen.prompt}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="history-item-placeholder">
+                  <ImageOff className="w-5 h-5" />
+                </div>
+              )}
+              {selected && (
+                <div className="history-item-check">
+                  <span>✓</span>
+                </div>
+              )}
+              {/* Expand button on hover */}
+              <button
+                className="history-item-expand"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLightbox(gen)
+                }}
+                title="View full size"
+              >
+                <Expand className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )
+        })}
+        
+        {loadingMore && (
+          <div className="history-loader-sentinel">
+            <Loader2 className="w-5 h-5 animate-spin" />
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
           <motion.div
-            key={gen.id}
-            className={`history-item ${selected ? 'selected' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
-            onClick={() => !disabled && toggleGeneration(gen)}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            title={gen.prompt}
+            className="lightbox-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightbox(null)}
           >
-            {gen.thumbnailUrl ? (
+            <motion.div
+              className="lightbox-content"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
-                src={`${API_URL}${gen.thumbnailUrl}`}
-                alt={gen.prompt}
-                loading="lazy"
+                src={`${API_URL}${lightbox.imageUrls[0]}`}
+                alt={lightbox.prompt}
               />
-            ) : (
-              <div className="history-item-placeholder">
-                <ImageOff className="w-5 h-5" />
+              <div className="lightbox-footer">
+                <p className="lightbox-prompt">{lightbox.prompt}</p>
+                <div className="lightbox-actions">
+                  <button
+                    className="btn btn-dark"
+                    onClick={() => downloadImage(lightbox)}
+                  >
+                    <Download className="w-4 h-4" /> Download
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => setLightbox(null)}
+                  >
+                    <X className="w-4 h-4" /> Close
+                  </button>
+                </div>
               </div>
-            )}
-            {selected && (
-              <div className="history-item-check">
-                <span>✓</span>
-              </div>
-            )}
+            </motion.div>
           </motion.div>
-        )
-      })}
-      
-      {loadingMore && (
-        <div className="history-loader-sentinel">
-          <Loader2 className="w-5 h-5 animate-spin" />
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

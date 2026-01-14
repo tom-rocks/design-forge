@@ -1289,6 +1289,86 @@ body {
   color: var(--text-dim);
 }
 
+/* Expand button - appears on hover */
+.history-item-expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 2;
+}
+
+.history-item:hover .history-item-expand {
+  opacity: 1;
+}
+
+.history-item-expand:hover {
+  background: var(--accent);
+}
+
+/* Lightbox */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.lightbox-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-hard-lg);
+}
+
+.lightbox-content img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.lightbox-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lightbox-prompt {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.4;
+  max-height: 60px;
+  overflow-y: auto;
+}
+
+.lightbox-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .history-loading,
 .history-empty {
   display: flex;
