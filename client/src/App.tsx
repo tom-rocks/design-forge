@@ -348,7 +348,7 @@ export default function App() {
                     onClick={() => setRefSource('drop')}
                   >
                     <LayoutGrid className="w-3 h-3" />
-                    All
+                    References
                   </button>
                   <button 
                     className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
