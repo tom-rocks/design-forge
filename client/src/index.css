@@ -260,7 +260,7 @@ body {
 
 /* Forge Specs LCD status display */
 .lcd-specs-status {
-  justify-content: center;
+  justify-content: flex-end;
   gap: 8px;
   min-height: 17px;
 }
