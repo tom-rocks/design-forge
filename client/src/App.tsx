@@ -397,10 +397,10 @@ export default function App() {
                 { ratio: '1:1', icon: '■' },
                 { ratio: '4:3', icon: '▬' },
                 { ratio: '3:4', icon: '▮' },
-                { ratio: '16:9', icon: '▭' },
-                { ratio: '9:16', icon: '▯' },
+                { ratio: '16:9', icon: '━' },
+                { ratio: '9:16', icon: '┃' },
               ].map(({ ratio, icon }) => (
-                <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>{icon}</span>
+                <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>{icon} {ratio}</span>
               ))}
               <span className="lcd-spec-sep">│</span>
               {[
