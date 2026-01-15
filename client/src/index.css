@@ -512,7 +512,7 @@ body {
 
 .panel-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
@@ -520,10 +520,6 @@ body {
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-dim);
-}
-
-.panel-header > svg {
-  margin-top: 2px;
 }
 
 .panel-icon {
