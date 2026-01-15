@@ -274,49 +274,52 @@ body {
   overflow: hidden;
 }
 
-.specs-option-row {
+.specs-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--gray-800);
-}
-
-.specs-option-row:last-child {
-  border-bottom: none;
 }
 
 .specs-label {
   color: var(--gray-500);
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  min-width: 45px;
 }
 
-.specs-select {
-  background: var(--gray-800);
+.specs-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.specs-pill {
+  background: transparent;
   border: 1px solid var(--gray-700);
-  color: var(--gray-200);
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  color: var(--gray-500);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: all 0.15s;
 }
 
-.specs-select:hover:not(:disabled) {
+.specs-pill:hover:not(:disabled) {
+  border-color: var(--gray-500);
+  color: var(--gray-300);
+}
+
+.specs-pill.active {
+  background: var(--gray-700);
   border-color: var(--gray-600);
+  color: var(--gray-100);
 }
 
-.specs-select:disabled {
-  color: var(--gray-600);
+.specs-pill:disabled,
+.specs-pill.disabled {
+  opacity: 0.3;
   cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.specs-select option {
-  background: var(--gray-900);
-  color: var(--gray-200);
 }
 
 .edit-panel-wrapper {
