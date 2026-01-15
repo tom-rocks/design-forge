@@ -516,7 +516,7 @@ body {
   gap: 10px;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-dim);
@@ -527,8 +527,8 @@ body {
 }
 
 .panel-icon {
-  width: 21px;
-  height: 21px;
+  width: 27px;
+  height: 27px;
   flex-shrink: 0;
   fill: currentColor;
   color: inherit;
