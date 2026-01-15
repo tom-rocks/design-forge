@@ -295,6 +295,36 @@ export default function App() {
     })
   }, [references])
 
+  // Handle paste from clipboard (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (!file) continue
+          
+          const reader = new FileReader()
+          reader.onload = (ev) => {
+            const url = ev.target?.result as string
+            addReference({
+              id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              url,
+              name: `Pasted image`,
+              type: 'file'
+            })
+          }
+          reader.readAsDataURL(file)
+        }
+      }
+    }
+    
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [references])
+
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
   // Check if all images have been processed (loaded or failed)
