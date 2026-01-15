@@ -414,7 +414,7 @@ export default function App() {
             <Panel>
               <PanelHeader onClick={() => setSpecsExpanded(!specsExpanded)}>
                 <SlidersHorizontal className="w-4 h-4" />
-                Forge Specs
+                Forge Specs <span className="header-subtitle">advanced settings</span>
                 <motion.div 
                   className="specs-chevron"
                   animate={{ rotate: specsExpanded ? 180 : 0 }}
@@ -549,7 +549,7 @@ export default function App() {
                   <path d="M7 5v4" />
                   <path d="M17 5v4" />
                 </svg>
-                Alloy
+                Alloy <span className="header-subtitle">image references</span>
               </PanelHeader>
               <PanelBody>
                 {/* Reference source tabs */}
