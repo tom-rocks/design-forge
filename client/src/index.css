@@ -324,25 +324,32 @@ body {
 }
 
 .specs-btn {
-  background: transparent;
-  border: 1px solid var(--gray-700);
-  color: var(--gray-500);
+  background: linear-gradient(180deg, #e8e4e0 0%, #d8d4d0 100%);
+  border: none;
+  color: var(--gray-600);
   font-size: 10px;
-  padding: 4px 8px;
+  padding: 5px 10px;
   border-radius: 3px;
   cursor: pointer;
   transition: all 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .specs-btn:hover:not(:disabled) {
-  border-color: var(--gray-500);
-  color: var(--gray-300);
+  background: linear-gradient(180deg, #f0ece8 0%, #e0dcd8 100%);
+  color: var(--gray-800);
 }
 
 .specs-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: linear-gradient(180deg, #ff6d00 0%, #ff5722 100%);
   color: white;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 1px 0 #bf360c;
 }
 
 .specs-btn:disabled {
@@ -485,23 +492,28 @@ body {
   padding: 10px 28px;
   font-size: 14px;
   border-radius: 3px;
-  box-shadow: none;
 }
 
 .mode-switch .btn-dark {
-  background: transparent;
+  background: linear-gradient(180deg, #e8e4e0 0%, #d8d4d0 100%);
   color: var(--text-dim);
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .mode-switch .btn-dark:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, #f0ece8 0%, #e0dcd8 100%);
   color: var(--text);
 }
 
 .mode-switch .btn-accent {
-  background: var(--accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(180deg, #ff6d00 0%, #ff5722 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 1px 0 #bf360c;
 }
 
 .mode-switch .btn:disabled {
@@ -956,23 +968,28 @@ body {
   padding: 10px 20px;
   font-size: 14px;
   border-radius: 3px;
-  box-shadow: none;
 }
 
 .ref-tabs .btn-dark {
-  background: transparent;
+  background: linear-gradient(180deg, #e8e4e0 0%, #d8d4d0 100%);
   color: var(--text-dim);
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .ref-tabs .btn-dark:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, #f0ece8 0%, #e0dcd8 100%);
   color: var(--text);
 }
 
 .ref-tabs .btn-accent {
-  background: var(--accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(180deg, #ff6d00 0%, #ff5722 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 1px 0 #bf360c;
 }
 
 /* Tab content - hidden when not active, preserves state */
