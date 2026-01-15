@@ -367,14 +367,11 @@ export default function App() {
           {/* FORGE SPECS - Collapsible generation options */}
           <motion.div
             className="specs-panel-wrapper"
-            animate={{ 
-              marginTop: 12
-            }}
+            animate={{ marginTop: 12 }}
           >
             <Panel>
               <PanelHeader 
                 onClick={() => setSpecsExpanded(!specsExpanded)}
-                className="specs-header"
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 Forge Specs
@@ -386,61 +383,70 @@ export default function App() {
                   <ChevronDown className="w-4 h-4" />
                 </motion.div>
               </PanelHeader>
-              <motion.div
-                className="specs-content"
-                animate={{ 
-                  height: specsExpanded ? 'auto' : 0,
-                  opacity: specsExpanded ? 1 : 0
-                }}
-                transition={{ duration: 0.2 }}
-              >
-                <PanelBody>
-                  <div className="specs-lcd">
-                    <div className="specs-lcd-row">
-                      <span className="specs-label">MODEL</span>
-                      <select 
-                        value={genModel} 
-                        onChange={e => setGenModel(e.target.value)}
-                        className="specs-select"
-                        disabled={isGenerating}
-                      >
-                        <option value="flash">Flash (Fast)</option>
-                        <option value="pro">Pro (Quality)</option>
-                      </select>
-                    </div>
-                    <div className="specs-lcd-row">
-                      <span className="specs-label">RATIO</span>
-                      <select 
-                        value={aspectRatio} 
-                        onChange={e => setAspectRatio(e.target.value)}
-                        className="specs-select"
-                        disabled={isGenerating}
-                      >
-                        <option value="1:1">1:1 Square</option>
-                        <option value="16:9">16:9 Wide</option>
-                        <option value="9:16">9:16 Portrait</option>
-                        <option value="4:3">4:3 Standard</option>
-                        <option value="3:4">3:4 Tall</option>
-                        <option value="3:2">3:2 Photo</option>
-                        <option value="2:3">2:3 Vertical</option>
-                      </select>
-                    </div>
-                    <div className="specs-lcd-row">
-                      <span className="specs-label">SIZE</span>
-                      <select 
-                        value={resolution} 
-                        onChange={e => setResolution(e.target.value)}
-                        className="specs-select"
-                        disabled={isGenerating || genModel === 'flash'}
-                      >
-                        <option value="1K">1K</option>
-                        <option value="2K">2K</option>
-                        <option value="4K">4K (Pro only)</option>
-                      </select>
-                    </div>
+              <PanelBody>
+                {/* Always visible LCD showing current specs */}
+                <div className="specs-lcd-display">
+                  <span className="specs-lcd-value">{genModel === 'pro' ? 'PRO' : 'FLASH'}</span>
+                  <span className="specs-lcd-sep">•</span>
+                  <span className="specs-lcd-value">{aspectRatio}</span>
+                  <span className="specs-lcd-sep">•</span>
+                  <span className="specs-lcd-value">{resolution}</span>
+                </div>
+                
+                {/* Collapsible options */}
+                <motion.div
+                  className="specs-options"
+                  animate={{ 
+                    height: specsExpanded ? 'auto' : 0,
+                    opacity: specsExpanded ? 1 : 0,
+                    marginTop: specsExpanded ? 12 : 0
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="specs-option-row">
+                    <span className="specs-label">MODEL</span>
+                    <select 
+                      value={genModel} 
+                      onChange={e => setGenModel(e.target.value)}
+                      className="specs-select"
+                      disabled={isGenerating}
+                    >
+                      <option value="flash">Flash (Fast)</option>
+                      <option value="pro">Pro (Quality)</option>
+                    </select>
                   </div>
-                </PanelBody>
-              </motion.div>
+                  <div className="specs-option-row">
+                    <span className="specs-label">RATIO</span>
+                    <select 
+                      value={aspectRatio} 
+                      onChange={e => setAspectRatio(e.target.value)}
+                      className="specs-select"
+                      disabled={isGenerating}
+                    >
+                      <option value="1:1">1:1 Square</option>
+                      <option value="16:9">16:9 Wide</option>
+                      <option value="9:16">9:16 Portrait</option>
+                      <option value="4:3">4:3 Standard</option>
+                      <option value="3:4">3:4 Tall</option>
+                      <option value="3:2">3:2 Photo</option>
+                      <option value="2:3">2:3 Vertical</option>
+                    </select>
+                  </div>
+                  <div className="specs-option-row">
+                    <span className="specs-label">SIZE</span>
+                    <select 
+                      value={resolution} 
+                      onChange={e => setResolution(e.target.value)}
+                      className="specs-select"
+                      disabled={isGenerating || genModel === 'flash'}
+                    >
+                      <option value="1K">1K</option>
+                      <option value="2K">2K</option>
+                      <option value="4K">4K (Pro only)</option>
+                    </select>
+                  </div>
+                </motion.div>
+              </PanelBody>
             </Panel>
           </motion.div>
 

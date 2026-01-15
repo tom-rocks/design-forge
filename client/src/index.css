@@ -247,39 +247,51 @@ body {
   user-select: none;
 }
 
-.specs-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .specs-chevron {
   margin-left: auto;
   opacity: 0.6;
 }
 
-.specs-content {
+/* LCD Display - always visible, matches Alloy block style */
+.specs-lcd-display {
+  background: #0a0a0a;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--gray-800);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.specs-lcd-value {
+  color: #4ade80;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+}
+
+.specs-lcd-sep {
+  color: var(--gray-600);
+  font-size: 10px;
+}
+
+/* Collapsible options */
+.specs-options {
   overflow: hidden;
 }
 
-.specs-lcd {
-  background: #1a1a1a;
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  border: 1px solid var(--gray-700);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.specs-lcd-row {
+.specs-option-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--gray-800);
 }
 
-.specs-lcd-row:last-child {
+.specs-option-row:last-child {
   border-bottom: none;
 }
 
@@ -291,25 +303,24 @@ body {
 }
 
 .specs-select {
-  background: transparent;
-  border: none;
-  color: #4ade80;
-  font-family: inherit;
+  background: var(--gray-800);
+  border: 1px solid var(--gray-700);
+  color: var(--gray-200);
   font-size: 12px;
-  text-align: right;
-  cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  transition: background 0.15s;
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
 
 .specs-select:hover:not(:disabled) {
-  background: var(--gray-800);
+  border-color: var(--gray-600);
 }
 
 .specs-select:disabled {
   color: var(--gray-600);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .specs-select option {
