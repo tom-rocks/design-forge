@@ -925,22 +925,6 @@ body {
   font-size: 14px !important;
 }
 
-.forge-button.forge-cancel {
-  background: var(--gray-800) !important;
-  border-color: var(--gray-600) !important;
-  color: var(--gray-300) !important;
-}
-
-.forge-button.forge-cancel:hover {
-  background: var(--gray-700) !important;
-  border-color: var(--gray-500) !important;
-  color: white !important;
-}
-
-.forge-button.forge-cancel svg {
-  fill: currentColor;
-}
-
 /* Crucible frame - carved channel around references */
 .crucible-frame {
   position: relative;

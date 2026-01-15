@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X, Square } from 'lucide-react'
+import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -547,16 +547,16 @@ export default function App() {
 
           {/* FORGE BUTTON */}
           <Button
-            variant={isGenerating ? 'dark' : 'accent'}
+            variant="accent"
             onClick={isGenerating ? handleCancel : handleGenerate}
             disabled={!isGenerating && !canGenerate}
             isLoading={false}
-            className={`w-full forge-button ${isGenerating ? 'forge-cancel' : ''}`}
+            className="w-full forge-button"
           >
             {isGenerating ? (
               <>
-                <Square className="w-4 h-4" />
-                Cancel
+                <X className="w-4 h-4" />
+                Tap to cancel
               </>
             ) : !canGenerate ? (
               !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage ? 'Add image' : 'Ready'
