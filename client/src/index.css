@@ -584,6 +584,17 @@ body {
   line-height: 1.5;
 }
 
+/* Prompt input with LED indicator */
+.prompt-input-wrapper {
+  position: relative;
+}
+
+.prompt-led {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+
 /* ============================================
    MODE SWITCH - Toggle between modes
    ============================================ */

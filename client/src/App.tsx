@@ -372,17 +372,19 @@ export default function App() {
               <MessageSquare className="w-4 h-4" />
               Prompt
               <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
-              <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
             </PanelHeader>
             <PanelBody>
-              <Textarea
-                ref={promptRef}
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-                placeholder="Describe what you want to create..."
-                rows={2}
-                disabled={isGenerating}
-              />
+              <div className="prompt-input-wrapper">
+                <Textarea
+                  ref={promptRef}
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  placeholder="Describe what you want to create..."
+                  rows={2}
+                  disabled={isGenerating}
+                />
+                <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
+              </div>
             </PanelBody>
           </Panel>
 
