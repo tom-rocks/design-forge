@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X, SlidersHorizontal, ChevronDown, Zap, Gem } from 'lucide-react'
+import { Search, History, Download, Flame, Hammer, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, X, ChevronDown, Zap, Gem } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -14,6 +14,14 @@ import {
   HighriseSearch,
   HistoryGrid
 } from './components'
+
+// Custom SVG icons
+import PromptIcon from './icons/Prompt.svg?react'
+import SpecsIcon from './icons/Sepcs.svg?react'
+import DropImageIcon from './icons/Dropimagetorefine.svg?react'
+import AlloyIcon from './icons/Alloy.svg?react'
+import OutputIcon from './icons/Output.svg?react'
+import ReadyToCastIcon from './icons/Readytocast.svg?react'
 
 
 /* ============================================
@@ -399,7 +407,7 @@ export default function App() {
         <div className="forge-block forge-input-block">
           <Panel>
             <PanelHeader>
-              <MessageSquare className="w-4 h-4" />
+              <PromptIcon className="panel-icon" />
               Prompt
               <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
             </PanelHeader>
@@ -459,7 +467,7 @@ export default function App() {
             </div>
             <Panel>
               <PanelHeader onClick={() => setSpecsExpanded(!specsExpanded)}>
-                <SlidersHorizontal className="w-4 h-4" />
+                <SpecsIcon className="panel-icon" />
                 Forge Specs <span className="header-subtitle">advanced settings</span>
                 <div className="header-right">
                   <motion.div 
@@ -577,6 +585,7 @@ export default function App() {
                       <div className="refine-content">
                         {refineSource === 'drop' && (
                           <div className="edit-dropzone">
+                            <DropImageIcon className="dropzone-icon" />
                             <span className="dropzone-text">Drop image to refine</span>
                           </div>
                         )}
@@ -640,12 +649,7 @@ export default function App() {
             </div>
             <Panel>
               <PanelHeader onClick={() => setAlloyExpanded(!alloyExpanded)}>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 9l3-4h10l3 4v10H4V9z" />
-                  <path d="M4 9h16" />
-                  <path d="M7 5v4" />
-                  <path d="M17 5v4" />
-                </svg>
+                <AlloyIcon className="panel-icon" />
                 Alloy <span className="header-subtitle">image references</span>
                 <div className="header-right">
                   <motion.div 
@@ -830,7 +834,7 @@ export default function App() {
           >
             <Panel>
               <PanelHeader led={isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : 'off'}>
-                <Monitor className="w-4 h-4" />
+                <OutputIcon className="panel-icon" />
                 Output
               </PanelHeader>
             <PanelBody>
@@ -911,6 +915,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
+                      <ReadyToCastIcon className="output-empty-icon" />
                       <span>Ready to cast</span>
                     </motion.div>
                   )}
