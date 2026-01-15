@@ -266,10 +266,11 @@ body {
 }
 
 .lcd-spec-item {
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   font-size: 10px;
-  letter-spacing: 0.03em;
-  color: #2a2928;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #3a3835;
   user-select: none;
   display: inline-flex;
   align-items: center;
@@ -290,10 +291,10 @@ body {
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
-/* TE-style colors for model selection */
+/* TE-style colors for LCD elements */
 .lcd-flash.lit {
-  color: #ff6d00;
-  text-shadow: 0 0 8px rgba(255, 109, 0, 0.6);
+  color: #ff5722;
+  text-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
 }
 
 .lcd-pro.lit {
@@ -308,8 +309,8 @@ body {
 }
 
 .lcd-2k.lit {
-  color: #ff6d00;
-  text-shadow: 0 0 8px rgba(255, 109, 0, 0.6);
+  color: #ff5722;
+  text-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
 }
 
 .lcd-4k.lit {
@@ -322,8 +323,9 @@ body {
 }
 
 .lcd-spec-sep {
-  color: #2a2928;
+  color: #3a3835;
   font-size: 10px;
+  font-weight: 600;
 }
 
 /* Specs panel header */
