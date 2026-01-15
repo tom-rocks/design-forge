@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2 } from 'lucide-react'
+import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -68,6 +68,9 @@ export default function App() {
   
   // Bridge connection status
   const [bridgeConnected, setBridgeConnected] = useState(false)
+  
+  // Output lightbox
+  const [outputLightbox, setOutputLightbox] = useState<string | null>(null)
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage)
   
@@ -194,6 +197,15 @@ export default function App() {
   const removeReference = (id: string) => {
     setReferences(references.filter(r => r.id !== id))
   }
+
+  const downloadOutputImage = useCallback((url: string) => {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `forge-output-${Date.now()}.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }, [])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -604,15 +616,26 @@ export default function App() {
                       transition={{ duration: 0.3 }}
                     >
                       {validImages.filter(url => loadedImages.has(url)).map((url, i) => (
-                        <motion.img 
+                        <motion.div 
                           key={url}
-                          src={url}
-                          alt={`Output ${i + 1}`}
-                          className="output-image"
+                          className="output-image-wrapper"
                           initial={{ opacity: 0, scale: 0.98 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: i * 0.15, duration: 0.4 }}
-                        />
+                        >
+                          <img 
+                            src={url}
+                            alt={`Output ${i + 1}`}
+                            className="output-image"
+                          />
+                          <button 
+                            className="output-expand"
+                            onClick={() => setOutputLightbox(url)}
+                            title="View full size"
+                          >
+                            <Maximize2 className="w-4 h-4" />
+                          </button>
+                        </motion.div>
                       ))}
                     </motion.div>
                   ) : (
@@ -648,6 +671,48 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Output Lightbox */}
+      <AnimatePresence>
+        {outputLightbox && (
+          <motion.div 
+            className="lightbox-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOutputLightbox(null)}
+          >
+            <motion.div 
+              className="lightbox-content"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src={outputLightbox} alt="Output full size" />
+              <div className="lightbox-footer">
+                <div className="lightbox-prompt">{prompt}</div>
+                <div className="lightbox-actions">
+                  <button 
+                    className="lightbox-download"
+                    onClick={() => downloadOutputImage(outputLightbox)}
+                    title="Download"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                  <button 
+                    className="lightbox-close"
+                    onClick={() => setOutputLightbox(null)}
+                    title="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

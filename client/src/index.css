@@ -614,12 +614,43 @@ body {
 .output-grid.cols-1 { grid-template-columns: 1fr; }
 .output-grid.cols-2 { grid-template-columns: 1fr 1fr; }
 
+.output-image-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .output-image {
   width: 100%;
   border-radius: var(--radius-md);
   box-shadow:
     0 2px 0 rgba(0, 0, 0, 0.06),
     0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.output-expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.output-image-wrapper:hover .output-expand {
+  opacity: 1;
+}
+
+.output-expand:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 /* ============================================
