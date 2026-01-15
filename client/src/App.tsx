@@ -366,7 +366,7 @@ export default function App() {
 
           {/* FORGE SPECS */}
           <motion.div
-            className="specs-panel-wrapper"
+            className="specs-frame"
             animate={{ marginTop: 12 }}
           >
             {/* LCD status display - horizontal, compact, all options visible */}

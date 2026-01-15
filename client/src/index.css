@@ -241,11 +241,28 @@ body {
    PANELS - Raised surfaces with depth
    ============================================ */
 
-/* Forge Specs Panel - LCD status display (same dimensions as Alloy LCD) */
+/* Forge Specs frame - matches crucible-frame width */
+.specs-frame {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  background: linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%);
+  box-shadow:
+    inset 2px 2px 4px rgba(0,0,0,0.15),
+    inset -1px -1px 2px rgba(255,255,255,0.3),
+    0 2px 4px rgba(0,0,0,0.1);
+}
+
+.specs-frame .panel {
+  border-radius: var(--radius-md);
+}
+
+
+/* Forge Specs LCD status display */
 .lcd-specs-status {
   justify-content: center;
   gap: 8px;
-  min-height: 17px; /* Same as lcd-ref-dot height */
+  min-height: 17px;
 }
 
 .lcd-spec-item {
@@ -1025,18 +1042,20 @@ body {
   /* Base styles - Framer Motion handles animation */
 }
 
-/* LCD Screen - TE style display */
+/* LCD Screen - TE style display, recessed into material */
 .lcd-screen {
-  background: #1a1918;
+  background: #0d0c0c;
   border-radius: 3px;
   padding: 6px 10px;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 10px;
+  border: 2px solid #0a0909;
   box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 3px 8px rgba(0, 0, 0, 0.8),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.02),
+    0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .lcd-grid-fire {
