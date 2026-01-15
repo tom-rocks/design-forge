@@ -424,9 +424,10 @@ export default function App() {
             <Panel>
               <PanelHeader led={references.length > 0 ? 'on' : 'off'}>
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="2,16 6,10 18,10 22,16 18,20 6,20" />
-                  <line x1="6" y1="10" x2="6" y2="20" />
-                  <line x1="18" y1="10" x2="18" y2="20" />
+                  <path d="M4 9l3-4h10l3 4v10H4V9z" />
+                  <path d="M4 9h16" />
+                  <path d="M7 5v4" />
+                  <path d="M17 5v4" />
                 </svg>
                 Alloy
               </PanelHeader>
