@@ -414,8 +414,8 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Reference content based on source */}
-                {refSource === 'drop' ? (
+                {/* Reference content - all tabs stay mounted to preserve state */}
+                <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
                   <div 
                     className={`dropzone dropzone-refs ${isDragging ? 'active' : ''}`}
                     onDragOver={handleDragOver}
@@ -426,7 +426,8 @@ export default function App() {
                       {isDragging ? 'Drop to add' : 'Drop images here'}
                     </span>
                   </div>
-                ) : refSource === 'items' ? (
+                </div>
+                <div className={`ref-tab-content ${refSource === 'items' ? 'active' : ''}`}>
                   <HighriseSearch
                     references={references}
                     onAddReference={addReference}
@@ -435,7 +436,8 @@ export default function App() {
                     disabled={isGenerating}
                     bridgeConnected={bridgeConnected}
                   />
-                ) : (
+                </div>
+                <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>
                   <HistoryGrid
                     authenticated={authenticated}
                     onLogin={login}
@@ -446,7 +448,7 @@ export default function App() {
                     disabled={isGenerating}
                     isActive={refSource === 'history'}
                   />
-                )}
+                </div>
 
                 {/* Always visible: Selected references */}
                 {references.length > 0 && (
