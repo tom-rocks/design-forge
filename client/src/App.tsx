@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X } from 'lucide-react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X, Square } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -71,6 +71,9 @@ export default function App() {
   
   // Output lightbox
   const [outputLightbox, setOutputLightbox] = useState<string | null>(null)
+  
+  // Abort controller for cancelling generation
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage)
   
@@ -113,6 +116,10 @@ export default function App() {
   const handleGenerate = useCallback(async () => {
     if (!canGenerate || isGenerating) return
     
+    // Create new abort controller for this generation
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+    
     // Reset all states immediately
     setIsGenerating(true)
     setError(null)
@@ -125,6 +132,7 @@ export default function App() {
 
     if (window.location.hostname === 'localhost') {
       await new Promise(resolve => setTimeout(resolve, 3000))
+      if (signal.aborted) return
       setResult({
         imageUrl: 'https://picsum.photos/512/512',
         imageUrls: ['https://picsum.photos/512/512?r=1', 'https://picsum.photos/512/512?r=2'],
@@ -147,6 +155,7 @@ export default function App() {
           mode,
           ...(mode === 'edit' && editImage ? { editImageValue: editImage, editImageType: 'url' } : {}),
         }),
+        signal,
       })
 
       const reader = response.body?.getReader()
@@ -181,11 +190,26 @@ export default function App() {
         }
       }
     } catch (err) {
+      // Don't show error if it was cancelled
+      if (err instanceof Error && err.name === 'AbortError') {
+        return
+      }
       setError(err instanceof Error ? err.message : 'Error')
     } finally {
       setIsGenerating(false)
+      abortControllerRef.current = null
     }
   }, [prompt, references, mode, editImage, canGenerate, isGenerating])
+
+  const handleCancel = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+      setIsGenerating(false)
+      setPipeFill(0)
+      setOutputHot(false)
+    }
+  }, [])
 
   const addReference = (ref: Reference) => {
     setReferences(prev => {
@@ -523,16 +547,16 @@ export default function App() {
 
           {/* FORGE BUTTON */}
           <Button
-            variant="accent"
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            isLoading={isGenerating}
-            className="w-full forge-button"
+            variant={isGenerating ? 'dark' : 'accent'}
+            onClick={isGenerating ? handleCancel : handleGenerate}
+            disabled={!isGenerating && !canGenerate}
+            isLoading={false}
+            className={`w-full forge-button ${isGenerating ? 'forge-cancel' : ''}`}
           >
             {isGenerating ? (
               <>
-                {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
-                {mode === 'create' ? 'Forging...' : 'Editing...'}
+                <Square className="w-4 h-4" />
+                Cancel
               </>
             ) : !canGenerate ? (
               !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage ? 'Add image' : 'Ready'
