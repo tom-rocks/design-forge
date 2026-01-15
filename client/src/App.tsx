@@ -381,8 +381,8 @@ export default function App() {
           >
             {/* LCD status display - horizontal, compact, all options visible */}
             <div className="lcd-screen lcd-specs-status">
-              <span className={`lcd-spec-item ${genModel === 'flash' ? 'lit' : ''}`}>FLASH</span>
-              <span className={`lcd-spec-item ${genModel === 'pro' ? 'lit' : ''}`}>PRO</span>
+              <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>⚡ FLASH</span>
+              <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>◆ PRO</span>
               <span className="lcd-spec-sep">│</span>
               {['1:1', '4:3', '3:4', '16:9', '9:16'].map(r => (
                 <span key={r} className={`lcd-spec-item ${aspectRatio === r ? 'lit' : ''}`}>{r}</span>

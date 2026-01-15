@@ -278,6 +278,17 @@ body {
   text-shadow: 0 0 6px rgba(139, 134, 133, 0.5);
 }
 
+/* TE-style colors for model selection */
+.lcd-flash.lit {
+  color: #ff6d00;
+  text-shadow: 0 0 8px rgba(255, 109, 0, 0.6);
+}
+
+.lcd-pro.lit {
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+}
+
 .lcd-spec-item.unavailable {
   opacity: 0.3;
 }
