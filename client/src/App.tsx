@@ -15,9 +15,6 @@ import {
   HistoryGrid
 } from './components'
 
-// Custom SVG icons (for content areas)
-import DropImageIcon from './icons/Dropimagetorefine.svg?react'
-import ReadyToCastIcon from './icons/Readytocast.svg?react'
 
 
 /* ============================================
@@ -539,7 +536,6 @@ export default function App() {
             <div className="edit-panel-inner">
               <Panel>
                 <PanelHeader>
-                  <Hammer className="w-4 h-4" />
                   Refine <span className="header-subtitle">edit an image</span>
                   <div className="header-right">
                     <span className={`led ${mode === 'edit' && prompt.trim() && !editImage?.url && !isGenerating ? 'blink' : editImage?.url ? 'on' : ''}`} />
@@ -579,7 +575,6 @@ export default function App() {
                       <div className="refine-content">
                         {refineSource === 'drop' && (
                           <div className="edit-dropzone">
-                            <DropImageIcon className="dropzone-icon" />
                             <span className="dropzone-text">Drop image to refine</span>
                           </div>
                         )}
@@ -907,7 +902,6 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <ReadyToCastIcon className="output-empty-icon" />
                       <span>Ready to cast</span>
                     </motion.div>
                   )}
