@@ -493,7 +493,7 @@ body {
 .dropzone-icon {
   width: 48px;
   height: 48px;
-  color: var(--text-light);
+  fill: var(--text-light);
   opacity: 0.6;
 }
 
@@ -527,9 +527,11 @@ body {
 }
 
 .panel-icon {
-  width: 16px;
-  height: 16px;
+  width: 21px;
+  height: 21px;
   flex-shrink: 0;
+  fill: currentColor;
+  color: inherit;
 }
 
 .header-subtitle {
@@ -840,7 +842,7 @@ body {
 .output-empty-icon {
   width: 56px;
   height: 56px;
-  color: var(--text-light);
+  fill: var(--text-light);
   opacity: 0.5;
 }
 
