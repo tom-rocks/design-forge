@@ -526,8 +526,7 @@ body {
   width: 27px;
   height: 27px;
   flex-shrink: 0;
-  fill: currentColor;
-  color: inherit;
+  fill: #9b9693;
 }
 
 .header-subtitle {
@@ -839,7 +838,6 @@ body {
   width: 56px;
   height: 56px;
   fill: var(--text-light);
-  opacity: 0.5;
 }
 
 /* Physical LED loader */
