@@ -274,8 +274,8 @@ body {
 }
 
 .lcd-spec-item.lit {
-  color: #8b8685;
-  text-shadow: 0 0 6px rgba(139, 134, 133, 0.5);
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
 /* TE-style colors for model selection */
@@ -289,20 +289,20 @@ body {
   text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
 }
 
-/* Resolution tier colors */
+/* Resolution tier colors - warm progression */
 .lcd-1k.lit {
-  color: #4ade80;
-  text-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+  color: #ffb74d;
+  text-shadow: 0 0 8px rgba(255, 183, 77, 0.6);
 }
 
 .lcd-2k.lit {
-  color: #facc15;
-  text-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+  color: #ff6d00;
+  text-shadow: 0 0 8px rgba(255, 109, 0, 0.6);
 }
 
 .lcd-4k.lit {
-  color: #f472b6;
-  text-shadow: 0 0 8px rgba(244, 114, 182, 0.6);
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
 }
 
 .lcd-spec-item.unavailable {
