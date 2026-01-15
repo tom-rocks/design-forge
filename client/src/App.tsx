@@ -384,13 +384,15 @@ export default function App() {
                 </motion.div>
               </PanelHeader>
               <PanelBody>
-                {/* Always visible LCD showing current specs */}
-                <div className="specs-lcd-display">
-                  <span className="specs-lcd-value">{genModel === 'pro' ? 'PRO' : 'FLASH'}</span>
-                  <span className="specs-lcd-sep">•</span>
-                  <span className="specs-lcd-value">{aspectRatio}</span>
-                  <span className="specs-lcd-sep">•</span>
-                  <span className="specs-lcd-value">{resolution}</span>
+                {/* Always visible LCD - same class as Alloy block */}
+                <div className="lcd-screen">
+                  <div className="lcd-specs-display">
+                    <span>{genModel === 'pro' ? 'PRO' : 'FLASH'}</span>
+                    <span className="lcd-specs-sep">•</span>
+                    <span>{aspectRatio}</span>
+                    <span className="lcd-specs-sep">•</span>
+                    <span>{resolution}</span>
+                  </div>
                 </div>
                 
                 {/* Collapsible options */}
