@@ -246,6 +246,7 @@ body {
   flex-direction: column;
   gap: 6px;
   padding: 8px 12px;
+  margin-bottom: 6px;
 }
 
 .lcd-spec-row {

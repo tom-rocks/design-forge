@@ -368,41 +368,39 @@ export default function App() {
             className="specs-panel-wrapper"
             animate={{ marginTop: 12 }}
           >
+            {/* LCD screen outside panel - same width as Alloy's LCD */}
+            <div className="lcd-screen lcd-specs">
+              {/* Model row */}
+              <div className="lcd-spec-row">
+                <span className={`lcd-spec-item ${genModel === 'flash' ? 'lit' : ''}`} onClick={() => !isGenerating && setGenModel('flash')}>FLASH</span>
+                <span className={`lcd-spec-item ${genModel === 'pro' ? 'lit' : ''}`} onClick={() => !isGenerating && setGenModel('pro')}>PRO</span>
+              </div>
+              {/* Ratio row */}
+              <div className="lcd-spec-row">
+                {['1:1', '4:3', '3:4', '16:9', '9:16'].map(r => (
+                  <span 
+                    key={r} 
+                    className={`lcd-spec-item ${aspectRatio === r ? 'lit' : ''}`}
+                    onClick={() => !isGenerating && setAspectRatio(r)}
+                  >{r}</span>
+                ))}
+              </div>
+              {/* Size row */}
+              <div className="lcd-spec-row">
+                {['1K', '2K', '4K'].map(s => (
+                  <span 
+                    key={s} 
+                    className={`lcd-spec-item ${resolution === s ? 'lit' : ''} ${genModel === 'flash' && s !== '1K' ? 'unavailable' : ''}`}
+                    onClick={() => !isGenerating && (genModel === 'pro' || s === '1K') && setResolution(s)}
+                  >{s}</span>
+                ))}
+              </div>
+            </div>
             <Panel>
               <PanelHeader>
                 <SlidersHorizontal className="w-4 h-4" />
                 Forge Specs
               </PanelHeader>
-              <PanelBody>
-                {/* LCD screen with all options visible, selected ones lit */}
-                <div className="lcd-screen lcd-specs">
-                  {/* Model row */}
-                  <div className="lcd-spec-row">
-                    <span className={`lcd-spec-item ${genModel === 'flash' ? 'lit' : ''}`} onClick={() => !isGenerating && setGenModel('flash')}>FLASH</span>
-                    <span className={`lcd-spec-item ${genModel === 'pro' ? 'lit' : ''}`} onClick={() => !isGenerating && setGenModel('pro')}>PRO</span>
-                  </div>
-                  {/* Ratio row */}
-                  <div className="lcd-spec-row">
-                    {['1:1', '4:3', '3:4', '16:9', '9:16'].map(r => (
-                      <span 
-                        key={r} 
-                        className={`lcd-spec-item ${aspectRatio === r ? 'lit' : ''}`}
-                        onClick={() => !isGenerating && setAspectRatio(r)}
-                      >{r}</span>
-                    ))}
-                  </div>
-                  {/* Size row */}
-                  <div className="lcd-spec-row">
-                    {['1K', '2K', '4K'].map(s => (
-                      <span 
-                        key={s} 
-                        className={`lcd-spec-item ${resolution === s ? 'lit' : ''} ${genModel === 'flash' && s !== '1K' ? 'unavailable' : ''}`}
-                        onClick={() => !isGenerating && (genModel === 'pro' || s === '1K') && setResolution(s)}
-                      >{s}</span>
-                    ))}
-                  </div>
-                </div>
-              </PanelBody>
             </Panel>
           </motion.div>
 
