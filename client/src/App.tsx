@@ -371,10 +371,8 @@ export default function App() {
             <PanelHeader>
               <MessageSquare className="w-4 h-4" />
               Prompt
-              <div className="header-right">
-                <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
-              </div>
               <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
+              <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
             </PanelHeader>
             <PanelBody>
               <Textarea
