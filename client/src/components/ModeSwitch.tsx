@@ -9,7 +9,7 @@ interface ModeSwitchProps {
 
 export function ModeSwitch({ mode, onChange, disabled }: ModeSwitchProps) {
   return (
-    <div className="mode-switch">
+    <div className="btn-group mode-switch">
       <Button
         variant={mode === 'create' ? 'accent' : 'dark'}
         onClick={() => onChange('create')}

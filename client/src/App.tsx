@@ -534,7 +534,7 @@ export default function App() {
               </PanelHeader>
               <PanelBody>
                 {/* Reference source tabs */}
-                <div className="ref-tabs">
+                <div className="btn-group ref-tabs">
                   <button 
                     className={`btn ${refSource === 'drop' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => {
