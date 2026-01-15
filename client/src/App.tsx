@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Monitor, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User } from 'lucide-react'
+import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -395,7 +395,7 @@ export default function App() {
                     className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => setRefSource('drop')}
                   >
-                    <Monitor className="w-3 h-3" />
+                    <Download className="w-3 h-3" />
                     Drop
                   </button>
                   <button 
@@ -537,7 +537,7 @@ export default function App() {
                       transition={{ duration: 0.25 }}
                     >
                       <div className="output-loader">
-                        <div className="loader-label">{isGenerating ? 'RECEIVING' : 'LOADING'}</div>
+                        <div className="loader-label">{isGenerating ? 'CASTING' : 'LOADING'}</div>
                         <div className="loader-track">
                           {[...Array(12)].map((_, i) => (
                             <motion.div
