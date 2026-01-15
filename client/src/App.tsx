@@ -588,7 +588,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <span>Output appears here</span>
+                      <span>Ready to cast</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
