@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor } from 'lucide-react'
+import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -456,6 +456,13 @@ export default function App() {
                     <div className="active-refs-header">
                       <span className="led on" />
                       <span>Active ({references.length}/14)</span>
+                      <button 
+                        className="active-refs-clear"
+                        onClick={() => setReferences([])}
+                        title="Clear all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                     <div className="thumb-grid">
                       <AnimatePresence mode="popLayout">

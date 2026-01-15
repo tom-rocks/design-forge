@@ -434,6 +434,22 @@ body {
   letter-spacing: 0.5px;
 }
 
+.active-refs-clear {
+  margin-left: auto;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+}
+
+.active-refs-clear:hover {
+  color: var(--accent);
+  background: rgba(255, 87, 34, 0.1);
+}
+
 .thumb {
   position: relative;
   width: 76px;
