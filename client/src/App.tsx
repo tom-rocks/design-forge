@@ -60,6 +60,7 @@ export default function App() {
   
   // Forge specs state
   const [specsExpanded, setSpecsExpanded] = useState(false)
+  const [alloyExpanded, setAlloyExpanded] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [resolution, setResolution] = useState<string>('1K')
   const [genModel, setGenModel] = useState<string>('flash')
@@ -598,7 +599,7 @@ export default function App() {
               </div>
             </div>
             <Panel>
-              <PanelHeader led={references.length > 0 ? 'on' : 'off'}>
+              <PanelHeader led={references.length > 0 ? 'on' : 'off'} onClick={() => setAlloyExpanded(!alloyExpanded)}>
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 9l3-4h10l3 4v10H4V9z" />
                   <path d="M4 9h16" />
@@ -606,7 +607,22 @@ export default function App() {
                   <path d="M17 5v4" />
                 </svg>
                 Alloy <span className="header-subtitle">image references</span>
+                <motion.div 
+                  className="specs-chevron"
+                  animate={{ rotate: alloyExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </motion.div>
               </PanelHeader>
+              <motion.div
+                className="alloy-content"
+                animate={{ 
+                  height: alloyExpanded ? 'auto' : 0,
+                  opacity: alloyExpanded ? 1 : 0
+                }}
+                transition={{ duration: 0.2 }}
+              >
               <PanelBody>
                 {/* Reference source tabs */}
                 <div className="btn-group ref-tabs">
@@ -723,6 +739,7 @@ export default function App() {
                   </div>
                 )}
               </PanelBody>
+              </motion.div>
             </Panel>
           </motion.div>
 

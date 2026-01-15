@@ -367,6 +367,11 @@ body {
   opacity: 0.6;
 }
 
+/* Collapsible content */
+.alloy-content {
+  overflow: hidden;
+}
+
 /* Collapsible options */
 .specs-options {
   overflow: hidden;
