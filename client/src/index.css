@@ -307,25 +307,25 @@ body {
 /* Forge Specs LCD status display */
 .lcd-specs-status {
   justify-content: flex-end;
-  gap: 8px;
-  min-height: 17px;
+  gap: 12px;
+  min-height: 26px;
 }
 
 .lcd-spec-item {
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: #3a3835;
   user-select: none;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .lcd-icon {
-  width: 11px;
-  height: 11px;
+  width: 16px;
+  height: 16px;
 }
 
 .lcd-ratio-icon {
@@ -370,7 +370,7 @@ body {
 
 .lcd-spec-sep {
   color: #3a3835;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -1189,12 +1189,12 @@ body {
 /* LCD Screen - TE style display, recessed into material */
 .lcd-screen {
   background: #0d0c0c;
-  border-radius: 3px;
-  padding: 6px 10px;
+  border-radius: 4px;
+  padding: 9px 15px;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   border: 2px solid #0a0909;
   box-shadow:
     inset 0 3px 8px rgba(0, 0, 0, 0.8),
@@ -1204,19 +1204,19 @@ body {
 
 .lcd-grid-fire {
   display: flex;
-  gap: 1px;
+  gap: 2px;
   flex: 1;
 }
 
 .lcd-column {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .lcd-pixel {
-  width: 5px;
-  height: 5px;
+  width: 7px;
+  height: 7px;
   border-radius: 1px;
   background: #2a2928;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
@@ -1226,13 +1226,13 @@ body {
 
 .lcd-refs {
   display: flex;
-  gap: 1px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
 .lcd-ref-dot {
-  width: 5px;
-  height: 17px;
+  width: 7px;
+  height: 25px;
   border-radius: 1px;
   background: #2a2928;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
@@ -1246,14 +1246,14 @@ body {
 
 .lcd-bridge {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
   align-items: center;
 }
 
 .lcd-bridge-icon {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
   color: #3a3835;
   transition: color 0.3s, filter 0.3s;
 }
@@ -1265,13 +1265,13 @@ body {
 
 .lcd-labels {
   display: flex;
-  gap: 12px;
+  gap: 18px;
   flex-shrink: 0;
 }
 
 .lcd-label {
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: #3a3835;
