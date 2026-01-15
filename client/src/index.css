@@ -514,17 +514,17 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-dim);
 }
 
 .panel-icon {
-  width: 19px;
-  height: 19px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
   fill: #9b9693;
 }
