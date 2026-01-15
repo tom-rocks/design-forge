@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Plus, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X } from 'lucide-react'
+import { Search, History, Download, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -423,8 +423,12 @@ export default function App() {
             </div>
             <Panel>
               <PanelHeader led={references.length > 0 ? 'on' : 'off'}>
-                <Plus className="w-4 h-4" />
-                References
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 8L8 4h8l4 4v4l-4 4H8L4 12V8z" />
+                  <path d="M8 4v4h8V4" />
+                  <path d="M4 8h4v4H4" />
+                </svg>
+                Alloy
               </PanelHeader>
               <PanelBody>
                 {/* Reference source tabs */}
