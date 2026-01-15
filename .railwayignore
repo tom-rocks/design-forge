@@ -1,0 +1,7 @@
+node_modules
+client/node_modules
+server/node_modules
+single-spa/node_modules
+.git
+*.log
+.DS_Store
