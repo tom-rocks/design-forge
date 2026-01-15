@@ -662,7 +662,7 @@ export default function App() {
 
           {/* FORGE BUTTON */}
           <Button
-            variant="accent"
+            variant={canGenerate || isGenerating ? 'accent' : 'dark'}
             onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
             disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
             isLoading={false}
