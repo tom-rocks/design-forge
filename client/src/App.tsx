@@ -15,12 +15,8 @@ import {
   HistoryGrid
 } from './components'
 
-// Custom SVG icons
-import PromptIcon from './icons/Prompt.svg?react'
-import SpecsIcon from './icons/Sepcs.svg?react'
+// Custom SVG icons (for content areas)
 import DropImageIcon from './icons/Dropimagetorefine.svg?react'
-import AlloyIcon from './icons/Alloy.svg?react'
-import OutputIcon from './icons/Output.svg?react'
 import ReadyToCastIcon from './icons/Readytocast.svg?react'
 
 
@@ -407,7 +403,6 @@ export default function App() {
         <div className="forge-block forge-input-block">
           <Panel>
             <PanelHeader>
-              <PromptIcon className="panel-icon" />
               Prompt
               <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
             </PanelHeader>
@@ -467,7 +462,6 @@ export default function App() {
             </div>
             <Panel>
               <PanelHeader onClick={() => setSpecsExpanded(!specsExpanded)}>
-                <SpecsIcon className="panel-icon" />
                 Forge Specs <span className="header-subtitle">advanced settings</span>
                 <div className="header-right">
                   <motion.div 
@@ -649,7 +643,6 @@ export default function App() {
             </div>
             <Panel>
               <PanelHeader onClick={() => setAlloyExpanded(!alloyExpanded)}>
-                <AlloyIcon className="panel-icon" />
                 Alloy <span className="header-subtitle">image references</span>
                 <div className="header-right">
                   <motion.div 
@@ -834,7 +827,6 @@ export default function App() {
           >
             <Panel>
               <PanelHeader led={isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : 'off'}>
-                <OutputIcon className="panel-icon" />
                 Output
               </PanelHeader>
             <PanelBody>
