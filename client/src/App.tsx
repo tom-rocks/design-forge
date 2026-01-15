@@ -436,6 +436,7 @@ export default function App() {
                   >
                     <ChevronDown className="w-4 h-4" />
                   </motion.div>
+                  <span className={`led ${genModel !== 'flash' || aspectRatio !== '1:1' || resolution !== '1K' ? 'on' : ''}`} />
                 </div>
               </PanelHeader>
               <motion.div
@@ -615,13 +616,13 @@ export default function App() {
                 </svg>
                 Alloy <span className="header-subtitle">image references</span>
                 <div className="header-right">
-                  <span className={`led ${references.length > 0 ? 'on' : ''}`} />
                   <motion.div 
                     animate={{ rotate: alloyExpanded ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
                     <ChevronDown className="w-4 h-4" />
                   </motion.div>
+                  <span className={`led ${references.length > 0 ? 'on' : ''}`} />
                 </div>
               </PanelHeader>
               <motion.div
