@@ -371,6 +371,9 @@ export default function App() {
             <PanelHeader>
               <MessageSquare className="w-4 h-4" />
               Prompt
+              <div className="header-right">
+                <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
+              </div>
               <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
             </PanelHeader>
             <PanelBody>
@@ -503,6 +506,9 @@ export default function App() {
                 <PanelHeader>
                   <Hammer className="w-4 h-4" />
                   Refine <span className="header-subtitle">edit an image</span>
+                  <div className="header-right">
+                    <span className={`led ${mode === 'edit' && prompt.trim() && !editImage?.url && !isGenerating ? 'blink' : editImage?.url ? 'on' : ''}`} />
+                  </div>
                 </PanelHeader>
                 <PanelBody>
                   {editImage ? (
