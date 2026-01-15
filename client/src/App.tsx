@@ -49,7 +49,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('create')
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
-  const [editImage, setEditImage] = useState<string | null>(null)
+  const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +94,7 @@ export default function App() {
   // Ref for prompt textarea
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
-  const canGenerate = prompt.trim() && (mode === 'create' || editImage)
+  const canGenerate = prompt.trim() && (mode === 'create' || editImage?.url)
   
   // Scroll to prompt and focus
   const scrollToPrompt = useCallback(() => {
@@ -178,7 +178,7 @@ export default function App() {
           aspectRatio: '1:1',
           styleImages: references.map(r => ({ url: r.url, strength: 1 })),
           mode,
-          ...(mode === 'edit' && editImage ? { editImageValue: editImage, editImageType: 'url' } : {}),
+          ...(mode === 'edit' && editImage?.url ? { editImageValue: editImage.url, editImageType: 'url' } : {}),
         }),
         signal,
       })
@@ -505,7 +505,7 @@ export default function App() {
                 <PanelBody>
                   {editImage ? (
                     <div className="edit-image-preview">
-                      <img src={editImage} alt="Refine" />
+                      <img src={editImage.thumbnail || editImage.url} alt="Refine" />
                       <button onClick={() => setEditImage(null)} className="thumb-remove">×</button>
                     </div>
                   ) : (
@@ -542,14 +542,17 @@ export default function App() {
                         {refineSource === 'items' && (
                           <HighriseSearch 
                             singleSelect
-                            onSingleSelect={(item) => setEditImage(item.imageUrl)} 
+                            onSingleSelect={(item) => setEditImage({ url: item.imageUrl })} 
                             bridgeConnected={bridgeConnected}
                           />
                         )}
                         {refineSource === 'history' && (
                           <HistoryGrid 
                             singleSelect
-                            onSingleSelect={(gen) => setEditImage(`${API_URL}${gen.imageUrls[0]}`)}
+                            onSingleSelect={(gen) => setEditImage({ 
+                              url: `${API_URL}${gen.imageUrls[0]}`,
+                              thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
+                            })}
                             isActive={mode === 'edit'}
                           />
                         )}
@@ -737,7 +740,7 @@ export default function App() {
                 Tap to cancel
               </>
             ) : !canGenerate ? (
-              !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage ? 'Select image' : 'Ready'
+              !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage?.url ? 'Select image' : 'Ready'
             ) : (
               <>
                 {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
