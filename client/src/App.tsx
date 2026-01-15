@@ -55,6 +55,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [refSource, setRefSource] = useState<RefSource>('drop')
+  const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
   
   // Track image loading states
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
@@ -112,6 +113,7 @@ export default function App() {
     // Reset all states immediately
     setIsGenerating(true)
     setError(null)
+    setRefSourceCollapsed(true) // Collapse tabs to focus on output
     setResult(null)
     setLoadedImages(new Set())
     setFailedImages(new Set())
@@ -392,63 +394,88 @@ export default function App() {
                 {/* Reference source tabs */}
                 <div className="ref-tabs">
                   <button 
-                    className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => setRefSource('drop')}
+                    className={`btn ${refSource === 'drop' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => {
+                      if (refSource === 'drop' && !refSourceCollapsed) {
+                        setRefSourceCollapsed(true)
+                      } else {
+                        setRefSource('drop')
+                        setRefSourceCollapsed(false)
+                      }
+                    }}
                   >
                     <Download className="w-3 h-3" />
                     Drop
                   </button>
                   <button 
-                    className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => setRefSource('items')}
+                    className={`btn ${refSource === 'items' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => {
+                      if (refSource === 'items' && !refSourceCollapsed) {
+                        setRefSourceCollapsed(true)
+                      } else {
+                        setRefSource('items')
+                        setRefSourceCollapsed(false)
+                      }
+                    }}
                   >
                     <Search className="w-3 h-3" />
                     Items
                   </button>
                   <button 
-                    className={`btn ${refSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => setRefSource('history')}
+                    className={`btn ${refSource === 'history' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => {
+                      if (refSource === 'history' && !refSourceCollapsed) {
+                        setRefSourceCollapsed(true)
+                      } else {
+                        setRefSource('history')
+                        setRefSourceCollapsed(false)
+                      }
+                    }}
                   >
                     <History className="w-3 h-3" />
                     Works
                   </button>
                 </div>
 
-                {/* Reference content - all tabs stay mounted to preserve state */}
-                <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
-                  <div 
-                    className={`dropzone dropzone-refs ${isDragging ? 'active' : ''}`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
-                    <span className="dropzone-text">
-                      {isDragging ? 'Drop to add' : 'Drop images here'}
-                    </span>
-                  </div>
-                </div>
-                <div className={`ref-tab-content ${refSource === 'items' ? 'active' : ''}`}>
-                  <HighriseSearch
-                    references={references}
-                    onAddReference={addReference}
-                    onRemoveReference={removeReference}
-                    maxRefs={14}
-                    disabled={isGenerating}
-                    bridgeConnected={bridgeConnected}
-                  />
-                </div>
-                <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>
-                  <HistoryGrid
-                    authenticated={authenticated}
-                    onLogin={login}
-                    references={references}
-                    onAddReference={addReference}
-                    onRemoveReference={removeReference}
-                    maxRefs={14}
-                    disabled={isGenerating}
-                    isActive={refSource === 'history'}
-                  />
-                </div>
+                {/* Reference content - all tabs stay mounted, collapsible */}
+                {!refSourceCollapsed && (
+                  <>
+                    <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
+                      <div 
+                        className={`dropzone dropzone-refs ${isDragging ? 'active' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                      >
+                        <span className="dropzone-text">
+                          {isDragging ? 'Drop to add' : 'Drop images here'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`ref-tab-content ${refSource === 'items' ? 'active' : ''}`}>
+                      <HighriseSearch
+                        references={references}
+                        onAddReference={addReference}
+                        onRemoveReference={removeReference}
+                        maxRefs={14}
+                        disabled={isGenerating}
+                        bridgeConnected={bridgeConnected}
+                      />
+                    </div>
+                    <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>
+                      <HistoryGrid
+                        authenticated={authenticated}
+                        onLogin={login}
+                        references={references}
+                        onAddReference={addReference}
+                        onRemoveReference={removeReference}
+                        maxRefs={14}
+                        disabled={isGenerating}
+                        isActive={refSource === 'history'}
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Always visible: Selected references */}
                 {references.length > 0 && (
