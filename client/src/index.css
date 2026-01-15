@@ -241,83 +241,42 @@ body {
    PANELS - Raised surfaces with depth
    ============================================ */
 
-/* Forge Specs Panel */
-.specs-panel-wrapper .panel-header {
-  cursor: pointer;
-  user-select: none;
+/* Forge Specs Panel - LCD style like Alloy block */
+.lcd-specs {
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
 }
 
-.specs-chevron {
-  margin-left: auto;
-  opacity: 0.6;
-}
-
-/* Specs display inside LCD screen */
-.lcd-specs-display {
+.lcd-spec-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  flex: 1;
+  gap: 12px;
+}
+
+.lcd-spec-item {
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 11px;
-  color: #8b8685;
-  letter-spacing: 0.05em;
-}
-
-.lcd-specs-sep {
-  opacity: 0.4;
-}
-
-/* Collapsible options */
-.specs-options {
-  overflow: hidden;
-}
-
-.specs-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-}
-
-.specs-label {
-  color: var(--gray-500);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  min-width: 45px;
-}
-
-.specs-pills {
-  display: flex;
-  gap: 4px;
-}
-
-.specs-pill {
-  background: transparent;
-  border: 1px solid var(--gray-700);
-  color: var(--gray-500);
   font-size: 10px;
-  padding: 4px 8px;
-  border-radius: 3px;
+  letter-spacing: 0.05em;
+  color: #2a2928;
   cursor: pointer;
-  transition: all 0.15s;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: color 0.2s, text-shadow 0.2s;
+  user-select: none;
 }
 
-.specs-pill:hover:not(:disabled) {
-  border-color: var(--gray-500);
-  color: var(--gray-300);
+.lcd-spec-item:hover:not(.unavailable) {
+  color: #5a5856;
 }
 
-.specs-pill.active {
-  background: var(--gray-700);
-  border-color: var(--gray-600);
-  color: var(--gray-100);
+.lcd-spec-item.lit {
+  color: #8b8685;
+  text-shadow: 0 0 6px rgba(139, 134, 133, 0.5);
 }
 
-.specs-pill:disabled,
-.specs-pill.disabled {
+.lcd-spec-item.unavailable {
   opacity: 0.3;
   cursor: not-allowed;
 }
