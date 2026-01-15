@@ -362,8 +362,7 @@ body {
   cursor: pointer;
 }
 
-.specs-chevron {
-  margin-left: auto;
+.header-right > div {
   opacity: 0.6;
 }
 
@@ -503,6 +502,13 @@ body {
   font-weight: 300;
   text-transform: uppercase;
   opacity: 0.6;
+}
+
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .panel-body {

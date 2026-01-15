@@ -426,13 +426,14 @@ export default function App() {
               <PanelHeader onClick={() => setSpecsExpanded(!specsExpanded)}>
                 <SlidersHorizontal className="w-4 h-4" />
                 Forge Specs <span className="header-subtitle">advanced settings</span>
-                <motion.div 
-                  className="specs-chevron"
-                  animate={{ rotate: specsExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </motion.div>
+                <div className="header-right">
+                  <motion.div 
+                    animate={{ rotate: specsExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                </div>
               </PanelHeader>
               <motion.div
                 className="specs-options"
@@ -599,7 +600,7 @@ export default function App() {
               </div>
             </div>
             <Panel>
-              <PanelHeader led={references.length > 0 ? 'on' : 'off'} onClick={() => setAlloyExpanded(!alloyExpanded)}>
+              <PanelHeader onClick={() => setAlloyExpanded(!alloyExpanded)}>
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 9l3-4h10l3 4v10H4V9z" />
                   <path d="M4 9h16" />
@@ -607,13 +608,15 @@ export default function App() {
                   <path d="M17 5v4" />
                 </svg>
                 Alloy <span className="header-subtitle">image references</span>
-                <motion.div 
-                  className="specs-chevron"
-                  animate={{ rotate: alloyExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </motion.div>
+                <div className="header-right">
+                  <span className={`led ${references.length > 0 ? 'on' : ''}`} />
+                  <motion.div 
+                    animate={{ rotate: alloyExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                </div>
               </PanelHeader>
               <motion.div
                 className="alloy-content"
