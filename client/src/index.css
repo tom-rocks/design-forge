@@ -241,17 +241,17 @@ body {
    PANELS - Raised surfaces with depth
    ============================================ */
 
-/* Forge Specs Panel - LCD status display */
+/* Forge Specs Panel - LCD status display (same dimensions as Alloy LCD) */
 .lcd-specs-status {
   justify-content: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 8px;
+  min-height: 17px; /* Same as lcd-ref-dot height */
 }
 
 .lcd-spec-item {
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.05em;
+  font-size: 10px;
+  letter-spacing: 0.03em;
   color: #2a2928;
   user-select: none;
 }
@@ -267,7 +267,7 @@ body {
 
 .lcd-spec-sep {
   color: #2a2928;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 /* Specs panel header */
