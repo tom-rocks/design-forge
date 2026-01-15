@@ -271,6 +271,18 @@ body {
   letter-spacing: 0.03em;
   color: #2a2928;
   user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.lcd-icon {
+  width: 11px;
+  height: 11px;
+}
+
+.lcd-ratio-icon {
+  flex-shrink: 0;
 }
 
 .lcd-spec-item.lit {

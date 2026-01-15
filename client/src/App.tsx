@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X, SlidersHorizontal, ChevronDown } from 'lucide-react'
+import { Search, History, Download, Flame, Hammer, MessageSquare, Wifi, WifiOff, LogIn, LogOut, User, Monitor, Trash2, Maximize2, X, SlidersHorizontal, ChevronDown, Zap, Gem } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -390,17 +390,26 @@ export default function App() {
           >
             {/* LCD status display - horizontal, compact, all options visible */}
             <div className="lcd-screen lcd-specs-status">
-              <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>⚡ FLASH</span>
-              <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>◆ PRO</span>
+              <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>
+                <Zap className="lcd-icon" /> FLASH
+              </span>
+              <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>
+                <Gem className="lcd-icon" /> PRO
+              </span>
               <span className="lcd-spec-sep">│</span>
               {[
-                { ratio: '1:1', icon: '■' },
-                { ratio: '4:3', icon: '▬' },
-                { ratio: '3:4', icon: '▮' },
-                { ratio: '16:9', icon: '━' },
-                { ratio: '9:16', icon: '┃' },
-              ].map(({ ratio, icon }) => (
-                <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>{icon} {ratio}</span>
+                { ratio: '1:1', w: 10, h: 10 },
+                { ratio: '4:3', w: 12, h: 9 },
+                { ratio: '3:4', w: 9, h: 12 },
+                { ratio: '16:9', w: 14, h: 8 },
+                { ratio: '9:16', w: 8, h: 14 },
+              ].map(({ ratio, w, h }) => (
+                <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>
+                  <svg className="lcd-ratio-icon" viewBox="0 0 16 16" width="14" height="14">
+                    <rect x={(16-w)/2} y={(16-h)/2} width={w} height={h} fill="currentColor" rx="1" />
+                  </svg>
+                  {ratio}
+                </span>
               ))}
               <span className="lcd-spec-sep">│</span>
               {[
