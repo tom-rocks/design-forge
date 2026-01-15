@@ -80,8 +80,17 @@ export default function App() {
   
   // Abort controller for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null)
+  
+  // Ref for prompt textarea
+  const promptRef = useRef<HTMLTextAreaElement>(null)
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage)
+  
+  // Scroll to prompt and focus
+  const scrollToPrompt = useCallback(() => {
+    promptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => promptRef.current?.focus(), 300)
+  }, [])
   
   // Check bridge status
   useEffect(() => {
@@ -355,6 +364,7 @@ export default function App() {
             </PanelHeader>
             <PanelBody>
               <Textarea
+                ref={promptRef}
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 placeholder="Describe what you want to create..."
@@ -644,8 +654,8 @@ export default function App() {
           {/* FORGE BUTTON */}
           <Button
             variant="accent"
-            onClick={isGenerating ? handleCancel : handleGenerate}
-            disabled={!isGenerating && !canGenerate}
+            onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
+            disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
             isLoading={false}
             className="w-full forge-button"
           >
