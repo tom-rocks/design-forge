@@ -1016,6 +1016,15 @@ body {
   margin-bottom: 14px;
 }
 
+/* Refine tabs */
+.refine-tabs {
+  margin-bottom: 14px;
+}
+
+.refine-content {
+  min-height: 200px;
+}
+
 /* Tab content - hidden when not active, preserves state */
 .ref-tab-content {
   display: none;

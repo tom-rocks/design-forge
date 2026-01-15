@@ -19,21 +19,26 @@ interface Reference {
 }
 
 interface HighriseSearchProps {
-  references: Reference[]
-  onAddReference: (ref: Reference) => void
-  onRemoveReference: (id: string) => void
+  references?: Reference[]
+  onAddReference?: (ref: Reference) => void
+  onRemoveReference?: (id: string) => void
   maxRefs?: number
   disabled?: boolean
   bridgeConnected?: boolean
+  // Single select mode - pick one item
+  singleSelect?: boolean
+  onSingleSelect?: (item: HighriseItem) => void
 }
 
 export default function HighriseSearch({ 
-  references,
+  references = [],
   onAddReference,
   onRemoveReference,
   maxRefs = 14,
   disabled,
-  bridgeConnected = false
+  bridgeConnected = false,
+  singleSelect = false,
+  onSingleSelect
 }: HighriseSearchProps) {
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<HighriseItem[]>([])
@@ -126,6 +131,15 @@ export default function HighriseSearch({
 
   // Toggle item selection
   const toggleItem = (item: HighriseItem) => {
+    // Single select mode - just call the callback
+    if (singleSelect && onSingleSelect) {
+      onSingleSelect(item)
+      return
+    }
+    
+    // Multi-select mode
+    if (!onAddReference || !onRemoveReference) return
+    
     const existingRef = references.find(r => r.url === item.imageUrl)
     if (existingRef) {
       onRemoveReference(existingRef.id)

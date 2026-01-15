@@ -56,6 +56,7 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [refSource, setRefSource] = useState<RefSource>('drop')
   const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
+  const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
   // Forge specs state
   const [specsExpanded, setSpecsExpanded] = useState(false)
@@ -499,18 +500,61 @@ export default function App() {
               <Panel>
                 <PanelHeader>
                   <Hammer className="w-4 h-4" />
-                  Edit Image
+                  Refine <span className="header-subtitle">edit an image</span>
                 </PanelHeader>
                 <PanelBody>
                   {editImage ? (
                     <div className="edit-image-preview">
-                      <img src={editImage} alt="Edit" />
+                      <img src={editImage} alt="Refine" />
                       <button onClick={() => setEditImage(null)} className="thumb-remove">×</button>
                     </div>
                   ) : (
-                    <div className="edit-dropzone">
-                      <span className="dropzone-text">Drop image to edit</span>
-                    </div>
+                    <>
+                      <div className="btn-group refine-tabs">
+                        <button 
+                          className={`btn ${refineSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
+                          onClick={() => setRefineSource('drop')}
+                        >
+                          <Download className="w-4 h-4" />
+                          Drop
+                        </button>
+                        <button 
+                          className={`btn ${refineSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
+                          onClick={() => setRefineSource('items')}
+                        >
+                          <Search className="w-4 h-4" />
+                          Items
+                        </button>
+                        <button 
+                          className={`btn ${refineSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
+                          onClick={() => setRefineSource('history')}
+                        >
+                          <History className="w-4 h-4" />
+                          Works
+                        </button>
+                      </div>
+                      <div className="refine-content">
+                        {refineSource === 'drop' && (
+                          <div className="edit-dropzone">
+                            <span className="dropzone-text">Drop image to refine</span>
+                          </div>
+                        )}
+                        {refineSource === 'items' && (
+                          <HighriseSearch 
+                            singleSelect
+                            onSingleSelect={(item) => setEditImage(item.imageUrl)} 
+                            bridgeConnected={bridgeConnected}
+                          />
+                        )}
+                        {refineSource === 'history' && (
+                          <HistoryGrid 
+                            singleSelect
+                            onSingleSelect={(gen) => setEditImage(`${API_URL}${gen.imageUrls[0]}`)}
+                            isActive={mode === 'edit'}
+                          />
+                        )}
+                      </div>
+                    </>
                   )}
                 </PanelBody>
               </Panel>
@@ -693,11 +737,11 @@ export default function App() {
                 Tap to cancel
               </>
             ) : !canGenerate ? (
-              !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage ? 'Add image' : 'Ready'
+              !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage ? 'Select image' : 'Ready'
             ) : (
               <>
                 {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
-                {mode === 'create' ? 'Forge' : 'Edit'}
+                {mode === 'create' ? 'Forge' : 'Refine'}
               </>
             )}
           </Button>

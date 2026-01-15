@@ -24,7 +24,7 @@ export function ModeSwitch({ mode, onChange, disabled }: ModeSwitchProps) {
         disabled={disabled}
       >
         <Hammer className="w-4 h-4" />
-        Edit
+        Refine
       </Button>
     </div>
   )

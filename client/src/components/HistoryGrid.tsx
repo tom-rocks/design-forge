@@ -20,25 +20,30 @@ interface Reference {
 }
 
 interface HistoryGridProps {
-  authenticated: boolean
-  onLogin: () => void
-  references: Reference[]
-  onAddReference: (ref: Reference) => void
-  onRemoveReference: (id: string) => void
+  authenticated?: boolean
+  onLogin?: () => void
+  references?: Reference[]
+  onAddReference?: (ref: Reference) => void
+  onRemoveReference?: (id: string) => void
   maxRefs?: number
   disabled?: boolean
   isActive?: boolean // Triggers refresh when tab becomes active
+  // Single select mode - pick one generation
+  singleSelect?: boolean
+  onSingleSelect?: (gen: Generation) => void
 }
 
 export default function HistoryGrid({
-  authenticated,
+  authenticated = true,
   onLogin,
-  references,
+  references = [],
   onAddReference,
   onRemoveReference,
   maxRefs = 14,
   disabled,
   isActive = false,
+  singleSelect = false,
+  onSingleSelect,
 }: HistoryGridProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -119,6 +124,15 @@ export default function HistoryGrid({
   const toggleGeneration = (gen: Generation) => {
     const imageUrl = gen.imageUrls[0]
     if (!imageUrl) return
+    
+    // Single select mode - just call the callback
+    if (singleSelect && onSingleSelect) {
+      onSingleSelect(gen)
+      return
+    }
+    
+    // Multi-select mode
+    if (!onAddReference || !onRemoveReference) return
     
     const fullUrl = `${API_URL}${imageUrl}`
     const existingRef = references.find(r => r.url === fullUrl)
