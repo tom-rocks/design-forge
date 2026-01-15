@@ -375,6 +375,9 @@ export default function App() {
             </PanelHeader>
             <PanelBody>
               <div className="prompt-input-wrapper">
+                <div className="prompt-led-row">
+                  <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
+                </div>
                 <Textarea
                   ref={promptRef}
                   value={prompt}
@@ -383,7 +386,6 @@ export default function App() {
                   rows={2}
                   disabled={isGenerating}
                 />
-                <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
               </div>
             </PanelBody>
           </Panel>

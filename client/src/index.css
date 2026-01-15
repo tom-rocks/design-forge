@@ -586,13 +586,14 @@ body {
 
 /* Prompt input with LED indicator */
 .prompt-input-wrapper {
-  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.prompt-led {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
+.prompt-led-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 
 /* ============================================
