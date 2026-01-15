@@ -393,12 +393,22 @@ export default function App() {
               <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>⚡ FLASH</span>
               <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>◆ PRO</span>
               <span className="lcd-spec-sep">│</span>
-              {['1:1', '4:3', '3:4', '16:9', '9:16'].map(r => (
-                <span key={r} className={`lcd-spec-item ${aspectRatio === r ? 'lit' : ''}`}>{r}</span>
+              {[
+                { ratio: '1:1', icon: '■' },
+                { ratio: '4:3', icon: '▬' },
+                { ratio: '3:4', icon: '▮' },
+                { ratio: '16:9', icon: '▭' },
+                { ratio: '9:16', icon: '▯' },
+              ].map(({ ratio, icon }) => (
+                <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>{icon}</span>
               ))}
               <span className="lcd-spec-sep">│</span>
-              {['1K', '2K', '4K'].map(s => (
-                <span key={s} className={`lcd-spec-item ${resolution === s ? 'lit' : ''} ${genModel === 'flash' && s !== '1K' ? 'unavailable' : ''}`}>{s}</span>
+              {[
+                { res: '1K', cls: 'lcd-1k' },
+                { res: '2K', cls: 'lcd-2k' },
+                { res: '4K', cls: 'lcd-4k' },
+              ].map(({ res, cls }) => (
+                <span key={res} className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''} ${genModel === 'flash' && res !== '1K' ? 'unavailable' : ''}`}>{res}</span>
               ))}
             </div>
             <Panel>

@@ -289,6 +289,22 @@ body {
   text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
 }
 
+/* Resolution tier colors */
+.lcd-1k.lit {
+  color: #4ade80;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+}
+
+.lcd-2k.lit {
+  color: #facc15;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+}
+
+.lcd-4k.lit {
+  color: #f472b6;
+  text-shadow: 0 0 8px rgba(244, 114, 182, 0.6);
+}
+
 .lcd-spec-item.unavailable {
   opacity: 0.3;
 }
