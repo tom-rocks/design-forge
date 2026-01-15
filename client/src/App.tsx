@@ -63,6 +63,15 @@ export default function App() {
   const [resolution, setResolution] = useState<string>('1K')
   const [genModel, setGenModel] = useState<string>('flash')
   
+  // Handle model change - auto-correct resolution if needed
+  const handleModelChange = useCallback((model: string) => {
+    setGenModel(model)
+    // Flash only supports 1K, so reset if switching to flash with higher res
+    if (model === 'flash' && resolution !== '1K') {
+      setResolution('1K')
+    }
+  }, [resolution])
+  
   // Track image loading states
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
@@ -418,12 +427,12 @@ export default function App() {
                     <div className="specs-buttons">
                       <button 
                         className={`specs-btn ${genModel === 'flash' ? 'active' : ''}`}
-                        onClick={() => setGenModel('flash')}
+                        onClick={() => handleModelChange('flash')}
                         disabled={isGenerating}
                       >Flash</button>
                       <button 
                         className={`specs-btn ${genModel === 'pro' ? 'active' : ''}`}
-                        onClick={() => setGenModel('pro')}
+                        onClick={() => handleModelChange('pro')}
                         disabled={isGenerating}
                       >Pro</button>
                     </div>
