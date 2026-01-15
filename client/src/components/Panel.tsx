@@ -9,6 +9,7 @@ interface PanelHeaderProps {
   children: ReactNode
   className?: string
   led?: 'off' | 'on' | 'success' | 'error'
+  onClick?: () => void
 }
 
 export function Panel({ children, className = '' }: PanelProps) {
@@ -19,9 +20,9 @@ export function Panel({ children, className = '' }: PanelProps) {
   )
 }
 
-export function PanelHeader({ children, className = '', led }: PanelHeaderProps) {
+export function PanelHeader({ children, className = '', led, onClick }: PanelHeaderProps) {
   return (
-    <div className={`panel-header ${className}`}>
+    <div className={`panel-header ${className}`} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
       {children}
       {led && (
         <div className={`led ml-auto ${led !== 'off' ? led : ''}`} />

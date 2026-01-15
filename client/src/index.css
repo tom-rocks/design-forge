@@ -241,6 +241,82 @@ body {
    PANELS - Raised surfaces with depth
    ============================================ */
 
+/* Forge Specs Panel */
+.specs-panel-wrapper .panel-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.specs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.specs-chevron {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+.specs-content {
+  overflow: hidden;
+}
+
+.specs-lcd {
+  background: #1a1a1a;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  border: 1px solid var(--gray-700);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.specs-lcd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.specs-lcd-row:last-child {
+  border-bottom: none;
+}
+
+.specs-label {
+  color: var(--gray-500);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.specs-select {
+  background: transparent;
+  border: none;
+  color: #4ade80;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: right;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.specs-select:hover:not(:disabled) {
+  background: var(--gray-800);
+}
+
+.specs-select:disabled {
+  color: var(--gray-600);
+  cursor: not-allowed;
+}
+
+.specs-select option {
+  background: var(--gray-900);
+  color: var(--gray-200);
+}
+
 .edit-panel-wrapper {
   display: grid;
   grid-template-rows: 0fr;
