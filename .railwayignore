@@ -1,22 +1,3 @@
-# Don't upload these to Railway
 jra/
 single-spa/
 microapps/
-bridge-keeper/
-icons/
-
-# Node modules (should be installed during build)
-node_modules/
-**/node_modules/
-client/node_modules/
-server/node_modules/
-
-# Build artifacts (rebuilt during deploy)
-client/dist/
-server/dist/
-**/dist/
-
-# Dev stuff
-.git/
-*.log
-*.md
