@@ -791,7 +791,12 @@ export default function App() {
                 Tap to cancel
               </>
             ) : !canGenerate ? (
-              !prompt.trim() ? 'Enter prompt' : mode === 'edit' && !editImage?.url ? 'Select image' : 'Ready'
+              !prompt.trim() ? (
+                <>
+                  <Flame className="w-4 h-4" />
+                  Enter prompt to forge
+                </>
+              ) : mode === 'edit' && !editImage?.url ? 'Select image' : 'Ready'
             ) : (
               <>
                 {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
