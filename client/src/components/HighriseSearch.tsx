@@ -54,6 +54,7 @@ export default function HighriseSearch({
   const [hasMore, setHasMore] = useState(false)
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Reset image loaded state when lightbox changes
@@ -64,10 +65,19 @@ export default function HighriseSearch({
   }, [lightbox?.id])
   
   // Pinned items - persisted to localStorage
+  // Normalize URLs on load to use proxy
   const [pinnedItems, setPinnedItems] = useState<HighriseItem[]>(() => {
     try {
       const stored = localStorage.getItem(PINNED_ITEMS_KEY)
-      return stored ? JSON.parse(stored) : []
+      if (!stored) return []
+      const items = JSON.parse(stored) as HighriseItem[]
+      // Normalize old URLs to use proxy
+      return items.map(item => ({
+        ...item,
+        imageUrl: item.imageUrl.includes('/api/highrise/proxy/') 
+          ? item.imageUrl 
+          : `${API_URL}/api/highrise/proxy/${item.id}.png`
+      }))
     } catch {
       return []
     }
@@ -105,6 +115,7 @@ export default function HighriseSearch({
     } else {
       setLoading(true)
       setPage(0)
+      setFailedImages(new Set()) // Reset failed images on new search
     }
     
     try {
@@ -230,16 +241,21 @@ export default function HighriseSearch({
   const isSelected = useCallback((item: HighriseItem) => selectedUrls.has(item.imageUrl), [selectedUrls])
   
   // Display items: show pinned first when no query, otherwise just search results
+  // Filter out items with failed images
   const displayItems = useMemo(() => {
+    let result: HighriseItem[]
     if (query.trim()) {
       // Searching - just show results, no pinned priority
-      return items
+      result = items
+    } else {
+      // Not searching - show pinned items first, then other items (excluding pinned)
+      const pinnedIds = new Set(pinnedItems.map(p => p.id))
+      const nonPinnedItems = items.filter(i => !pinnedIds.has(i.id))
+      result = [...pinnedItems, ...nonPinnedItems]
     }
-    // Not searching - show pinned items first, then other items (excluding pinned)
-    const pinnedIds = new Set(pinnedItems.map(p => p.id))
-    const nonPinnedItems = items.filter(i => !pinnedIds.has(i.id))
-    return [...pinnedItems, ...nonPinnedItems]
-  }, [query, items, pinnedItems])
+    // Filter out items with failed images
+    return result.filter(item => !failedImages.has(item.id))
+  }, [query, items, pinnedItems, failedImages])
 
   const getRarityColor = (r: string) => {
     switch (r?.toLowerCase()) {
@@ -314,6 +330,7 @@ export default function HighriseSearch({
                       src={item.imageUrl}
                       alt={item.name}
                       loading="lazy"
+                      onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
                     />
                     {selected && (
                       <div className="highrise-item-check">
@@ -400,6 +417,7 @@ export default function HighriseSearch({
                       src={item.imageUrl}
                       alt={item.name}
                       loading="lazy"
+                      onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
                     />
                     {selected && (
                       <div className="highrise-item-check">

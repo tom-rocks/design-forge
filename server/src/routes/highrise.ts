@@ -85,22 +85,15 @@ interface SearchResult {
 // Transform bridge item to our format (handles GetItemsRequest response)
 const transformBridgeItem = (item: BridgeItem): SearchResult => {
   const id = item.disp_id || item.id || item.item_id || '';
-  // Debug: log available name fields
-  const nameFields = {
-    disp_name: item.disp_name,
-    name: item.name,
-    display_name: item.display_name,
-    item_name: item.item_name,
-  };
   const resolvedName = item.disp_name || item.name || item.display_name || item.item_name || id;
-  console.log(`[Highrise] Item ${id} name resolution:`, nameFields, '→', resolvedName);
   
   return {
     id,
     name: resolvedName,
     category: item.category || item.type || 'unknown',
     rarity: item.rarity || 'common',
-    imageUrl: `${HIGHRISE_CDN}/${id}.png`,
+    // Use proxy URL so we can debug/log image fetches
+    imageUrl: `/api/highrise/proxy/${id}.png`,
   };
 };
 
@@ -211,7 +204,7 @@ router.get('/items', async (req: Request, res: Response) => {
       name: item.item_name,
       category: item.category,
       rarity: item.rarity,
-      imageUrl: `${HIGHRISE_CDN}/${item.item_id}.png`,
+      imageUrl: `/api/highrise/proxy/${item.item_id}.png`,
     }));
 
     res.json({
@@ -261,7 +254,7 @@ router.get('/items/:itemId', async (req: Request, res: Response) => {
       name: item.item_name,
       category: item.category,
       rarity: item.rarity,
-      imageUrl: `${HIGHRISE_CDN}/${item.item_id}.png`,
+      imageUrl: `/api/highrise/proxy/${item.item_id}.png`,
     });
 
   } catch (error) {
