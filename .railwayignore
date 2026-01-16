@@ -1,5 +1,6 @@
 # Don't upload these folders to Railway
 jra/
 single-spa/
+microapps/
 *.log
 .git/
