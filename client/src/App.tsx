@@ -12,7 +12,8 @@ import {
   MoltenPipe,
   LCDFire,
   HighriseSearch,
-  HistoryGrid
+  HistoryGrid,
+  type ReplayConfig
 } from './components'
 
 
@@ -139,6 +140,50 @@ export default function App() {
       return () => clearTimeout(timer)
     }
   }, [isGenerating, result])
+
+  // Replay a previous generation's settings
+  const handleReplay = useCallback((config: ReplayConfig) => {
+    // Set prompt
+    setPrompt(config.prompt || '')
+    
+    // Set mode
+    if (config.mode) setMode(config.mode)
+    
+    // Set model (with resolution correction for flash)
+    if (config.model) {
+      setGenModel(config.model)
+      if (config.model === 'flash' && config.resolution && config.resolution !== '1K') {
+        setResolution('1K')
+      } else if (config.resolution) {
+        setResolution(config.resolution)
+      }
+    } else if (config.resolution) {
+      setResolution(config.resolution)
+    }
+    
+    // Set aspect ratio
+    if (config.aspectRatio) setAspectRatio(config.aspectRatio)
+    
+    // Set references from style images
+    if (config.references && config.references.length > 0) {
+      const newRefs = config.references.map((ref, i) => ({
+        id: `replay-${i}-${Date.now()}`,
+        url: ref.url,
+        name: ref.name,
+        type: 'generation' as const,
+      }))
+      setReferences(newRefs)
+    }
+    
+    // Expand specs panel to show restored settings
+    setSpecsExpanded(true)
+    
+    // Focus the prompt for easy editing
+    setTimeout(() => {
+      promptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      promptRef.current?.focus()
+    }, 100)
+  }, [])
 
   const handleGenerate = useCallback(async () => {
     if (!canGenerate || isGenerating) return
@@ -739,6 +784,7 @@ export default function App() {
                         maxRefs={14}
                         disabled={isGenerating}
                         isActive={refSource === 'history'}
+                        onReplay={handleReplay}
                       />
                     </div>
                   </>

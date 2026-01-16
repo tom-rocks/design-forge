@@ -1799,6 +1799,12 @@ body {
   gap: 12px;
 }
 
+.lightbox-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .lightbox-prompt {
   flex: 1;
   font-size: 14px;

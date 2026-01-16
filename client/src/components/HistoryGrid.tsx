@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, ImageOff, LogIn, Expand, Download, Pin } from 'lucide-react'
+import { Loader2, ImageOff, LogIn, Expand, Download, Pin, RotateCcw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
 const PINNED_GENS_KEY = 'pinned-generations'
 
+// Full generation data from API - includes all settings for replay
 interface Generation {
   id: string
   prompt: string
@@ -12,6 +13,26 @@ interface Generation {
   imageUrls: string[]
   created_at: string
   mode: 'create' | 'edit'
+  model?: string
+  resolution?: string
+  aspect_ratio?: string
+  settings?: {
+    styleImages?: { url: string; name?: string }[]
+    negativePrompt?: string
+    [key: string]: any // Future-proof: accept any additional settings
+  }
+}
+
+// Replay config - passed back to App.tsx
+export interface ReplayConfig {
+  prompt: string
+  mode: 'create' | 'edit'
+  model?: string
+  resolution?: string
+  aspectRatio?: string
+  references?: { url: string; name?: string }[]
+  // Spread any additional settings for future compatibility
+  [key: string]: any
 }
 
 interface Reference {
@@ -33,6 +54,8 @@ interface HistoryGridProps {
   // Single select mode - pick one generation
   singleSelect?: boolean
   onSingleSelect?: (gen: Generation) => void
+  // Replay a generation's settings
+  onReplay?: (config: ReplayConfig) => void
 }
 
 export default function HistoryGrid({
@@ -46,6 +69,7 @@ export default function HistoryGrid({
   isActive = false,
   singleSelect = false,
   onSingleSelect,
+  onReplay,
 }: HistoryGridProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -216,6 +240,26 @@ export default function HistoryGrid({
       console.error('Failed to download:', e)
     }
   }
+  
+  // Replay generation - restore all settings
+  const replayGeneration = (gen: Generation) => {
+    if (!onReplay) return
+    
+    // Build replay config from stored generation data
+    // Future-proof: spread settings so new params auto-included
+    const config: ReplayConfig = {
+      prompt: gen.prompt,
+      mode: gen.mode || 'create',
+      model: gen.model,
+      resolution: gen.resolution,
+      aspectRatio: gen.aspect_ratio,
+      references: gen.settings?.styleImages,
+      ...gen.settings, // Include any additional settings for future compatibility
+    }
+    
+    onReplay(config)
+    setLightbox(null) // Close lightbox after replay
+  }
 
   // Not authenticated
   if (!authenticated) {
@@ -336,13 +380,24 @@ export default function HistoryGrid({
               />
               <div className="lightbox-footer">
                 <p className="lightbox-prompt">{lightbox.prompt}</p>
-                <button
-                  className="lightbox-download"
-                  onClick={() => downloadImage(lightbox)}
-                  title="Download"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
+                <div className="lightbox-actions">
+                  {onReplay && (
+                    <button
+                      className="lightbox-download"
+                      onClick={() => replayGeneration(lightbox)}
+                      title="Replay settings"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </button>
+                  )}
+                  <button
+                    className="lightbox-download"
+                    onClick={() => downloadImage(lightbox)}
+                    title="Download"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
