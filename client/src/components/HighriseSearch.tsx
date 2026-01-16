@@ -166,6 +166,7 @@ export default function HighriseSearch({
         
         // Transform AP response to our format
         // Route through our proxy for logging/debugging, with AP fallback for new pipeline
+        // v=2 cache bust to clear old bad cached responses
         const items = (result.items || []).map((item: any) => {
           const dispId = item.disp_id || item.id
           return {
@@ -173,7 +174,7 @@ export default function HighriseSearch({
             name: item.disp_name || item.name,
             category: item.category || 'unknown',
             rarity: item.rarity || 'common',
-            imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png`,
+            imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png?v=2`,
             apImageUrl: `https://production-ap.highrise.game/avataritem/front/${dispId}.png`,
           }
         })

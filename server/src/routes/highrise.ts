@@ -349,6 +349,7 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
     
     if (!response.ok) {
       logProxy(itemId, 'CDN_ERROR', `Status ${response.status} ${response.statusText}`);
+      res.set('Cache-Control', 'no-store');
       res.status(response.status).send('Image not found');
       return;
     }
@@ -356,9 +357,10 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
     const buffer = await response.arrayBuffer();
     
     // CDN returns tiny placeholder (69 bytes) for items on new asset pipeline
-    // Return 404 so client can fall back to AP URL
+    // Return 404 so client can steal from AP - don't cache this response!
     if (buffer.byteLength < 500) {
       logProxy(itemId, 'NEW_PIPELINE', `${buffer.byteLength} bytes placeholder - needs AP URL`);
+      res.set('Cache-Control', 'no-store');
       res.status(404).json({ error: 'new_pipeline', itemId });
       return;
     }
