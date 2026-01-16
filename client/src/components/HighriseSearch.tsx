@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Search, Loader2, WifiOff, Expand, Download, X } from 'lucide-react'
+import { Search, Loader2, WifiOff, Expand, Download } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -308,12 +308,6 @@ export default function HighriseSearch({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                className="lightbox-close"
-                onClick={() => setLightbox(null)}
-              >
-                <X className="w-5 h-5" />
-              </button>
               <img
                 src={lightbox.imageUrl}
                 alt={lightbox.name}

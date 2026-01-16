@@ -478,23 +478,11 @@ body {
 }
 
 .edit-dropzone {
-  padding: 24px;
+  padding: 28px;
   text-align: center;
   background: var(--surface-inset);
-  border: 2px dashed rgba(0, 0, 0, 0.12);
   border-radius: var(--radius-lg);
   transition: all 0.15s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.dropzone-icon {
-  width: 48px;
-  height: 48px;
-  fill: var(--text-light);
-  opacity: 0.6;
 }
 
 .panel {
@@ -780,7 +768,6 @@ body {
 
 .dropzone {
   padding: 28px;
-  border: 2px dashed rgba(0, 0, 0, 0.12);
   border-radius: var(--radius-lg);
   background: var(--surface-inset);
   text-align: center;
@@ -792,15 +779,12 @@ body {
 }
 
 .dropzone.active {
-  border-color: var(--accent);
   background: rgba(255, 109, 58, 0.08);
 }
 
 .dropzone-text {
   font-size: 14px;
   color: var(--text-light);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 /* ============================================

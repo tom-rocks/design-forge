@@ -575,7 +575,7 @@ export default function App() {
                       <div className="refine-content">
                         {refineSource === 'drop' && (
                           <div className="edit-dropzone">
-                            <span className="dropzone-text">Drop image to refine</span>
+                            <span className="dropzone-text">Drop or paste image</span>
                           </div>
                         )}
                         {refineSource === 'items' && (
@@ -715,7 +715,7 @@ export default function App() {
                         onDrop={handleDrop}
                       >
                         <span className="dropzone-text">
-                          {isDragging ? 'Drop to add' : 'Drop images here'}
+                          {isDragging ? 'Drop to add' : 'Drop or paste images'}
                         </span>
                       </div>
                     </div>
@@ -947,22 +947,13 @@ export default function App() {
               <img src={outputLightbox} alt="Output full size" />
               <div className="lightbox-footer">
                 <div className="lightbox-prompt">{prompt}</div>
-                <div className="lightbox-actions">
-                  <button 
+                <button 
                     className="lightbox-download"
                     onClick={() => downloadOutputImage(outputLightbox)}
                     title="Download"
                   >
                     <Download className="w-5 h-5" />
                   </button>
-                  <button 
-                    className="lightbox-close"
-                    onClick={() => setOutputLightbox(null)}
-                    title="Close"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
               </div>
             </motion.div>
           </motion.div>
