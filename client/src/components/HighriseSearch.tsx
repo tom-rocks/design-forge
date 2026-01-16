@@ -370,8 +370,15 @@ export default function HighriseSearch({
                       src={cachedImages.has(item.id) ? `${item.imageUrl}?cached=1` : item.imageUrl}
                       alt={item.name}
                       loading="lazy"
+                      onLoad={(e) => {
+                        // CDN returns valid 1x1 PNG for new pipeline items - detect and steal
+                        const img = e.currentTarget
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !cachedImages.has(item.id)) {
+                          stealAndCache(item)
+                        }
+                      }}
                       onError={() => {
-                        // Try to steal from AP if we have a fallback URL
+                        // True error - try to steal or mark failed
                         if (item.apImageUrl && !cachedImages.has(item.id)) {
                           stealAndCache(item)
                         } else {
@@ -464,8 +471,15 @@ export default function HighriseSearch({
                       src={cachedImages.has(item.id) ? `${item.imageUrl}?cached=1` : item.imageUrl}
                       alt={item.name}
                       loading="lazy"
+                      onLoad={(e) => {
+                        // CDN returns valid 1x1 PNG for new pipeline items - detect and steal
+                        const img = e.currentTarget
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !cachedImages.has(item.id)) {
+                          stealAndCache(item)
+                        }
+                      }}
                       onError={() => {
-                        // Try to steal from AP if we have a fallback URL
+                        // True error - try to steal or mark failed
                         if (item.apImageUrl && !cachedImages.has(item.id)) {
                           stealAndCache(item)
                         } else {
