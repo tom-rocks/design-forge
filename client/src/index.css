@@ -625,6 +625,17 @@ body {
   line-height: 1.5;
 }
 
+/* Hot prompt effect during replay */
+.textarea.prompt-hot {
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(230, 74, 25, 0.4);
+  transition: color 0.8s ease-out, text-shadow 0.8s ease-out;
+}
+
+.textarea:not(.prompt-hot) {
+  transition: color 0.8s ease-out, text-shadow 0.8s ease-out;
+}
+
 /* Prompt input with LED indicator */
 .prompt-input-wrapper {
   display: flex;

@@ -146,6 +146,7 @@ export default function App() {
 
   // Replay animation state
   const [replayAnimating, setReplayAnimating] = useState(false)
+  const [promptHot, setPromptHot] = useState(false)
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
@@ -199,6 +200,7 @@ export default function App() {
     // Type out the prompt character by character
     const fullPrompt = config.prompt || ''
     setPrompt('')
+    setPromptHot(true) // Start hot (orange)
     let charIndex = 0
     const typeInterval = setInterval(() => {
       if (charIndex < fullPrompt.length) {
@@ -206,8 +208,10 @@ export default function App() {
         charIndex++
       } else {
         clearInterval(typeInterval)
+        // Cool down the prompt (orange → grey transition)
+        setTimeout(() => setPromptHot(false), 200)
         // End animation state
-        setTimeout(() => setReplayAnimating(false), 300)
+        setTimeout(() => setReplayAnimating(false), 800)
       }
     }, 15) // Fast but visible typing
     
@@ -496,6 +500,7 @@ export default function App() {
                 </div>
                 <Textarea
                   ref={promptRef}
+                  className={promptHot ? 'prompt-hot' : ''}
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
                   placeholder="Describe what you want to create..."
