@@ -663,7 +663,7 @@ export default function App() {
           >
             {/* LCD Status Display */}
             <div className="lcd-screen">
-              <LCDFire active={isGenerating} columns={42} rows={3} />
+              <LCDFire active={isGenerating} columns={56} rows={3} />
               <div className="lcd-refs">
                 {[...Array(14)].map((_, i) => (
                   <div 
