@@ -478,10 +478,10 @@ body {
 }
 
 .edit-dropzone {
-  padding: 28px;
+  padding: 32px 16px;
   text-align: center;
   background: var(--surface-inset);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   transition: all 0.15s ease;
 }
 
@@ -767,15 +767,15 @@ body {
    ============================================ */
 
 .dropzone {
-  padding: 28px;
-  border-radius: var(--radius-lg);
+  padding: 32px 16px;
+  border-radius: var(--radius-md);
   background: var(--surface-inset);
   text-align: center;
   transition: all 0.15s ease;
 }
 
 .dropzone-refs {
-  min-height: 140px;
+  min-height: 120px;
 }
 
 .dropzone.active {
@@ -783,8 +783,8 @@ body {
 }
 
 .dropzone-text {
-  font-size: 14px;
-  color: var(--text-light);
+  font-size: 12px;
+  color: var(--text-dim);
 }
 
 /* ============================================
@@ -1105,7 +1105,7 @@ body {
 }
 
 .refine-content {
-  min-height: 200px;
+  min-height: 120px;
 }
 
 /* Tab content - hidden when not active, preserves state */
