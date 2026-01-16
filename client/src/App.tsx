@@ -458,7 +458,7 @@ export default function App() {
               ))}
             </div>
             <Panel>
-              <PanelHeader onClick={() => setSpecsExpanded(!specsExpanded)}>
+              <PanelHeader className="collapsible" onClick={() => setSpecsExpanded(!specsExpanded)}>
                 Forge Specs <span className="header-subtitle">advanced settings</span>
                 <div className="header-right">
                   <motion.div 
@@ -637,7 +637,7 @@ export default function App() {
               </div>
             </div>
             <Panel>
-              <PanelHeader onClick={() => setAlloyExpanded(!alloyExpanded)}>
+              <PanelHeader className="collapsible" onClick={() => setAlloyExpanded(!alloyExpanded)}>
                 Alloy <span className="header-subtitle">image references</span>
                 <div className="header-right">
                   <motion.div 
