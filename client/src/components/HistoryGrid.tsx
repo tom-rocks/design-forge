@@ -258,6 +258,9 @@ export default function HistoryGrid({
           return (
             <motion.div
               key={gen.id}
+              layout
+              layoutId={`history-${gen.id}`}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={`history-item ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
               onClick={() => !disabled && toggleGeneration(gen)}
               whileHover={{ scale: 1.03 }}

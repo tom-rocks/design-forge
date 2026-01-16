@@ -262,6 +262,9 @@ export default function HighriseSearch({
                 return (
                   <motion.div
                     key={item.id}
+                    layout
+                    layoutId={`highrise-${item.id}`}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
                     whileHover={{ scale: 1.05 }}
@@ -345,6 +348,9 @@ export default function HighriseSearch({
                 return (
                   <motion.div
                     key={item.id}
+                    layout
+                    layoutId={`highrise-${item.id}`}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} pinned ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
                     whileHover={{ scale: 1.05 }}
