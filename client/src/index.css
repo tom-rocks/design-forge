@@ -396,21 +396,21 @@ body {
 .specs-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 0;
+  gap: 14px;
+  padding: 7px 0;
 }
 
 .specs-label {
   color: var(--gray-500);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  min-width: 40px;
+  min-width: 46px;
 }
 
 .specs-buttons {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
@@ -418,8 +418,8 @@ body {
   background: #ddd9d5;
   border: none;
   color: var(--gray-600);
-  font-size: 10px;
-  padding: 5px 10px;
+  font-size: 12px;
+  padding: 6px 12px;
   border-radius: 3px;
   cursor: pointer;
   transition: all 0.15s;
