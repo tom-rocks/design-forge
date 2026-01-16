@@ -1177,14 +1177,14 @@ body {
 
 /* LCD Screen - TE style display, recessed into material */
 .lcd-screen {
-  background: #0d0c0c;
+  background: #1a1918;
   border-radius: 4px;
   padding: 6px 10px;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #0a0909;
+  border: 2px solid #0a0908;
   box-shadow:
     /* Inner top-left highlight */
     inset 1px 1px 0 rgba(255, 255, 255, 0.05),
