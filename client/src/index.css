@@ -1517,16 +1517,17 @@ body {
 }
 
 /* Expand button - appears on hover */
+/* Expand button on items */
 .highrise-item-expand {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.7);
+  background: #ddd9d5;
   border: none;
-  color: var(--cream);
+  color: var(--text-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1534,6 +1535,9 @@ body {
   opacity: 0;
   transition: opacity 0.15s ease, background 0.15s ease;
   z-index: 2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .highrise-item:hover .highrise-item-expand {
@@ -1541,20 +1545,21 @@ body {
 }
 
 .highrise-item-expand:hover {
-  background: var(--accent);
+  background: #e8e4e0;
+  color: var(--text);
 }
 
 /* Pin button - shared between highrise and history */
 .item-pin {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 24px;
-  height: 24px;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.7);
+  background: #ddd9d5;
   border: none;
-  color: var(--cream);
+  color: var(--text-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1562,6 +1567,9 @@ body {
   opacity: 0;
   transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
   z-index: 2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .highrise-item:hover .item-pin,
@@ -1570,12 +1578,14 @@ body {
 }
 
 .item-pin:hover {
-  background: rgba(0, 0, 0, 0.9);
+  background: #e8e4e0;
+  color: var(--text);
 }
 
 .item-pin.active {
   opacity: 1;
   background: var(--accent);
+  color: white;
   transform: rotate(-45deg);
 }
 
@@ -1723,14 +1733,14 @@ body {
 /* Expand button - appears on hover */
 .history-item-expand {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.7);
+  background: #ddd9d5;
   border: none;
-  color: var(--cream);
+  color: var(--text-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1738,6 +1748,9 @@ body {
   opacity: 0;
   transition: opacity 0.15s ease, background 0.15s ease;
   z-index: 2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .history-item:hover .history-item-expand {
@@ -1745,7 +1758,8 @@ body {
 }
 
 .history-item-expand:hover {
-  background: var(--accent);
+  background: #e8e4e0;
+  color: var(--text);
 }
 
 /* Lightbox */
