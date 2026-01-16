@@ -6,38 +6,43 @@ interface LCDFireProps {
   rows?: number
 }
 
-// Color palette - smooth gradient from cold to hot
-const FIRE_PALETTE = [
-  '#2a2928', // 0 - off (LCD background)
-  '#2a2928', '#2d2826', '#302924', '#352a22', // barely warm
-  '#3d2820', '#45281e', '#4d281c', '#55281a', // ember glow starting
-  '#5e2918', '#672a16', '#702b14', '#7a2c12', // deep ember
-  '#842d10', '#8e2e0e', '#993010', '#a43212', // warming up
-  '#b03414', '#bc3616', '#c83818', '#d43a1a', // getting hot
-  '#e03c1c', '#e64a19', '#ec5816', '#f26613', // accent zone
-  '#f87410', '#ff820d', '#ff8a0a', '#ff9207', // bright orange
-  '#ff9a04', '#ffa201', '#ffaa00', '#ffb200', // very hot
-  '#ffba00', '#ffc200', '#ffca00', '#ffd200', // white-hot
-]
+// Color palette for fire - from bottom (hottest) to top (cooler tips)
+const getFireColor = (row: number, maxRows: number, intensity: number) => {
+  // Bottom is hottest (white/yellow), top is cooler (red/orange)
+  const heightRatio = row / maxRows // 0 at bottom, 1 at top
+  
+  if (intensity < 0.1) return '#2a2928' // off
+  
+  // Interpolate colors based on height and intensity
+  if (heightRatio < 0.33) {
+    // Bottom third - bright orange to yellow
+    const t = intensity
+    return `rgb(${Math.floor(255)}, ${Math.floor(140 + t * 80)}, ${Math.floor(t * 60)})`
+  } else if (heightRatio < 0.66) {
+    // Middle third - orange
+    const t = intensity
+    return `rgb(${Math.floor(255)}, ${Math.floor(80 + t * 60)}, ${Math.floor(t * 20)})`
+  } else {
+    // Top third - red/deep orange tips
+    const t = intensity * 0.8
+    return `rgb(${Math.floor(200 + t * 55)}, ${Math.floor(50 + t * 40)}, ${Math.floor(t * 15)})`
+  }
+}
 
-export function LCDFire({ active, columns = 64, rows = 3 }: LCDFireProps) {
-  const [grid, setGrid] = useState<number[][]>(() => 
-    Array(rows).fill(null).map(() => Array(columns).fill(0))
-  )
+export function LCDFire({ active, columns = 56, rows = 3 }: LCDFireProps) {
+  // Heights array - one value per column (0 to 1, represents how high the bar goes)
+  const [heights, setHeights] = useState<number[]>(() => Array(columns).fill(0))
   const frameRef = useRef<number>()
   const timeRef = useRef(0)
-  const targetGridRef = useRef<number[][]>(
-    Array(rows).fill(null).map(() => Array(columns).fill(0))
-  )
   
   useEffect(() => {
     if (!active) {
-      // Smooth cool down
+      // Cool down smoothly
       const coolDown = () => {
-        setGrid(prev => {
-          const allCold = prev.every(row => row.every(v => v < 1))
-          if (allCold) return prev.map(row => row.map(() => 0))
-          return prev.map(row => row.map(v => Math.max(0, v * 0.85)))
+        setHeights(prev => {
+          const allCold = prev.every(h => h < 0.01)
+          if (allCold) return prev.map(() => 0)
+          return prev.map(h => h * 0.9)
         })
       }
       const interval = setInterval(coolDown, 30)
@@ -48,49 +53,27 @@ export function LCDFire({ active, columns = 64, rows = 3 }: LCDFireProps) {
       const time = timestamp / 1000
       timeRef.current = time
       
-      // Generate target values using layered waves (audio visualizer style)
-      const target = targetGridRef.current
-      
-      for (let x = 0; x < columns; x++) {
-        const xNorm = x / columns
-        
-        // Layer multiple sine waves at different frequencies for organic feel
-        const wave1 = Math.sin(time * 2.5 + xNorm * 8) * 0.5 + 0.5
-        const wave2 = Math.sin(time * 4.1 + xNorm * 12 + 1.2) * 0.3 + 0.5
-        const wave3 = Math.sin(time * 6.3 + xNorm * 6 - 0.8) * 0.2 + 0.5
-        const wave4 = Math.sin(time * 1.7 + xNorm * 3) * 0.4 + 0.5 // slow rolling wave
-        
-        // Combine waves
-        const combined = (wave1 + wave2 + wave3 + wave4) / 4
-        
-        // Add some high-frequency shimmer
-        const shimmer = Math.sin(time * 15 + x * 0.5) * 0.1 + 0.9
-        
-        // Base intensity with variation
-        const baseIntensity = combined * shimmer
-        
-        // Bottom row is hottest
-        target[rows - 1][x] = baseIntensity * 36
-        
-        // Middle rows fade up with wave influence
-        for (let y = rows - 2; y >= 0; y--) {
-          const heightFade = (rows - 1 - y) / rows
-          const flicker = Math.sin(time * 8 + x * 0.3 + y * 2) * 0.15 + 0.85
-          // Heat rises less to top rows, creating flame tips
-          const below = target[y + 1][x]
-          target[y][x] = below * (0.4 - heightFade * 0.2) * flicker
-        }
-      }
-      
-      // Smooth interpolation toward target (creates fluid motion)
-      setGrid(prev => {
-        return prev.map((row, y) => 
-          row.map((val, x) => {
-            const targetVal = target[y][x]
-            // Lerp toward target for smooth movement
-            return val + (targetVal - val) * 0.15
-          })
-        )
+      setHeights(prev => {
+        return prev.map((currentHeight, x) => {
+          const xNorm = x / columns
+          
+          // Layer multiple waves for organic movement
+          const wave1 = Math.sin(time * 3 + xNorm * Math.PI * 4) * 0.5 + 0.5
+          const wave2 = Math.sin(time * 5 + xNorm * Math.PI * 7 + 1) * 0.3 + 0.5
+          const wave3 = Math.sin(time * 2 + xNorm * Math.PI * 2) * 0.4 + 0.5
+          const wave4 = Math.sin(time * 7 + xNorm * Math.PI * 10 + 2) * 0.2 + 0.5
+          
+          // Combine waves
+          const targetHeight = (wave1 + wave2 + wave3 + wave4) / 4
+          
+          // Add some randomness for flicker
+          const flicker = 0.95 + Math.random() * 0.1
+          
+          // Smooth interpolation toward target
+          const newHeight = currentHeight + (targetHeight * flicker - currentHeight) * 0.2
+          
+          return Math.max(0, Math.min(1, newHeight))
+        })
       })
       
       frameRef.current = requestAnimationFrame(simulate)
@@ -100,33 +83,40 @@ export function LCDFire({ active, columns = 64, rows = 3 }: LCDFireProps) {
     return () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current)
     }
-  }, [active, columns, rows])
+  }, [active, columns])
   
   return (
     <div className="lcd-grid-fire">
-      {Array(columns).fill(null).map((_, col) => (
-        <div key={col} className="lcd-column">
-          {Array(rows).fill(null).map((_, row) => {
-            const value = grid[row]?.[col] || 0
-            const colorIndex = Math.min(Math.floor(value), 36)
-            const glowIntensity = value > 18 ? (value - 18) / 18 : 0
-            
-            return (
-              <div 
-                key={row}
-                className="lcd-pixel"
-                style={{ 
-                  backgroundColor: FIRE_PALETTE[colorIndex],
-                  boxShadow: glowIntensity > 0.2
-                    ? `0 0 ${Math.floor(glowIntensity * 4)}px ${FIRE_PALETTE[colorIndex]}`
-                    : 'none',
-                  transition: 'background-color 0.05s ease-out'
-                }}
-              />
-            )
-          })}
-        </div>
-      ))}
+      {Array(columns).fill(null).map((_, col) => {
+        const height = heights[col] || 0
+        // Calculate how many rows should be lit (from bottom up)
+        const litRows = height * rows
+        
+        return (
+          <div key={col} className="lcd-column">
+            {Array(rows).fill(null).map((_, row) => {
+              // Rows are rendered top to bottom, but we want bottom-up lighting
+              const rowFromBottom = rows - 1 - row
+              const isLit = rowFromBottom < litRows
+              const intensity = isLit ? Math.min(1, litRows - rowFromBottom) : 0
+              const color = isLit ? getFireColor(rowFromBottom, rows, intensity) : '#2a2928'
+              
+              return (
+                <div 
+                  key={row}
+                  className="lcd-pixel"
+                  style={{ 
+                    backgroundColor: color,
+                    boxShadow: intensity > 0.5
+                      ? `0 0 ${Math.floor(intensity * 3)}px ${color}`
+                      : 'none',
+                  }}
+                />
+              )
+            })}
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -96,6 +96,9 @@ export default function App() {
   
   // Ref for prompt textarea
   const promptRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Ref for output container (scroll target)
+  const outputRef = useRef<HTMLDivElement>(null)
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage?.url)
   
@@ -402,6 +405,15 @@ export default function App() {
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
+  
+  // Scroll to output when generation completes
+  useEffect(() => {
+    if (result && !isGenerating) {
+      setTimeout(() => {
+        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+  }, [result, isGenerating])
   // Check if all images have been processed (loaded or failed)
   const allProcessed = images.length > 0 && (loadedImages.size + failedImages.size) >= images.length
   const isLoadingImages = images.length > 0 && !allProcessed && !isGenerating
@@ -906,6 +918,7 @@ export default function App() {
               </PanelHeader>
             <PanelBody>
               <motion.div 
+                ref={outputRef}
                 className="output-container"
                 layout="position"
               >
