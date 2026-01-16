@@ -1,7 +1,19 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, ImageOff, LogIn, Expand, Download, Pin, RotateCcw } from 'lucide-react'
+import { Loader2, ImageOff, LogIn, Expand, Download, Pin, RotateCcw, Zap, Gem, Flame, Hammer } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
+
+// Helper to get aspect ratio icon dimensions
+const getAspectDimensions = (ratio: string | undefined) => {
+  switch (ratio) {
+    case '1:1': return { w: 10, h: 10 }
+    case '3:4': return { w: 9, h: 12 }
+    case '4:3': return { w: 12, h: 9 }
+    case '9:16': return { w: 7, h: 12 }
+    case '16:9': return { w: 12, h: 7 }
+    default: return { w: 10, h: 10 }
+  }
+}
 
 const PINNED_GENS_KEY = 'pinned-generations'
 
@@ -378,6 +390,43 @@ export default function HistoryGrid({
                 src={`${API_URL}${lightbox.imageUrls[0]}`}
                 alt={lightbox.prompt}
               />
+              {/* Specs bar */}
+              <div className="lightbox-specs">
+                {/* Mode */}
+                <span className="lightbox-spec" title={lightbox.mode === 'edit' ? 'Refined' : 'Created'}>
+                  {lightbox.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+                </span>
+                <span className="lightbox-spec-sep">·</span>
+                {/* Model */}
+                <span className="lightbox-spec" title={lightbox.model === 'flash' ? 'Flash' : 'Pro'}>
+                  {lightbox.model === 'flash' ? <Zap className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
+                  {lightbox.model === 'flash' ? 'Flash' : 'Pro'}
+                </span>
+                <span className="lightbox-spec-sep">·</span>
+                {/* Aspect Ratio */}
+                {lightbox.aspect_ratio && (
+                  <>
+                    <span className="lightbox-spec" title={`Ratio ${lightbox.aspect_ratio}`}>
+                      <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
+                        <rect 
+                          x={(14 - getAspectDimensions(lightbox.aspect_ratio).w) / 2} 
+                          y={(14 - getAspectDimensions(lightbox.aspect_ratio).h) / 2} 
+                          width={getAspectDimensions(lightbox.aspect_ratio).w} 
+                          height={getAspectDimensions(lightbox.aspect_ratio).h} 
+                          fill="currentColor" 
+                          rx="1" 
+                        />
+                      </svg>
+                      {lightbox.aspect_ratio}
+                    </span>
+                    <span className="lightbox-spec-sep">·</span>
+                  </>
+                )}
+                {/* Resolution */}
+                <span className="lightbox-spec" title={`Resolution ${lightbox.resolution || '1K'}`}>
+                  {lightbox.resolution || '1K'}
+                </span>
+              </div>
               <div className="lightbox-footer">
                 <p className="lightbox-prompt">{lightbox.prompt}</p>
                 <div className="lightbox-actions">
