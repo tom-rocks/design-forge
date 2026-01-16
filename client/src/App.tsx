@@ -141,48 +141,77 @@ export default function App() {
     }
   }, [isGenerating, result])
 
-  // Replay a previous generation's settings
+  // Replay animation state
+  const [replayAnimating, setReplayAnimating] = useState(false)
+  
+  // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
-    // Set prompt
-    setPrompt(config.prompt || '')
+    // Start animation state
+    setReplayAnimating(true)
     
-    // Set mode
-    if (config.mode) setMode(config.mode)
+    // Expand specs panel first so user sees the changes
+    setSpecsExpanded(true)
+    setAlloyExpanded(true)
     
-    // Set model (with resolution correction for flash)
-    if (config.model) {
-      setGenModel(config.model)
+    // Stagger the settings restoration for visual effect
+    setTimeout(() => {
+      // Set mode
+      if (config.mode) setMode(config.mode)
+    }, 100)
+    
+    setTimeout(() => {
+      // Set model
+      if (config.model) {
+        setGenModel(config.model)
+      }
+    }, 200)
+    
+    setTimeout(() => {
+      // Set aspect ratio
+      if (config.aspectRatio) setAspectRatio(config.aspectRatio)
+    }, 300)
+    
+    setTimeout(() => {
+      // Set resolution (with flash correction)
       if (config.model === 'flash' && config.resolution && config.resolution !== '1K') {
         setResolution('1K')
       } else if (config.resolution) {
         setResolution(config.resolution)
       }
-    } else if (config.resolution) {
-      setResolution(config.resolution)
-    }
+    }, 400)
     
-    // Set aspect ratio
-    if (config.aspectRatio) setAspectRatio(config.aspectRatio)
+    setTimeout(() => {
+      // Set references from style images
+      if (config.references && config.references.length > 0) {
+        const newRefs = config.references.map((ref, i) => ({
+          id: `replay-${i}-${Date.now()}`,
+          url: ref.url,
+          name: ref.name,
+          type: 'generation' as const,
+        }))
+        setReferences(newRefs)
+      }
+    }, 500)
     
-    // Set references from style images
-    if (config.references && config.references.length > 0) {
-      const newRefs = config.references.map((ref, i) => ({
-        id: `replay-${i}-${Date.now()}`,
-        url: ref.url,
-        name: ref.name,
-        type: 'generation' as const,
-      }))
-      setReferences(newRefs)
-    }
+    // Type out the prompt character by character
+    const fullPrompt = config.prompt || ''
+    setPrompt('')
+    let charIndex = 0
+    const typeInterval = setInterval(() => {
+      if (charIndex < fullPrompt.length) {
+        setPrompt(fullPrompt.slice(0, charIndex + 1))
+        charIndex++
+      } else {
+        clearInterval(typeInterval)
+        // End animation state
+        setTimeout(() => setReplayAnimating(false), 300)
+      }
+    }, 15) // Fast but visible typing
     
-    // Expand specs panel to show restored settings
-    setSpecsExpanded(true)
-    
-    // Focus the prompt for easy editing
+    // Scroll to prompt
     setTimeout(() => {
       promptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      promptRef.current?.focus()
-    }, 100)
+    }, 200)
   }, [])
 
   const handleGenerate = useCallback(async () => {
@@ -528,12 +557,12 @@ export default function App() {
                     <span className="specs-label">MODEL</span>
                     <div className="specs-buttons">
                       <button 
-                        className={`specs-btn ${genModel === 'flash' ? 'active' : ''}`}
+                        className={`specs-btn ${genModel === 'flash' ? 'active' : ''} ${replayAnimating && genModel === 'flash' ? 'replay-highlight' : ''}`}
                         onClick={() => handleModelChange('flash')}
                         disabled={isGenerating}
                       >Flash</button>
                       <button 
-                        className={`specs-btn ${genModel === 'pro' ? 'active' : ''}`}
+                        className={`specs-btn ${genModel === 'pro' ? 'active' : ''} ${replayAnimating && genModel === 'pro' ? 'replay-highlight' : ''}`}
                         onClick={() => handleModelChange('pro')}
                         disabled={isGenerating}
                       >Pro</button>
@@ -545,7 +574,7 @@ export default function App() {
                       {['1:1', '4:3', '3:4', '16:9', '9:16'].map(r => (
                         <button 
                           key={r}
-                          className={`specs-btn ${aspectRatio === r ? 'active' : ''}`}
+                          className={`specs-btn ${aspectRatio === r ? 'active' : ''} ${replayAnimating && aspectRatio === r ? 'replay-highlight' : ''}`}
                           onClick={() => setAspectRatio(r)}
                           disabled={isGenerating}
                         >{r}</button>
@@ -558,7 +587,7 @@ export default function App() {
                       {['1K', '2K', '4K'].map(s => (
                         <button 
                           key={s}
-                          className={`specs-btn ${resolution === s ? 'active' : ''}`}
+                          className={`specs-btn ${resolution === s ? 'active' : ''} ${replayAnimating && resolution === s ? 'replay-highlight' : ''}`}
                           onClick={() => setResolution(s)}
                           disabled={isGenerating || (genModel === 'flash' && s !== '1K')}
                         >{s}</button>
