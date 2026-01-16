@@ -3,6 +3,7 @@ import { Search, History, Download, Flame, Hammer, Wifi, WifiOff, LogIn, LogOut,
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
+import { checkAPContext, waitForAP } from './lib/ap-bridge'
 import { 
   Button, 
   Panel, PanelHeader, PanelBody, 
@@ -88,6 +89,9 @@ export default function App() {
   // Bridge connection status
   const [bridgeConnected, setBridgeConnected] = useState(false)
   
+  // AP iframe context (when running inside Admin Panel microapp)
+  const [inAPContext, setInAPContext] = useState(false)
+  
   // Output lightbox
   const [outputLightbox, setOutputLightbox] = useState<string | null>(null)
   
@@ -108,20 +112,39 @@ export default function App() {
     setTimeout(() => promptRef.current?.focus(), 300)
   }, [])
   
-  // Check bridge status
+  // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
-    const checkBridge = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/bridge/status`)
-        const data = await res.json()
-        setBridgeConnected(data.connected)
-      } catch {
-        setBridgeConnected(false)
+    // First check if we're in AP iframe context
+    const isInAP = checkAPContext()
+    
+    if (isInAP) {
+      // We're in AP iframe - wait for parent to be ready
+      setInAPContext(true)
+      waitForAP(5000).then(ready => {
+        setBridgeConnected(ready)
+      })
+      
+      // Keep checking AP connection
+      const interval = setInterval(async () => {
+        const ready = await waitForAP(2000)
+        setBridgeConnected(ready)
+      }, 10000)
+      return () => clearInterval(interval)
+    } else {
+      // Standalone mode - check server bridge status
+      const checkBridge = async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/bridge/status`)
+          const data = await res.json()
+          setBridgeConnected(data.connected)
+        } catch {
+          setBridgeConnected(false)
+        }
       }
+      checkBridge()
+      const interval = setInterval(checkBridge, 5000)
+      return () => clearInterval(interval)
     }
-    checkBridge()
-    const interval = setInterval(checkBridge, 5000)
-    return () => clearInterval(interval)
   }, [])
 
   // Animate pipe when forging
@@ -674,6 +697,7 @@ export default function App() {
                             singleSelect
                             onSingleSelect={(item) => setEditImage({ url: item.imageUrl })} 
                             bridgeConnected={bridgeConnected}
+                            useAPBridge={inAPContext}
                           />
                         )}
                         {refineSource === 'history' && (
@@ -818,6 +842,7 @@ export default function App() {
                         maxRefs={14}
                         disabled={isGenerating}
                         bridgeConnected={bridgeConnected}
+                        useAPBridge={inAPContext}
                       />
                     </div>
                     <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>

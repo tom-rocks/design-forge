@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Search, Loader2, WifiOff, Expand, Download, Pin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
+import { searchItemsViaAP } from '../lib/ap-bridge'
 
 const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 
@@ -27,6 +28,8 @@ interface HighriseSearchProps {
   maxRefs?: number
   disabled?: boolean
   bridgeConnected?: boolean
+  // Use AP iframe bridge instead of server bridge
+  useAPBridge?: boolean
   // Single select mode - pick one item
   singleSelect?: boolean
   onSingleSelect?: (item: HighriseItem) => void
@@ -39,6 +42,7 @@ export default function HighriseSearch({
   maxRefs = 14,
   disabled,
   bridgeConnected = false,
+  useAPBridge = false,
   singleSelect = false,
   onSingleSelect
 }: HighriseSearchProps) {
@@ -104,14 +108,40 @@ export default function HighriseSearch({
     }
     
     try {
-      const params = new URLSearchParams()
-      if (query.trim()) params.set('q', query.trim())
-      params.set('type', 'all')
-      params.set('limit', '40')
-      params.set('page', String(currentPage))
+      let data: { items?: HighriseItem[]; hasMore?: boolean; pages?: number }
+      
+      if (useAPBridge) {
+        // Use direct AP bridge via postMessage
+        const result = await searchItemsViaAP({
+          query: query.trim(),
+          limit: 40,
+          offset: currentPage * 40,
+        })
+        
+        // Transform AP response to our format
+        const items = (result.items || []).map((item: any) => ({
+          id: item._id || item.disp_id,
+          name: item.disp_name || item.name,
+          category: item.category || 'unknown',
+          rarity: item.rarity || 'common',
+          imageUrl: `https://cdn.highrise.game/item/${item.disp_id}.png`,
+        }))
+        
+        data = {
+          items,
+          hasMore: (result.pages || 0) > currentPage + 1,
+        }
+      } else {
+        // Use server bridge
+        const params = new URLSearchParams()
+        if (query.trim()) params.set('q', query.trim())
+        params.set('type', 'all')
+        params.set('limit', '40')
+        params.set('page', String(currentPage))
 
-      const res = await fetch(`${API_URL}/api/highrise/items?${params}`)
-      const data = await res.json()
+        const res = await fetch(`${API_URL}/api/highrise/items?${params}`)
+        data = await res.json()
+      }
       
       if (append) {
         setItems(prev => [...prev, ...(data.items || [])])
@@ -127,7 +157,7 @@ export default function HighriseSearch({
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [query, page, bridgeConnected])
+  }, [query, page, bridgeConnected, useAPBridge])
 
   // Debounced search
   useEffect(() => {
