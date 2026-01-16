@@ -26,3 +26,7 @@ npm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Old/unused folders (not part of deployment)
+jra/
+single-spa/

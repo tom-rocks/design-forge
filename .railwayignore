@@ -1,7 +1,5 @@
-node_modules
-client/node_modules
-server/node_modules
-single-spa/node_modules
-.git
+# Don't upload these folders to Railway
+jra/
+single-spa/
 *.log
-.DS_Store
+.git/
