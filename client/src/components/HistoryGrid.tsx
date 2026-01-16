@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ImageOff, LogIn, Expand, Download } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { Loader2, ImageOff, LogIn, Expand, Download, Pin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
+
+const PINNED_GENS_KEY = 'pinned-generations'
 
 interface Generation {
   id: string
@@ -53,6 +55,44 @@ export default function HistoryGrid({
   const [lightbox, setLightbox] = useState<Generation | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
+  
+  // Pinned generations - persisted to localStorage
+  const [pinnedGens, setPinnedGens] = useState<Generation[]>(() => {
+    try {
+      const stored = localStorage.getItem(PINNED_GENS_KEY)
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+  
+  // Save pinned generations to localStorage
+  useEffect(() => {
+    localStorage.setItem(PINNED_GENS_KEY, JSON.stringify(pinnedGens))
+  }, [pinnedGens])
+  
+  // Toggle pin status
+  const togglePin = (gen: Generation, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPinnedGens(prev => {
+      const isPinned = prev.some(p => p.id === gen.id)
+      if (isPinned) {
+        return prev.filter(p => p.id !== gen.id)
+      } else {
+        return [...prev, gen]
+      }
+    })
+  }
+  
+  const isPinned = useCallback((gen: Generation) => 
+    pinnedGens.some(p => p.id === gen.id), [pinnedGens])
+  
+  // Display generations: pinned first, then rest
+  const displayGenerations = useMemo(() => {
+    const pinnedIds = new Set(pinnedGens.map(p => p.id))
+    const nonPinnedGens = generations.filter(g => !pinnedIds.has(g.id))
+    return [...pinnedGens, ...nonPinnedGens]
+  }, [generations, pinnedGens])
 
   // Fetch user's generations
   const fetchGenerations = useCallback(async (append = false) => {
@@ -212,12 +252,13 @@ export default function HistoryGrid({
   return (
     <>
       <div className="history-grid" ref={gridRef}>
-        {generations.map(gen => {
+        {displayGenerations.map(gen => {
           const selected = isSelected(gen)
+          const pinned = isPinned(gen)
           return (
             <motion.div
               key={gen.id}
-              className={`history-item ${selected ? 'selected' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
+              className={`history-item ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
               onClick={() => !disabled && toggleGeneration(gen)}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
@@ -239,6 +280,14 @@ export default function HistoryGrid({
                   <span>✓</span>
                 </div>
               )}
+              {/* Pin button */}
+              <button
+                className={`item-pin ${pinned ? 'active' : ''}`}
+                onClick={(e) => togglePin(gen, e)}
+                title={pinned ? 'Unpin' : 'Pin to top'}
+              >
+                <Pin className="w-3 h-3" />
+              </button>
               {/* Expand button on hover */}
               <button
                 className="history-item-expand"

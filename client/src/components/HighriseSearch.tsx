@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Search, Loader2, WifiOff, Expand, Download } from 'lucide-react'
+import { Search, Loader2, WifiOff, Expand, Download, Pin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
+
+const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 
 interface HighriseItem {
   id: string
@@ -48,6 +50,37 @@ export default function HighriseSearch({
   const [hasMore, setHasMore] = useState(false)
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  
+  // Pinned items - persisted to localStorage
+  const [pinnedItems, setPinnedItems] = useState<HighriseItem[]>(() => {
+    try {
+      const stored = localStorage.getItem(PINNED_ITEMS_KEY)
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+  
+  // Save pinned items to localStorage
+  useEffect(() => {
+    localStorage.setItem(PINNED_ITEMS_KEY, JSON.stringify(pinnedItems))
+  }, [pinnedItems])
+  
+  // Toggle pin status
+  const togglePin = (item: HighriseItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPinnedItems(prev => {
+      const isPinned = prev.some(p => p.id === item.id)
+      if (isPinned) {
+        return prev.filter(p => p.id !== item.id)
+      } else {
+        return [...prev, item]
+      }
+    })
+  }
+  
+  const isPinned = useCallback((item: HighriseItem) => 
+    pinnedItems.some(p => p.id === item.id), [pinnedItems])
 
   // Search items
   const searchItems = useCallback(async (append = false) => {
@@ -156,6 +189,18 @@ export default function HighriseSearch({
   // Memoize selected URLs for O(1) lookups
   const selectedUrls = useMemo(() => new Set(references.map(r => r.url)), [references])
   const isSelected = useCallback((item: HighriseItem) => selectedUrls.has(item.imageUrl), [selectedUrls])
+  
+  // Display items: show pinned first when no query, otherwise just search results
+  const displayItems = useMemo(() => {
+    if (query.trim()) {
+      // Searching - just show results, no pinned priority
+      return items
+    }
+    // Not searching - show pinned items first, then other items (excluding pinned)
+    const pinnedIds = new Set(pinnedItems.map(p => p.id))
+    const nonPinnedItems = items.filter(i => !pinnedIds.has(i.id))
+    return [...pinnedItems, ...nonPinnedItems]
+  }, [query, items, pinnedItems])
 
   const getRarityColor = (r: string) => {
     switch (r?.toLowerCase()) {
@@ -202,7 +247,7 @@ export default function HighriseSearch({
 
       {/* Results Grid */}
       <AnimatePresence mode="wait">
-        {items.length > 0 ? (
+        {displayItems.length > 0 ? (
           <motion.div
             key="results"
             initial={{ opacity: 0 }}
@@ -211,12 +256,13 @@ export default function HighriseSearch({
             className="highrise-results"
           >
             <div className="highrise-grid" ref={gridRef}>
-              {items.map(item => {
+              {displayItems.map(item => {
                 const selected = isSelected(item)
+                const pinned = isPinned(item)
                 return (
                   <motion.div
                     key={item.id}
-                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
+                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -232,6 +278,14 @@ export default function HighriseSearch({
                         <span>✓</span>
                       </div>
                     )}
+                    {/* Pin button */}
+                    <button
+                      className={`item-pin ${pinned ? 'active' : ''}`}
+                      onClick={(e) => togglePin(item, e)}
+                      title={pinned ? 'Unpin' : 'Pin to top'}
+                    >
+                      <Pin className="w-3 h-3" />
+                    </button>
                     {/* Expand button on hover */}
                     <button
                       className="highrise-item-expand"
@@ -276,6 +330,58 @@ export default function HighriseSearch({
           >
             <WifiOff className="w-4 h-4" />
             <span>Limited mode - connect bridge for full search</span>
+          </motion.div>
+        ) : pinnedItems.length > 0 ? (
+          <motion.div
+            key="pinned-only"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="highrise-results"
+          >
+            <div className="highrise-grid" ref={gridRef}>
+              {pinnedItems.map(item => {
+                const selected = isSelected(item)
+                return (
+                  <motion.div
+                    key={item.id}
+                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} pinned ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
+                    onClick={() => !disabled && toggleItem(item)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title={item.name}
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      loading="lazy"
+                    />
+                    {selected && (
+                      <div className="highrise-item-check">
+                        <span>✓</span>
+                      </div>
+                    )}
+                    <button
+                      className="item-pin active"
+                      onClick={(e) => togglePin(item, e)}
+                      title="Unpin"
+                    >
+                      <Pin className="w-3 h-3" />
+                    </button>
+                    <button
+                      className="highrise-item-expand"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setLightbox(item)
+                      }}
+                      title="View full size"
+                    >
+                      <Expand className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                )
+              })}
+            </div>
           </motion.div>
         ) : (
           <motion.div
