@@ -1786,6 +1786,19 @@ body {
   box-shadow: var(--shadow-hard-lg);
 }
 
+.lightbox-image-container {
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-image-loading {
+  position: absolute;
+  color: var(--text-dim);
+}
+
 .lightbox-content img {
   max-width: 100%;
   max-height: 70vh;

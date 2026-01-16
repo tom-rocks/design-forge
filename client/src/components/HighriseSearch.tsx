@@ -49,7 +49,15 @@ export default function HighriseSearch({
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
+  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
+  
+  // Reset image loaded state when lightbox changes
+  useEffect(() => {
+    if (lightbox) {
+      setLightboxImageLoaded(false)
+    }
+  }, [lightbox?.id])
   
   // Pinned items - persisted to localStorage
   const [pinnedItems, setPinnedItems] = useState<HighriseItem[]>(() => {
@@ -419,10 +427,21 @@ export default function HighriseSearch({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={lightbox.imageUrl}
-                alt={lightbox.name}
-              />
+              <div className="lightbox-image-container">
+                {!lightboxImageLoaded && (
+                  <div className="lightbox-image-loading">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                )}
+                <motion.img
+                  src={lightbox.imageUrl}
+                  alt={lightbox.name}
+                  onLoad={() => setLightboxImageLoaded(true)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
               <div className="lightbox-footer">
                 <p className="lightbox-prompt">
                   <strong>{lightbox.name}</strong>

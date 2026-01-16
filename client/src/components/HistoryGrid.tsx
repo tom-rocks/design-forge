@@ -89,8 +89,16 @@ export default function HistoryGrid({
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
   const [lightbox, setLightbox] = useState<Generation | null>(null)
+  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
+  
+  // Reset image loaded state when lightbox changes
+  useEffect(() => {
+    if (lightbox) {
+      setLightboxImageLoaded(false)
+    }
+  }, [lightbox?.id])
   
   // Pinned generations - persisted to localStorage
   const [pinnedGens, setPinnedGens] = useState<Generation[]>(() => {
@@ -386,10 +394,21 @@ export default function HistoryGrid({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={`${API_URL}${lightbox.imageUrls[0]}`}
-                alt={lightbox.prompt}
-              />
+              <div className="lightbox-image-container">
+                {!lightboxImageLoaded && (
+                  <div className="lightbox-image-loading">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                )}
+                <motion.img
+                  src={`${API_URL}${lightbox.imageUrls[0]}`}
+                  alt={lightbox.prompt}
+                  onLoad={() => setLightboxImageLoaded(true)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
               {/* Specs bar */}
               <div className="lightbox-specs">
                 {/* Mode */}
