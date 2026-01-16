@@ -58,16 +58,29 @@ export default function HighriseSearch({
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const [cachedImages, setCachedImages] = useState<Set<string>>(new Set()) // Items we've cached from AP
   
+  // Track items we're currently stealing (prevent duplicate attempts)
+  const [stealingImages, setStealingImages] = useState<Set<string>>(new Set())
+  
   // Steal image from AP and cache on our server
   const stealAndCache = useCallback(async (item: HighriseItem) => {
-    if (!item.apImageUrl || cachedImages.has(item.id)) return
+    if (!item.apImageUrl || cachedImages.has(item.id) || stealingImages.has(item.id)) return
+    
+    // Mark as stealing to prevent duplicate attempts
+    setStealingImages(prev => new Set(prev).add(item.id))
     
     try {
+      console.log(`[Highrise] Stealing ${item.id} from ${item.apImageUrl}`)
+      
       // Fetch from AP (we have auth via iframe)
-      const response = await fetch(item.apImageUrl)
-      if (!response.ok) throw new Error('AP fetch failed')
+      const response = await fetch(item.apImageUrl, { credentials: 'include' })
+      if (!response.ok) throw new Error(`AP fetch failed: ${response.status}`)
       
       const blob = await response.blob()
+      console.log(`[Highrise] Got blob ${blob.size} bytes for ${item.id}`)
+      
+      if (blob.size < 500) {
+        throw new Error('AP returned tiny image too')
+      }
       
       // Convert to base64
       const base64 = await new Promise<string>((resolve) => {
@@ -77,19 +90,29 @@ export default function HighriseSearch({
       })
       
       // Send to our server to cache
-      await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
+      const cacheRes = await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64 })
       })
       
+      if (!cacheRes.ok) throw new Error(`Cache failed: ${cacheRes.status}`)
+      
       setCachedImages(prev => new Set(prev).add(item.id))
-      console.log(`[Highrise] Cached ${item.id} from AP`)
+      console.log(`[Highrise] Successfully cached ${item.id}`)
     } catch (e) {
+      // Don't hide the item - just log the error and leave 1x1 visible
       console.error(`[Highrise] Failed to steal ${item.id}:`, e)
-      setFailedImages(prev => new Set(prev).add(item.id))
+      // Only mark as truly failed if we can't display anything
+      // setFailedImages(prev => new Set(prev).add(item.id))
+    } finally {
+      setStealingImages(prev => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
     }
-  }, [cachedImages])
+  }, [cachedImages, stealingImages])
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Reset image loaded state when lightbox changes
