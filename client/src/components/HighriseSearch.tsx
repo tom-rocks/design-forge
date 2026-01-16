@@ -119,12 +119,13 @@ export default function HighriseSearch({
         })
         
         // Transform AP response to our format
+        // Route through our proxy for logging/debugging
         const items = (result.items || []).map((item: any) => ({
           id: item._id || item.disp_id,
           name: item.disp_name || item.name,
           category: item.category || 'unknown',
           rarity: item.rarity || 'common',
-          imageUrl: `https://cdn.highrise.game/item/${item.disp_id}.png`,
+          imageUrl: `${API_URL}/api/highrise/proxy/${item.disp_id}.png`,
         }))
         
         data = {

@@ -113,25 +113,17 @@ export default function Root() {
 
         if (type === "api") {
           // Generic API proxy - forward to AP's /api
-          console.log("[Forge Microapp] API request:", { endpoint, method, body });
-          
           const response = await fetch(endpoint || "/api", {
             method: method || "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "same-origin", // Ensure cookies are sent
             body: body ? JSON.stringify(body) : undefined,
           });
 
-          console.log("[Forge Microapp] API response status:", response.status);
-
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error("[Forge Microapp] API error:", errorText);
-            throw new Error(`API error: ${response.status} - ${errorText}`);
+            throw new Error(`API error: ${response.status}`);
           }
 
           result = await response.json();
-          console.log("[Forge Microapp] API result:", result);
         } else {
           throw new Error(`Unknown message type: ${type}`);
         }
@@ -142,7 +134,6 @@ export default function Root() {
           event.origin
         );
       } catch (error) {
-        console.error("[Forge Microapp] Error:", error);
         // Send error back to iframe
         event.source?.postMessage(
           { id, success: false, error: error.message },

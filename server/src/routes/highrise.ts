@@ -280,31 +280,48 @@ router.get('/types', (_req: Request, res: Response) => {
   });
 });
 
+// In-memory proxy log buffer
+const proxyLogs: { timestamp: string; itemId: string; status: string; details?: string }[] = [];
+const MAX_PROXY_LOGS = 50;
+
+function logProxy(itemId: string, status: string, details?: string) {
+  const entry = { timestamp: new Date().toISOString(), itemId, status, details };
+  proxyLogs.unshift(entry);
+  if (proxyLogs.length > MAX_PROXY_LOGS) proxyLogs.pop();
+  console.log(`[Highrise Proxy] ${itemId}: ${status}${details ? ` - ${details}` : ''}`);
+}
+
+// Debug endpoint for proxy logs
+router.get('/proxy-logs', (_req: Request, res: Response) => {
+  res.json({ logs: proxyLogs });
+});
+
 // Image proxy - allows Krea API to fetch Highrise images through our server
 // Using wildcard to capture the full item ID including any dots
 router.get('/proxy/*', async (req: Request, res: Response) => {
+  const fullPath = req.params[0] || '';
+  const itemId = fullPath.replace(/\.png$/, '');
+  
+  if (!itemId) {
+    logProxy('(empty)', 'ERROR', 'Missing item ID');
+    res.status(400).send('Missing item ID');
+    return;
+  }
+  
+  const imageUrl = `${HIGHRISE_CDN}/${itemId}.png`;
+  logProxy(itemId, 'FETCHING', imageUrl);
+  
   try {
-    // Get the full path after /proxy/
-    const fullPath = req.params[0] || '';
-    // Remove .png extension if present
-    const itemId = fullPath.replace(/\.png$/, '');
-    
-    if (!itemId) {
-      res.status(400).send('Missing item ID');
-      return;
-    }
-    
-    const imageUrl = `${HIGHRISE_CDN}/${itemId}.png`;
-    console.log('[Highrise] Proxying image:', itemId, '->', imageUrl);
-    
     const response = await fetch(imageUrl);
+    
     if (!response.ok) {
-      console.log('[Highrise] Image not found:', response.status);
+      logProxy(itemId, 'CDN_ERROR', `Status ${response.status} ${response.statusText}`);
       res.status(response.status).send('Image not found');
       return;
     }
     
     const buffer = await response.arrayBuffer();
+    logProxy(itemId, 'OK', `${buffer.byteLength} bytes`);
     
     // Cache for 1 hour, always return as PNG
     res.set('Content-Type', 'image/png');
@@ -312,7 +329,7 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
     res.send(Buffer.from(buffer));
     
   } catch (error) {
-    console.error('[Highrise] Proxy error:', error);
+    logProxy(itemId, 'EXCEPTION', String(error));
     res.status(500).send('Failed to proxy image');
   }
 });
