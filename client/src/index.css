@@ -478,11 +478,17 @@ body {
 }
 
 .edit-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 32px 16px;
   text-align: center;
   background: var(--surface-inset);
   border-radius: var(--radius-md);
   transition: all 0.15s ease;
+  color: var(--text-dim);
+  font-size: 12px;
 }
 
 .panel {
@@ -1529,13 +1535,11 @@ body {
 }
 
 .highrise-loading,
-.highrise-empty,
-.highrise-notice {
+.highrise-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   padding: 32px 16px;
   color: var(--text-dim);
   font-size: 12px;
@@ -1545,10 +1549,16 @@ body {
 }
 
 .highrise-notice {
+  display: flex;
   flex-direction: row;
+  align-items: center;
+  gap: 8px;
   padding: 12px 16px;
   background: rgba(255, 87, 34, 0.1);
   color: var(--accent);
+  font-size: 12px;
+  text-align: center;
+  border-radius: var(--radius-md);
 }
 
 /* ============================================
@@ -1778,10 +1788,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   padding: 32px 16px;
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: 12px;
   text-align: center;
   background: var(--surface-inset);
   border-radius: var(--radius-md);

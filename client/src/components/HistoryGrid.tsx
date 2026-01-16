@@ -204,7 +204,6 @@ export default function HistoryGrid({
   if (generations.length === 0) {
     return (
       <div className="history-empty">
-        <ImageOff className="w-5 h-5" />
         <span>No generations yet</span>
       </div>
     )

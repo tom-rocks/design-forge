@@ -285,7 +285,6 @@ export default function HighriseSearch({
             exit={{ opacity: 0 }}
             className="highrise-empty"
           >
-            <Search className="w-5 h-5" />
             <span>Search Highrise items above</span>
           </motion.div>
         )}

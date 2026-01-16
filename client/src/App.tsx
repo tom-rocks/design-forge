@@ -575,7 +575,7 @@ export default function App() {
                       <div className="refine-content">
                         {refineSource === 'drop' && (
                           <div className="edit-dropzone">
-                            <span className="dropzone-text">Drop or paste image</span>
+                            Drop or paste image
                           </div>
                         )}
                         {refineSource === 'items' && (
