@@ -1,0 +1,29 @@
+# Dependencies - installed fresh during build
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build outputs - rebuilt during build
+client/dist/
+server/dist/
+
+# Development files
+*.log
+*.md
+.git/
+.gitignore
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Extra folders that shouldn't be deployed
+jra/
+single-spa/
