@@ -12,6 +12,7 @@ interface HighriseItem {
   category: string
   rarity: string
   imageUrl: string
+  apImageUrl?: string // Fallback for new pipeline items
 }
 
 interface Reference {
@@ -55,6 +56,40 @@ export default function HighriseSearch({
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  const [cachedImages, setCachedImages] = useState<Set<string>>(new Set()) // Items we've cached from AP
+  
+  // Steal image from AP and cache on our server
+  const stealAndCache = useCallback(async (item: HighriseItem) => {
+    if (!item.apImageUrl || cachedImages.has(item.id)) return
+    
+    try {
+      // Fetch from AP (we have auth via iframe)
+      const response = await fetch(item.apImageUrl)
+      if (!response.ok) throw new Error('AP fetch failed')
+      
+      const blob = await response.blob()
+      
+      // Convert to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+      
+      // Send to our server to cache
+      await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64 })
+      })
+      
+      setCachedImages(prev => new Set(prev).add(item.id))
+      console.log(`[Highrise] Cached ${item.id} from AP`)
+    } catch (e) {
+      console.error(`[Highrise] Failed to steal ${item.id}:`, e)
+      setFailedImages(prev => new Set(prev).add(item.id))
+    }
+  }, [cachedImages])
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Reset image loaded state when lightbox changes
@@ -130,14 +165,18 @@ export default function HighriseSearch({
         })
         
         // Transform AP response to our format
-        // Route through our proxy for logging/debugging
-        const items = (result.items || []).map((item: any) => ({
-          id: item._id || item.disp_id,
-          name: item.disp_name || item.name,
-          category: item.category || 'unknown',
-          rarity: item.rarity || 'common',
-          imageUrl: `${API_URL}/api/highrise/proxy/${item.disp_id}.png`,
-        }))
+        // Route through our proxy for logging/debugging, with AP fallback for new pipeline
+        const items = (result.items || []).map((item: any) => {
+          const dispId = item.disp_id || item.id
+          return {
+            id: item._id || dispId,
+            name: item.disp_name || item.name,
+            category: item.category || 'unknown',
+            rarity: item.rarity || 'common',
+            imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png`,
+            apImageUrl: `https://production-ap.highrise.game/avataritem/front/${dispId}.png`,
+          }
+        })
         
         data = {
           items,
@@ -327,10 +366,17 @@ export default function HighriseSearch({
                     title={item.name}
                   >
                     <img
-                      src={item.imageUrl}
+                      src={cachedImages.has(item.id) ? `${item.imageUrl}?cached=1` : item.imageUrl}
                       alt={item.name}
                       loading="lazy"
-                      onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
+                      onError={() => {
+                        // Try to steal from AP if we have a fallback URL
+                        if (item.apImageUrl && !cachedImages.has(item.id)) {
+                          stealAndCache(item)
+                        } else {
+                          setFailedImages(prev => new Set(prev).add(item.id))
+                        }
+                      }}
                     />
                     {selected && (
                       <div className="highrise-item-check">
@@ -414,10 +460,17 @@ export default function HighriseSearch({
                     title={item.name}
                   >
                     <img
-                      src={item.imageUrl}
+                      src={cachedImages.has(item.id) ? `${item.imageUrl}?cached=1` : item.imageUrl}
                       alt={item.name}
                       loading="lazy"
-                      onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
+                      onError={() => {
+                        // Try to steal from AP if we have a fallback URL
+                        if (item.apImageUrl && !cachedImages.has(item.id)) {
+                          stealAndCache(item)
+                        } else {
+                          setFailedImages(prev => new Set(prev).add(item.id))
+                        }
+                      }}
                     />
                     {selected && (
                       <div className="highrise-item-check">

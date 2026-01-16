@@ -289,6 +289,36 @@ router.get('/proxy-logs', (_req: Request, res: Response) => {
   res.json({ logs: proxyLogs });
 });
 
+// In-memory image cache for new pipeline items (stolen from AP by client)
+const imageCache = new Map<string, Buffer>();
+
+// Client uploads image it stole from AP (for new pipeline items server can't access)
+router.post('/proxy/cache/:itemId', async (req: Request, res: Response) => {
+  const { itemId } = req.params;
+  
+  // Expect base64 JSON body
+  const { base64 } = req.body as { base64?: string };
+  if (!base64) {
+    res.status(400).json({ error: 'Missing base64 data' });
+    return;
+  }
+  
+  // Decode base64 (strip data URL prefix if present)
+  const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
+  const buffer = Buffer.from(base64Data, 'base64');
+  
+  if (buffer.length < 500) {
+    res.status(400).json({ error: 'Invalid image data' });
+    return;
+  }
+  
+  // Cache it
+  imageCache.set(itemId, buffer);
+  logProxy(itemId, 'CACHED', `${buffer.length} bytes stolen from AP`);
+  
+  res.json({ ok: true, size: buffer.length });
+});
+
 // Image proxy - allows Krea API to fetch Highrise images through our server
 // Using wildcard to capture the full item ID including any dots
 router.get('/proxy/*', async (req: Request, res: Response) => {
@@ -298,6 +328,16 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
   if (!itemId) {
     logProxy('(empty)', 'ERROR', 'Missing item ID');
     res.status(400).send('Missing item ID');
+    return;
+  }
+  
+  // Check cache first (for new pipeline items stolen from AP)
+  const cached = imageCache.get(itemId);
+  if (cached) {
+    logProxy(itemId, 'CACHE_HIT', `${cached.length} bytes`);
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(cached);
     return;
   }
   
@@ -314,6 +354,15 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
     }
     
     const buffer = await response.arrayBuffer();
+    
+    // CDN returns tiny placeholder (69 bytes) for items on new asset pipeline
+    // Return 404 so client can fall back to AP URL
+    if (buffer.byteLength < 500) {
+      logProxy(itemId, 'NEW_PIPELINE', `${buffer.byteLength} bytes placeholder - needs AP URL`);
+      res.status(404).json({ error: 'new_pipeline', itemId });
+      return;
+    }
+    
     logProxy(itemId, 'OK', `${buffer.byteLength} bytes`);
     
     // Cache for 1 hour, always return as PNG
