@@ -1496,6 +1496,23 @@ body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  /* Hide alt text and broken image icon */
+  color: transparent;
+  font-size: 0;
+}
+
+/* Hide broken image icon in various browsers */
+.highrise-item img::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+}
+
+.highrise-item img:not([src]), 
+.highrise-item img[src=""] {
+  visibility: hidden;
 }
 
 .highrise-item:hover {
@@ -1558,8 +1575,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  color: var(--accent);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  z-index: 5;
+}
+
+/* Subtle pulse animation for loading items */
+.highrise-item.loading {
+  animation: item-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes item-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* Expand button - appears on hover */

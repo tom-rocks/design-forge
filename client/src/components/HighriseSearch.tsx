@@ -412,7 +412,7 @@ export default function HighriseSearch({
                     layout
                     layoutId={`highrise-${item.id}`}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
+                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${proxyingImages.has(item.id) ? 'loading' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -420,7 +420,7 @@ export default function HighriseSearch({
                   >
                     <img
                       src={getDisplayUrl(item)}
-                      alt={item.name}
+                      alt=""
                       loading="lazy"
                       onLoad={(e) => {
                         // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
@@ -526,7 +526,7 @@ export default function HighriseSearch({
                     layout
                     layoutId={`highrise-${item.id}`}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} pinned ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
+                    className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} pinned ${proxyingImages.has(item.id) ? 'loading' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -534,7 +534,7 @@ export default function HighriseSearch({
                   >
                     <img
                       src={getDisplayUrl(item)}
-                      alt={item.name}
+                      alt=""
                       loading="lazy"
                       onLoad={(e) => {
                         // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
