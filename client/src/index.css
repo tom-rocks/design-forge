@@ -312,10 +312,10 @@ body {
   left: 0;
   right: 0;
   z-index: 100;
-  padding: 12px 20px 20px;
+  padding: 0 20px 20px;
   background: linear-gradient(to top, 
     var(--bg) 0%, 
-    var(--bg) 70%, 
+    var(--bg) 85%, 
     transparent 100%
   );
   pointer-events: none;
@@ -327,51 +327,131 @@ body {
   pointer-events: auto;
   background: var(--surface);
   border-radius: var(--radius-lg);
-  padding: 12px 16px;
+  padding: 0;
   box-shadow: 
     0 -4px 20px rgba(0, 0, 0, 0.15),
     0 -1px 4px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
   border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* LCD in floating prompt */
+.lcd-floating {
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 0;
+  margin: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .floating-prompt-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 12px;
+  padding: 12px 16px;
 }
 
-.floating-prompt-row .led {
+/* Mode button group - stacked */
+.floating-mode-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.floating-mode-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.floating-mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--btn-dark-bg);
+  color: var(--btn-dark-text);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.floating-mode-btn:hover:not(:disabled) {
+  background: var(--btn-dark-hover);
+}
+
+.floating-mode-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 2px 4px rgba(255, 109, 58, 0.3);
+}
+
+.floating-mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Prompt input wrapper */
+.floating-prompt-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  padding: 0 14px;
+}
+
+.floating-prompt-input-wrapper .led {
   flex-shrink: 0;
 }
 
 .floating-prompt-input {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   max-height: 120px;
   resize: none;
   border: none;
-  background: var(--bg-input);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
+  background: transparent;
+  padding: 12px 0;
   font-size: 14px;
   line-height: 1.4;
 }
 
 .floating-prompt-input:focus {
   outline: none;
+}
+
+.floating-prompt-input-wrapper:focus-within {
   box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
 .floating-forge-btn {
   flex-shrink: 0;
-  padding: 10px 20px !important;
-  font-weight: 600;
+  align-self: stretch;
+  padding: 12px 24px !important;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
 }
 
 /* Add padding to main content so it doesn't hide behind floating prompt */
 .forge-main {
-  padding-bottom: 100px;
+  padding-bottom: 140px;
 }
 
 /* Forge Specs LCD status display */

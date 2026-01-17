@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem } from 'lucide-react'
+import { Search, History, Download, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Flame, Hammer } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -7,7 +7,6 @@ import { checkAPContext, waitForAP } from './lib/ap-bridge'
 import { 
   Button, 
   Panel, PanelHeader, PanelBody, 
-  ModeSwitch, 
   Textarea,
   Thumb,
   MoltenPipe,
@@ -513,38 +512,6 @@ export default function App() {
         <div className="forge-block forge-input-block">
           {/* FORGE SPECS - First */}
           <motion.div className="specs-frame">
-            {/* LCD status display - horizontal, compact, all options visible */}
-            <div className="lcd-screen lcd-specs-status">
-              <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>
-                <Zap className="lcd-icon" /> FLASH
-              </span>
-              <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>
-                <Gem className="lcd-icon" /> PRO
-              </span>
-              <span className="lcd-spec-sep">│</span>
-              {[
-                { ratio: '1:1', w: 10, h: 10 },
-                { ratio: '4:3', w: 12, h: 9 },
-                { ratio: '3:4', w: 9, h: 12 },
-                { ratio: '16:9', w: 14, h: 8 },
-                { ratio: '9:16', w: 8, h: 14 },
-              ].map(({ ratio, w, h }) => (
-                <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>
-                  <svg className="lcd-ratio-icon" viewBox="0 0 16 16" width="14" height="14">
-                    <rect x={(16-w)/2} y={(16-h)/2} width={w} height={h} fill="currentColor" rx="1" />
-                  </svg>
-                  {ratio}
-                </span>
-              ))}
-              <span className="lcd-spec-sep">│</span>
-              {[
-                { res: '1K', cls: 'lcd-1k' },
-                { res: '2K', cls: 'lcd-2k' },
-                { res: '4K', cls: 'lcd-4k' },
-              ].map(({ res, cls }) => (
-                <span key={res} className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''} ${genModel === 'flash' && res !== '1K' ? 'unavailable' : ''}`}>{res}</span>
-              ))}
-            </div>
             <Panel>
               <PanelHeader className="collapsible" onClick={() => setSpecsExpanded(!specsExpanded)}>
                 Forge Specs <span className="header-subtitle">advanced settings</span>
@@ -1002,18 +969,77 @@ export default function App() {
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
         <div className="floating-prompt-inner">
+          {/* LCD status display */}
+          <div className="lcd-screen lcd-floating">
+            <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>
+              <Zap className="lcd-icon" /> FLASH
+            </span>
+            <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>
+              <Gem className="lcd-icon" /> PRO
+            </span>
+            <span className="lcd-spec-sep">│</span>
+            {[
+              { ratio: '1:1', w: 10, h: 10 },
+              { ratio: '4:3', w: 12, h: 9 },
+              { ratio: '3:4', w: 9, h: 12 },
+              { ratio: '16:9', w: 14, h: 8 },
+              { ratio: '9:16', w: 8, h: 14 },
+            ].map(({ ratio, w, h }) => (
+              <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>
+                <svg className="lcd-ratio-icon" viewBox="0 0 16 16" width="14" height="14">
+                  <rect x={(16-w)/2} y={(16-h)/2} width={w} height={h} fill="currentColor" rx="1" />
+                </svg>
+                {ratio}
+              </span>
+            ))}
+            <span className="lcd-spec-sep">│</span>
+            {[
+              { res: '1K', cls: 'lcd-1k' },
+              { res: '2K', cls: 'lcd-2k' },
+              { res: '4K', cls: 'lcd-4k' },
+            ].map(({ res, cls }) => (
+              <span key={res} className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''} ${genModel === 'flash' && res !== '1K' ? 'unavailable' : ''}`}>{res}</span>
+            ))}
+          </div>
+          
+          {/* Main input row */}
           <div className="floating-prompt-row">
-            <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
-            <Textarea
-              ref={promptRef}
-              className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''}`}
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              placeholder="Describe what you want to create..."
-              rows={1}
-              disabled={isGenerating}
-            />
-            <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
+            {/* Mode buttons - stacked */}
+            <div className="floating-mode-group">
+              <span className="floating-mode-label">MODE</span>
+              <button 
+                className={`floating-mode-btn ${mode === 'create' ? 'active' : ''}`}
+                onClick={() => setMode('create')}
+                disabled={isGenerating}
+              >
+                <Flame className="w-3 h-3" />
+                Create
+              </button>
+              <button 
+                className={`floating-mode-btn ${mode === 'edit' ? 'active' : ''}`}
+                onClick={() => setMode('edit')}
+                disabled={isGenerating}
+              >
+                <Hammer className="w-3 h-3" />
+                Refine
+              </button>
+            </div>
+            
+            {/* Prompt input */}
+            <div className="floating-prompt-input-wrapper">
+              <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
+              <Textarea
+                ref={promptRef}
+                className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''}`}
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder="Describe what you want to create..."
+                rows={1}
+                disabled={isGenerating}
+              />
+            </div>
+            
+            {/* Forge button */}
             <Button
               variant={canGenerate || isGenerating ? 'accent' : 'dark'}
               onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
