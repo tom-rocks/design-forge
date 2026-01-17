@@ -531,8 +531,8 @@ body {
 }
 
 .lcd-interactive button.lcd-spec-item:hover:not(:disabled):not(.lit) {
-  color: #8a8885;
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+  color: #b0ada8;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
 }
 
 .lcd-interactive button.lcd-spec-item:hover:not(:disabled).lit {
