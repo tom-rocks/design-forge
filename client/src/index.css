@@ -304,6 +304,10 @@ body {
   border-radius: var(--radius-md);
 }
 
+/* Prompt panel - below specs */
+.prompt-panel {
+  margin-top: 12px;
+}
 
 /* Forge Specs LCD status display */
 .lcd-specs-status {
