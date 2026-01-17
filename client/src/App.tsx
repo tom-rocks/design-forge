@@ -948,7 +948,6 @@ export default function App() {
           <div className="floating-prompt-row">
             {/* Mode buttons - stacked */}
             <div className="floating-mode-group">
-              <span className="floating-mode-label">MODE</span>
               <button 
                 className={`floating-mode-btn ${mode === 'create' ? 'active' : ''}`}
                 onClick={() => setMode('create')}
