@@ -56,63 +56,46 @@ export default function HighriseSearch({
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  const [cachedImages, setCachedImages] = useState<Set<string>>(new Set()) // Items we've cached from AP
+  const [useApUrl, setUseApUrl] = useState<Set<string>>(new Set()) // Items that need AP URL (new pipeline)
   
-  // Track items we're currently stealing (prevent duplicate attempts)
-  const [stealingImages, setStealingImages] = useState<Set<string>>(new Set())
-  
-  // Steal image from AP and cache on our server
-  const stealAndCache = useCallback(async (item: HighriseItem) => {
-    if (!item.apImageUrl || cachedImages.has(item.id) || stealingImages.has(item.id)) return
-    
-    // Mark as stealing to prevent duplicate attempts
-    setStealingImages(prev => new Set(prev).add(item.id))
-    
-    try {
-      console.log(`[Highrise] Stealing ${item.id} from ${item.apImageUrl}`)
-      
-      // Fetch from AP (we have auth via iframe)
-      const response = await fetch(item.apImageUrl, { credentials: 'include' })
-      if (!response.ok) throw new Error(`AP fetch failed: ${response.status}`)
-      
-      const blob = await response.blob()
-      console.log(`[Highrise] Got blob ${blob.size} bytes for ${item.id}`)
-      
-      if (blob.size < 500) {
-        throw new Error('AP returned tiny image too')
-      }
-      
-      // Convert to base64
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
-      })
-      
-      // Send to our server to cache
-      const cacheRes = await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64 })
-      })
-      
-      if (!cacheRes.ok) throw new Error(`Cache failed: ${cacheRes.status}`)
-      
-      setCachedImages(prev => new Set(prev).add(item.id))
-      console.log(`[Highrise] Successfully cached ${item.id}`)
-    } catch (e) {
-      // Don't hide the item - just log the error and leave 1x1 visible
-      console.error(`[Highrise] Failed to steal ${item.id}:`, e)
-      // Only mark as truly failed if we can't display anything
-      // setFailedImages(prev => new Set(prev).add(item.id))
-    } finally {
-      setStealingImages(prev => {
-        const next = new Set(prev)
-        next.delete(item.id)
-        return next
-      })
+  // Get display URL - use AP URL if proxy returned placeholder
+  const getDisplayUrl = useCallback((item: HighriseItem) => {
+    if (useApUrl.has(item.id) && item.apImageUrl) {
+      return item.apImageUrl
     }
-  }, [cachedImages, stealingImages])
+    return item.imageUrl
+  }, [useApUrl])
+  
+  // Cache image on server (only called when selecting for generation)
+  const cacheForGeneration = useCallback(async (item: HighriseItem): Promise<string> => {
+    // If it's a new pipeline item, steal from AP and cache
+    if (useApUrl.has(item.id) && item.apImageUrl) {
+      try {
+        const response = await fetch(item.apImageUrl, { credentials: 'include' })
+        if (!response.ok) throw new Error(`AP fetch failed: ${response.status}`)
+        
+        const blob = await response.blob()
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+        
+        // Cache on server
+        await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64 })
+        })
+        
+        console.log(`[Highrise] Cached ${item.id} for generation`)
+      } catch (e) {
+        console.error(`[Highrise] Failed to cache ${item.id}:`, e)
+      }
+    }
+    // Return proxy URL (now cached if it was new pipeline)
+    return item.imageUrl
+  }, [useApUrl])
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Reset image loaded state when lightbox changes
@@ -276,7 +259,7 @@ export default function HighriseSearch({
   }, [hasMore, loadingMore, loadMore])
 
   // Toggle item selection
-  const toggleItem = (item: HighriseItem) => {
+  const toggleItem = async (item: HighriseItem) => {
     // Single select mode - just call the callback
     if (singleSelect && onSingleSelect) {
       onSingleSelect(item)
@@ -290,9 +273,11 @@ export default function HighriseSearch({
     if (existingRef) {
       onRemoveReference(existingRef.id)
     } else if (references.length < maxRefs) {
+      // Cache for generation if it's a new pipeline item
+      await cacheForGeneration(item)
       onAddReference({
         id: `hr-${item.id}`,
-        url: item.imageUrl,
+        url: item.imageUrl, // Proxy URL - now cached if new pipeline
         name: item.name,
         type: 'highrise'
       })
@@ -390,20 +375,20 @@ export default function HighriseSearch({
                     title={item.name}
                   >
                     <img
-                      src={cachedImages.has(item.id) ? `${item.imageUrl}?cached=1` : item.imageUrl}
+                      src={getDisplayUrl(item)}
                       alt={item.name}
                       loading="lazy"
                       onLoad={(e) => {
-                        // CDN returns valid 1x1 PNG for new pipeline items - detect and steal
+                        // CDN returns valid 1x1 PNG for new pipeline items - switch to AP URL
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !cachedImages.has(item.id)) {
-                          stealAndCache(item)
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !useApUrl.has(item.id)) {
+                          setUseApUrl(prev => new Set(prev).add(item.id))
                         }
                       }}
                       onError={() => {
-                        // True error - try to steal or mark failed
-                        if (item.apImageUrl && !cachedImages.has(item.id)) {
-                          stealAndCache(item)
+                        // Proxy error - try AP URL
+                        if (item.apImageUrl && !useApUrl.has(item.id)) {
+                          setUseApUrl(prev => new Set(prev).add(item.id))
                         } else {
                           setFailedImages(prev => new Set(prev).add(item.id))
                         }
@@ -491,20 +476,20 @@ export default function HighriseSearch({
                     title={item.name}
                   >
                     <img
-                      src={cachedImages.has(item.id) ? `${item.imageUrl}?cached=1` : item.imageUrl}
+                      src={getDisplayUrl(item)}
                       alt={item.name}
                       loading="lazy"
                       onLoad={(e) => {
-                        // CDN returns valid 1x1 PNG for new pipeline items - detect and steal
+                        // CDN returns valid 1x1 PNG for new pipeline items - switch to AP URL
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !cachedImages.has(item.id)) {
-                          stealAndCache(item)
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !useApUrl.has(item.id)) {
+                          setUseApUrl(prev => new Set(prev).add(item.id))
                         }
                       }}
                       onError={() => {
-                        // True error - try to steal or mark failed
-                        if (item.apImageUrl && !cachedImages.has(item.id)) {
-                          stealAndCache(item)
+                        // Proxy error - try AP URL
+                        if (item.apImageUrl && !useApUrl.has(item.id)) {
+                          setUseApUrl(prev => new Set(prev).add(item.id))
                         } else {
                           setFailedImages(prev => new Set(prev).add(item.id))
                         }
