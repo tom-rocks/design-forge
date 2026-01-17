@@ -423,30 +423,38 @@ export default function HighriseSearch({
                       alt=""
                       loading="lazy"
                       onLoad={(e) => {
-                        // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
-                          // Skip if we're currently proxying (wait for it to complete)
-                          if (proxyingImages.has(item.id)) return
+                        const is1x1 = img.naturalWidth <= 1 && img.naturalHeight <= 1
+                        console.log(`[Highrise] onLoad ${item.id}: ${img.naturalWidth}x${img.naturalHeight}, src=${img.src.substring(0, 50)}...`)
+                        
+                        if (is1x1) {
+                          if (proxyingImages.has(item.id)) {
+                            console.log(`[Highrise] ${item.id} is 1x1 but still proxying, waiting...`)
+                            return
+                          }
                           
                           if (item.apImageUrl && !proxiedImages.has(item.id)) {
-                            // First time seeing 1x1 - try AP proxy
+                            console.log(`[Highrise] ${item.id} is 1x1, trying AP proxy`)
                             proxyImageViaAP(item)
                           } else if (proxiedImages.has(item.id)) {
-                            // Already tried AP proxy and still got 1x1 - mark as failed
+                            console.log(`[Highrise] ${item.id} is 1x1 AFTER proxy - marking failed`)
                             setFailedImages(prev => new Set(prev).add(item.id))
                           }
                         }
                       }}
                       onError={() => {
-                        // Skip if we're currently proxying (wait for it to complete)
-                        if (proxyingImages.has(item.id)) return
+                        console.log(`[Highrise] onError ${item.id}, proxying=${proxyingImages.has(item.id)}, proxied=${proxiedImages.has(item.id)}`)
                         
-                        // Image failed to load - try AP proxy if available
+                        if (proxyingImages.has(item.id)) {
+                          console.log(`[Highrise] ${item.id} error but still proxying, waiting...`)
+                          return
+                        }
+                        
                         if (item.apImageUrl && !proxiedImages.has(item.id)) {
+                          console.log(`[Highrise] ${item.id} error, trying AP proxy`)
                           proxyImageViaAP(item)
                         } else {
-                          // No fallback available or already tried - mark failed
+                          console.log(`[Highrise] ${item.id} error, no fallback - marking failed`)
                           setFailedImages(prev => new Set(prev).add(item.id))
                         }
                       }}
