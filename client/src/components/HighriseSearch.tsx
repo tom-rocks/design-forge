@@ -425,8 +425,14 @@ export default function HighriseSearch({
                       onLoad={(e) => {
                         // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !proxiedImages.has(item.id)) {
-                          proxyImageViaAP(item)
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+                          if (item.apImageUrl && !proxiedImages.has(item.id)) {
+                            // First time seeing 1x1 - try AP proxy
+                            proxyImageViaAP(item)
+                          } else {
+                            // Already tried AP proxy and still got 1x1 - mark as failed
+                            setFailedImages(prev => new Set(prev).add(item.id))
+                          }
                         }
                       }}
                       onError={() => {
@@ -533,8 +539,14 @@ export default function HighriseSearch({
                       onLoad={(e) => {
                         // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !proxiedImages.has(item.id)) {
-                          proxyImageViaAP(item)
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+                          if (item.apImageUrl && !proxiedImages.has(item.id)) {
+                            // First time seeing 1x1 - try AP proxy
+                            proxyImageViaAP(item)
+                          } else {
+                            // Already tried AP proxy and still got 1x1 - mark as failed
+                            setFailedImages(prev => new Set(prev).add(item.id))
+                          }
                         }
                       }}
                       onError={() => {
