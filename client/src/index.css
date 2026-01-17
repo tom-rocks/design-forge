@@ -1496,8 +1496,14 @@ body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
-  /* Hide alt text */
-  color: transparent;
+  /* Start hidden until loaded */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* Show image once loaded */
+.highrise-item img.loaded {
+  opacity: 1;
 }
 
 .highrise-item:hover {

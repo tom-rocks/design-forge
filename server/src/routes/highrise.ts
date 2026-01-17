@@ -63,12 +63,14 @@ const AVATAR_CATEGORIES = [
 const hasValidThumbnail = (item: BridgeItem): boolean => {
   const id = item.disp_id || item.id || item.item_id || '';
   
-  // Skip room items and grab bags (these don't have displayable images)
-  if (id.startsWith('room-') || id.startsWith('grab-')) {
+  // Skip items that don't have displayable thumbnails
+  // - room items, grab bags
+  // - btd (background decals) - game-only assets, no thumbnails
+  if (id.startsWith('room-') || id.startsWith('grab-') || id.startsWith('btd-') || id.startsWith('btd_')) {
     return false;
   }
   
-  // Allow backgrounds and containers - they have images at different CDN paths
+  // Allow profile backgrounds and containers - they have images at different CDN paths
   if (id.startsWith('bg-') || id.startsWith('cn-')) {
     return true;
   }
