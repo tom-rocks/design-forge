@@ -4,7 +4,21 @@ import { isBridgeConnected, searchItemsViaBridge, getItemViaBridge } from '../br
 const router = Router();
 
 const HIGHRISE_API = 'https://webapi.highrise.game';
-const HIGHRISE_CDN = 'https://cdn.highrisegame.com/avatar';
+const HIGHRISE_CDN = 'https://cdn.highrisegame.com';
+
+// Get the correct CDN URL for an item based on its disp_id
+function getItemCdnUrl(itemId: string): string {
+  if (itemId.startsWith('bg-')) {
+    // Backgrounds: /background/{disp_id}/full
+    return `${HIGHRISE_CDN}/background/${itemId}/full`;
+  } else if (itemId.startsWith('cn-')) {
+    // Containers: /container/{disp_id}/full
+    return `${HIGHRISE_CDN}/container/${itemId}/full`;
+  } else {
+    // Avatar items: /avatar/{disp_id}.png
+    return `${HIGHRISE_CDN}/avatar/${itemId}.png`;
+  }
+}
 
 // Item types for bridge search
 const ITEM_TYPES = [
@@ -33,8 +47,8 @@ interface BridgeItem {
   type?: string;
 }
 
-// Only avatar items have valid PNG thumbnails
-const VALID_ITEM_TYPES = ['DAvatarItemArchetype'];
+// Item types that have valid images (avatar items, backgrounds, containers)
+const VALID_ITEM_TYPES = ['DAvatarItemArchetype', 'DBackgroundArchetype', 'DContainerArchetype'];
 
 // Categories that have valid avatar thumbnails
 const AVATAR_CATEGORIES = [
@@ -45,30 +59,40 @@ const AVATAR_CATEGORIES = [
   'tattoo', 'aura', 'emote'
 ];
 
-// Filter out items without valid thumbnails
+// Filter out items without valid images
 const hasValidThumbnail = (item: BridgeItem): boolean => {
   const id = item.disp_id || item.id || item.item_id || '';
   
-  // Skip containers (cn-...) and other non-avatar items by ID prefix
-  if (id.startsWith('cn-') || id.startsWith('room-') || id.startsWith('grab-')) {
+  // Skip room items and grab bags (these don't have displayable images)
+  if (id.startsWith('room-') || id.startsWith('grab-')) {
     return false;
   }
   
-  // If _type is present (bridge response), check if it's an avatar item
+  // Allow backgrounds and containers - they have images at different CDN paths
+  if (id.startsWith('bg-') || id.startsWith('cn-')) {
+    return true;
+  }
+  
+  // If _type is present (bridge response), check if it's in our valid types
   if (item._type && !VALID_ITEM_TYPES.includes(item._type)) {
     return false;
   }
   
-  // If category is container or not a known avatar category, skip it
+  // Skip room/grab categories
   const category = item.category?.toLowerCase();
-  if (category === 'container' || category === 'room' || category === 'grab') {
+  if (category === 'room' || category === 'grab') {
     return false;
   }
   
   // For bridge responses with category, check if it's a valid avatar category
-  // For public API (no _type), allow all categories that pass the above checks
-  if (item._type && category && !AVATAR_CATEGORIES.includes(category)) {
-    return false;
+  // But allow profile_background and container categories
+  if (item._type && category) {
+    if (category === 'profile_background' || category === 'container') {
+      return true;
+    }
+    if (!AVATAR_CATEGORIES.includes(category)) {
+      return false;
+    }
   }
   
   return true;
@@ -341,7 +365,8 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
     return;
   }
   
-  const imageUrl = `${HIGHRISE_CDN}/${itemId}.png`;
+  // Get correct CDN URL based on item type (avatar, background, container)
+  const imageUrl = getItemCdnUrl(itemId);
   logProxy(itemId, 'FETCHING', imageUrl);
   
   try {

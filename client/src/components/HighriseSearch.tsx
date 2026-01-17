@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Search, Loader2, WifiOff, Expand, Download, Pin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
-import { searchItemsViaAP } from '../lib/ap-bridge'
+import { searchItemsViaAP, fetchImageViaAP, checkAPContext } from '../lib/ap-bridge'
 
 const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 
@@ -56,30 +56,57 @@ export default function HighriseSearch({
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  const [useApUrl, setUseApUrl] = useState<Set<string>>(new Set()) // Items that need AP URL (new pipeline)
+  const [proxiedImages, setProxiedImages] = useState<Map<string, string>>(new Map()) // item.id → data URL
+  const [proxyingImages, setProxyingImages] = useState<Set<string>>(new Set()) // Currently being proxied
   
-  // Get display URL - use AP URL if proxy returned placeholder
+  // Get display URL - use proxied data URL if available, otherwise original URL
   const getDisplayUrl = useCallback((item: HighriseItem) => {
-    if (useApUrl.has(item.id) && item.apImageUrl) {
-      return item.apImageUrl
+    // Use proxied data URL if we fetched it via AP
+    if (proxiedImages.has(item.id)) {
+      return proxiedImages.get(item.id)!
     }
     return item.imageUrl
-  }, [useApUrl])
+  }, [proxiedImages])
+  
+  // Proxy image through AP parent
+  const proxyImageViaAP = useCallback(async (item: HighriseItem) => {
+    console.log(`[Highrise] proxyImageViaAP called for ${item.id}, apUrl: ${item.apImageUrl}`)
+    if (!item.apImageUrl || proxyingImages.has(item.id) || proxiedImages.has(item.id)) {
+      console.log(`[Highrise] Skipping proxy: apUrl=${!!item.apImageUrl}, alreadyProxying=${proxyingImages.has(item.id)}, alreadyProxied=${proxiedImages.has(item.id)}`)
+      return
+    }
+    if (!useAPBridge || !checkAPContext()) {
+      // Not in AP context, can't proxy - mark as failed
+      console.log(`[Highrise] Not in AP context, marking as failed`)
+      setFailedImages(prev => new Set(prev).add(item.id))
+      return
+    }
+    
+    console.log(`[Highrise] Starting AP proxy for ${item.id}: ${item.apImageUrl}`)
+    setProxyingImages(prev => new Set(prev).add(item.id))
+    
+    try {
+      const dataUrl = await fetchImageViaAP(item.apImageUrl)
+      setProxiedImages(prev => new Map(prev).set(item.id, dataUrl))
+      console.log(`[Highrise] Successfully proxied ${item.id} via AP, got ${dataUrl.length} bytes`)
+    } catch (e) {
+      console.error(`[Highrise] AP proxy failed for ${item.id}:`, e)
+      setFailedImages(prev => new Set(prev).add(item.id))
+    } finally {
+      setProxyingImages(prev => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+    }
+  }, [useAPBridge, proxyingImages, proxiedImages])
   
   // Cache image on server (only called when selecting for generation)
   const cacheForGeneration = useCallback(async (item: HighriseItem): Promise<string> => {
-    // If it's a new pipeline item, steal from AP and cache
-    if (useApUrl.has(item.id) && item.apImageUrl) {
+    // If we have a proxied data URL, cache it on the server for generation
+    if (proxiedImages.has(item.id)) {
       try {
-        const response = await fetch(item.apImageUrl, { credentials: 'include' })
-        if (!response.ok) throw new Error(`AP fetch failed: ${response.status}`)
-        
-        const blob = await response.blob()
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(blob)
-        })
+        const base64 = proxiedImages.get(item.id)!
         
         // Cache on server
         await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
@@ -93,9 +120,9 @@ export default function HighriseSearch({
         console.error(`[Highrise] Failed to cache ${item.id}:`, e)
       }
     }
-    // Return proxy URL (now cached if it was new pipeline)
-    return item.imageUrl
-  }, [useApUrl])
+    // Return the display URL (data URL if proxied, otherwise original)
+    return getDisplayUrl(item)
+  }, [proxiedImages, getDisplayUrl])
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Reset image loaded state when lightbox changes
@@ -171,17 +198,34 @@ export default function HighriseSearch({
         })
         
         // Transform AP response to our format
-        // Route through our proxy for logging/debugging, with AP fallback for new pipeline
-        // v=2 cache bust to clear old bad cached responses
+        // Route ALL items through our proxy first - server knows correct CDN URLs
+        // Falls back to AP proxy if server can't fetch (auth required, new pipeline, etc.)
         const items = (result.items || []).map((item: any) => {
           const dispId = item.disp_id || item.id
+          
+          // All items go through our proxy first (server handles different URL patterns)
+          // AP fallback URL depends on item type
+          let apImageUrl: string
+          
+          if (dispId.startsWith('cn-')) {
+            // Container - AP can fetch CDN URL with auth
+            apImageUrl = `https://cdn.highrisegame.com/container/${dispId}/full`
+          } else if (dispId.startsWith('bg-')) {
+            // Background - AP can fetch CDN URL with auth
+            apImageUrl = `https://cdn.highrisegame.com/background/${dispId}/full`
+          } else {
+            // Avatar item - AP has internal endpoint
+            apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+          }
+          
           return {
             id: item._id || dispId,
             name: item.disp_name || item.name,
             category: item.category || 'unknown',
             rarity: item.rarity || 'common',
-            imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png?v=2`,
-            apImageUrl: `https://production-ap.highrise.game/avataritem/front/${dispId}.png`,
+            // Always try our proxy first - server handles bg/cn/avatar URL patterns
+            imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`,
+            apImageUrl,
           }
         })
         
@@ -379,21 +423,28 @@ export default function HighriseSearch({
                       alt={item.name}
                       loading="lazy"
                       onLoad={(e) => {
-                        // CDN returns valid 1x1 PNG for new pipeline items - switch to AP URL
+                        // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !useApUrl.has(item.id)) {
-                          setUseApUrl(prev => new Set(prev).add(item.id))
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !proxiedImages.has(item.id)) {
+                          proxyImageViaAP(item)
                         }
                       }}
                       onError={() => {
-                        // Proxy error - try AP URL
-                        if (item.apImageUrl && !useApUrl.has(item.id)) {
-                          setUseApUrl(prev => new Set(prev).add(item.id))
+                        // Image failed to load - try AP proxy if available
+                        console.log(`[Highrise] Image error for ${item.id}, url: ${item.imageUrl}, apUrl: ${item.apImageUrl}`)
+                        if (item.apImageUrl && !proxiedImages.has(item.id)) {
+                          proxyImageViaAP(item)
                         } else {
+                          // No fallback available or already tried - mark failed
                           setFailedImages(prev => new Set(prev).add(item.id))
                         }
                       }}
                     />
+                    {proxyingImages.has(item.id) && (
+                      <div className="highrise-item-loading">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      </div>
+                    )}
                     {selected && (
                       <div className="highrise-item-check">
                         <span>✓</span>
@@ -480,21 +531,28 @@ export default function HighriseSearch({
                       alt={item.name}
                       loading="lazy"
                       onLoad={(e) => {
-                        // CDN returns valid 1x1 PNG for new pipeline items - switch to AP URL
+                        // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
-                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !useApUrl.has(item.id)) {
-                          setUseApUrl(prev => new Set(prev).add(item.id))
+                        if (img.naturalWidth <= 1 && img.naturalHeight <= 1 && item.apImageUrl && !proxiedImages.has(item.id)) {
+                          proxyImageViaAP(item)
                         }
                       }}
                       onError={() => {
-                        // Proxy error - try AP URL
-                        if (item.apImageUrl && !useApUrl.has(item.id)) {
-                          setUseApUrl(prev => new Set(prev).add(item.id))
+                        // Image failed to load - try AP proxy if available
+                        console.log(`[Highrise] Image error for ${item.id}, url: ${item.imageUrl}, apUrl: ${item.apImageUrl}`)
+                        if (item.apImageUrl && !proxiedImages.has(item.id)) {
+                          proxyImageViaAP(item)
                         } else {
+                          // No fallback available or already tried - mark failed
                           setFailedImages(prev => new Set(prev).add(item.id))
                         }
                       }}
                     />
+                    {proxyingImages.has(item.id) && (
+                      <div className="highrise-item-loading">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      </div>
+                    )}
                     {selected && (
                       <div className="highrise-item-check">
                         <span>✓</span>

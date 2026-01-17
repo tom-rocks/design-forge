@@ -222,3 +222,55 @@ export async function getItemViaAP(dispId: string) {
   
   return apRequest<{ items: unknown[] }>('/api', 'POST', body);
 }
+
+/**
+ * Fetch image via AP parent (for authenticated image access)
+ * Returns a base64 data URL
+ */
+export async function fetchImageViaAP(imageUrl: string): Promise<string> {
+  if (!checkAPContext() || !window.parent) {
+    throw new Error('Not in AP context');
+  }
+  
+  const id = `img-${++requestCounter}-${Date.now()}`;
+  
+  return new Promise((resolve, reject) => {
+    // Set timeout (images can be slow)
+    const timeout = setTimeout(() => {
+      pendingRequests.delete(id);
+      reject(new Error('Image proxy timeout'));
+    }, 15000);
+    
+    pendingRequests.set(id, {
+      resolve: (value: unknown) => {
+        clearTimeout(timeout);
+        const data = value as { dataUrl?: string };
+        if (data?.dataUrl) {
+          resolve(data.dataUrl);
+        } else {
+          reject(new Error('No dataUrl in response'));
+        }
+      },
+      reject: (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      }
+    });
+    
+    // Send request to parent
+    const message = {
+      id,
+      type: 'image-proxy',
+      url: imageUrl
+    };
+    
+    // Try all AP origins
+    AP_ORIGINS.forEach(origin => {
+      try {
+        window.parent.postMessage(message, origin);
+      } catch (e) {
+        // Ignore
+      }
+    });
+  });
+}

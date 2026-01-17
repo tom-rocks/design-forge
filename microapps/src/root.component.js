@@ -124,6 +124,32 @@ export default function Root() {
           }
 
           result = await response.json();
+        } else if (type === "image-proxy") {
+          // Image proxy - fetch image with AP's authenticated session
+          const { url } = event.data;
+          if (!url) {
+            throw new Error("No URL provided for image proxy");
+          }
+
+          const response = await fetch(url, {
+            credentials: "include", // Include AP cookies
+          });
+
+          if (!response.ok) {
+            throw new Error(`Image fetch failed: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          
+          // Convert to base64 data URL
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          result = { dataUrl };
         } else {
           throw new Error(`Unknown message type: ${type}`);
         }
