@@ -307,21 +307,117 @@ The bridge enables Design Forge to search Highrise's internal item database thro
 ### Architecture
 
 ```
-┌─────────────────────┐         WebSocket          ┌─────────────────────┐
-│   Design Forge      │ ◄──────────────────────► │   Highrise AP       │
-│   (Railway Server)  │                            │   (single-spa app)  │
-│                     │                            │                     │
-│   - bridge.ts       │   Authenticated session    │   - bridge.js       │
-│   - /ws/bridge      │   for item queries         │   - Uses AP's /api  │
-└─────────────────────┘                            └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Highrise Admin Panel (AP)                        │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                    single-spa Microapp                             │  │
+│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
+│  │  │              Design Forge (iframe)                          │  │  │
+│  │  │                                                             │  │  │
+│  │  │  - React client                                             │  │  │
+│  │  │  - Communicates with parent via postMessage                 │  │  │
+│  │  └─────────────────────────────────────────────────────────────┘  │  │
+│  │                           ▲                                        │  │
+│  │                           │ postMessage                            │  │
+│  │                           ▼                                        │  │
+│  │  - root.component.js (message handler)                            │  │
+│  │  - Proxies API requests to AP                                     │  │
+│  │  - Proxies images using AP's authenticated session                │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                        WebSocket   │   HTTPS (images/API)
+                                    ▼
+                    ┌─────────────────────────────┐
+                    │   Design Forge Server       │
+                    │   (Railway)                 │
+                    │                             │
+                    │   - bridge.ts (WebSocket)   │
+                    │   - highrise.ts (proxy)     │
+                    │   - generate.ts (Gemini)    │
+                    └─────────────────────────────┘
 ```
 
 ### How It Works
 
 1. **single-spa microapp** runs inside Highrise Admin Panel
-2. Microapp connects via WebSocket to our server at `/ws/bridge`
-3. Authenticates with `BRIDGE_SECRET`
-4. Server sends search requests → microapp queries AP's internal API → returns results
+2. **Design Forge client** runs as an iframe inside the microapp
+3. Microapp connects via WebSocket to our server at `/ws/bridge`
+4. Authenticates with `BRIDGE_SECRET`
+5. Server sends search requests → microapp queries AP's internal API → returns results
+
+### Image Proxy via postMessage
+
+Since Design Forge runs in an iframe on a different domain (Railway), it cannot directly access AP's authenticated endpoints. The solution uses postMessage:
+
+```
+Design Forge (iframe)                    Microapp (parent)
+       │                                        │
+       │  postMessage('image-proxy', url)       │
+       │ ─────────────────────────────────────► │
+       │                                        │ fetch(url, {credentials: 'include'})
+       │                                        │ ─────► AP CDN (authenticated)
+       │                                        │ ◄───── image blob
+       │                                        │ convert to base64
+       │  postMessage('image-proxy-result',     │
+       │              data:image/png;base64...) │
+       │ ◄───────────────────────────────────── │
+       │                                        │
+       ▼                                        ▼
+  Display image using data URL
+```
+
+**Client-side (ap-bridge.ts)**:
+```typescript
+export async function fetchImageViaAP(imageUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const requestId = `img-${Date.now()}-${Math.random()}`
+    
+    const handler = (event: MessageEvent) => {
+      if (event.data?.requestId === requestId) {
+        window.removeEventListener('message', handler)
+        if (event.data.success) {
+          resolve(event.data.dataUrl)  // base64 data URL
+        } else {
+          reject(new Error(event.data.error))
+        }
+      }
+    }
+    
+    window.addEventListener('message', handler)
+    window.parent.postMessage({ type: 'image-proxy', url: imageUrl, requestId }, '*')
+  })
+}
+```
+
+**Microapp-side (root.component.js)**:
+```javascript
+window.addEventListener('message', async (event) => {
+  if (event.data?.type === 'image-proxy') {
+    const { url, requestId } = event.data
+    try {
+      const response = await fetch(url, { credentials: 'include' })
+      const blob = await response.blob()
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        event.source.postMessage({
+          type: 'image-proxy-result',
+          requestId,
+          success: true,
+          dataUrl: reader.result
+        }, event.origin)
+      }
+      reader.readAsDataURL(blob)
+    } catch (error) {
+      event.source.postMessage({
+        type: 'image-proxy-result',
+        requestId,
+        success: false,
+        error: error.message
+      }, event.origin)
+    }
+  }
+})
 
 ### Server-Side (server/src/bridge.ts)
 
@@ -413,6 +509,47 @@ curl https://your-app.railway.app/api/bridge/status
 { "connected": true, "timestamp": "2026-01-15T..." }
 ```
 
+### Highrise Item Types & CDN URLs
+
+Different item types use different CDN URL patterns:
+
+| Item Type | `disp_id` Prefix | `_type` | CDN URL Pattern |
+|-----------|------------------|---------|-----------------|
+| Avatar Items | Various (e.g., `hair_front-`, `dress-`) | `DAvatarItemArchetype` | `cdn.highrisegame.com/avatar/{disp_id}` |
+| Backgrounds | `bg-` | `DBackgroundArchetype` | `cdn.highrisegame.com/background/{disp_id}/full` |
+| Containers | `cn-` | `DContainerArchetype` | `cdn.highrisegame.com/container/{disp_id}/full` |
+
+**Server-side URL construction (highrise.ts)**:
+```typescript
+function getItemCdnUrl(itemId: string): string {
+  if (itemId.startsWith('bg-')) {
+    return `${HIGHRISE_CDN}/background/${itemId}/full`
+  } else if (itemId.startsWith('cn-')) {
+    return `${HIGHRISE_CDN}/container/${itemId}/full`
+  }
+  return `${HIGHRISE_CDN}/avatar/${itemId}`
+}
+```
+
+### Item Filtering Rules
+
+Some items are filtered out server-side because they don't have displayable thumbnails:
+
+| Prefix/Pattern | Reason |
+|----------------|--------|
+| `btd-` | Background decals - return 1x1 placeholder images |
+| `btd_` | Alternative background decal prefix |
+| `room-` | Room items - not visual assets |
+| `grab-` | Grab bags - not individual items |
+
+**1x1 Placeholder Detection**: Some items return a valid 1x1 pixel PNG from CDN when thumbnails aren't available. The client detects these in `onLoad`:
+```typescript
+if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+  // Mark as failed - this is a placeholder, not a real image
+  setFailedImages(prev => new Set(prev).add(item.id))
+}
+```
+
 ---
 
 ## Gemini API Integration
@@ -466,12 +603,32 @@ data: {"error":"Rate limit exceeded"}
 
 ### Image Upload Flow
 
-1. **Style images** are fetched from URL and uploaded to Gemini Files API
+1. **Style images** are fetched from URL or decoded from data URL, then uploaded to Gemini Files API
 2. **Edit images** are base64-decoded and uploaded to Gemini Files API
 3. Both use resumable upload protocol with file_uri references
 
+**Handling Data URLs vs HTTP URLs**:
 ```typescript
-// Upload to Gemini Files API
+async function uploadToGeminiFiles(url: string, apiKey: string) {
+  let buffer: Buffer;
+  
+  // Handle data URLs (base64 encoded images from AP proxy)
+  if (url.startsWith('data:')) {
+    const matches = url.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) return null;
+    buffer = Buffer.from(matches[2], 'base64');
+  } else {
+    // Fetch from HTTP URL
+    const response = await fetch(url);
+    buffer = Buffer.from(await response.arrayBuffer());
+  }
+  
+  // Process and upload to Gemini...
+}
+```
+
+**Upload to Gemini Files API**:
+```typescript
 const startResponse = await fetch(`${GEMINI_UPLOAD_BASE}/files`, {
   method: 'POST',
   headers: {
@@ -689,9 +846,40 @@ while (true) {
 
 #### Images not loading from Highrise
 
-**Cause**: CORS issues with direct CDN access.
+**Cause**: CORS issues or authentication requirements with AP/CDN access.
 
-**Solution**: Use the proxy endpoint: `/api/highrise/proxy/{item_id}.png`
+**Solutions**:
+1. Use the server proxy endpoint: `/api/highrise/proxy/{item_id}.png`
+2. If proxy fails (new items not on CDN), use AP bridge's `image-proxy` postMessage
+3. Check if item type is supported (see Item Filtering Rules above)
+
+**Image Loading Flow**:
+```
+1. Try server proxy: /api/highrise/proxy/{id}.png
+   └─ If 1x1 or error → 
+2. Try AP proxy via postMessage
+   └─ If 1x1 or error →
+3. Mark as failed, hide from grid
+```
+
+#### "Unknown message type: image-proxy"
+
+**Cause**: The microapp hasn't been updated with the image-proxy handler.
+
+**Solution**: Rebuild and redeploy the microapp:
+```bash
+cd microapps && npm run build
+# Then deploy dist/index.js to Highrise AP
+```
+
+#### Backgrounds/Containers not loading
+
+**Cause**: Different CDN URL patterns or server-side filtering.
+
+**Solutions**:
+1. Check `VALID_ITEM_TYPES` includes `DBackgroundArchetype` and `DContainerArchetype`
+2. Verify `getItemCdnUrl()` constructs correct URLs for `bg-` and `cn-` prefixes
+3. Check `hasValidThumbnail()` isn't filtering them out
 
 #### Generation stuck at "GENERATING..."
 
@@ -769,11 +957,27 @@ npm start
 
 | File | Purpose |
 |------|---------|
-| `server/src/routes/generate.ts` | All Gemini generation logic |
+| `server/src/routes/generate.ts` | Gemini generation logic, data URL handling |
+| `server/src/routes/highrise.ts` | Item search, CDN URL construction, filtering |
 | `server/src/bridge.ts` | WebSocket bridge server |
-| `client/src/App.tsx` | Main UI component |
+| `client/src/App.tsx` | Main UI component, layout |
+| `client/src/components/HighriseSearch.tsx` | Item search UI, image proxy logic |
+| `client/src/lib/ap-bridge.ts` | postMessage communication with AP |
 | `client/src/index.css` | All styles (see STYLING.md) |
+| `microapps/src/root.component.js` | Microapp entry, image-proxy handler |
 | `nixpacks.toml` | Railway build config |
+
+### UI Layout Order
+
+The main forge interface follows this vertical flow:
+1. **Forge Specs** - Model, ratio, resolution settings (collapsible)
+2. **Prompt** - Text input for generation
+3. **Refine** - Edit mode image selector (hidden when not in edit mode)
+4. **Alloy** - Reference images panel (collapsible, but Active refs stay visible)
+5. **Forge Button** - Generate action
+6. **Output** - Generated images display
+
+**Note**: Active references stay visible even when the Alloy panel is collapsed, allowing users to see their selections while keeping the UI compact.
 
 ### Environment Quick Check
 
@@ -807,4 +1011,4 @@ If you can check all boxes, you're **fully onboarded and ready to work on Design
 
 ---
 
-*Last updated: January 2026*
+*Last updated: January 17, 2026*
