@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Flame, Hammer, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, X, ChevronDown, Zap, Gem } from 'lucide-react'
+import { Search, History, Download, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -613,30 +613,6 @@ export default function App() {
             </Panel>
           </motion.div>
 
-          {/* PROMPT - Below Forge Specs */}
-          <Panel className="prompt-panel">
-            <PanelHeader>
-              Prompt
-              <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
-            </PanelHeader>
-            <PanelBody>
-              <div className="prompt-input-wrapper">
-                <div className="prompt-led-row">
-                  <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
-                </div>
-                <Textarea
-                  ref={promptRef}
-                  className={promptHot ? 'prompt-hot' : ''}
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value)}
-                  placeholder="Describe what you want to create..."
-                  rows={2}
-                  disabled={isGenerating}
-                />
-              </div>
-            </PanelBody>
-          </Panel>
-
           <motion.div
             className="edit-panel-wrapper"
             animate={{ 
@@ -894,33 +870,6 @@ export default function App() {
             </Panel>
           </motion.div>
 
-          {/* FORGE BUTTON */}
-          <Button
-            variant={canGenerate || isGenerating ? 'accent' : 'dark'}
-            onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
-            disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
-            isLoading={false}
-            className="w-full forge-button"
-          >
-            {isGenerating ? (
-              <>
-                <X className="w-4 h-4" />
-                Tap to cancel
-              </>
-            ) : !canGenerate ? (
-              !prompt.trim() ? (
-                <>
-                  <Flame className="w-4 h-4" />
-                  Enter prompt to forge
-                </>
-              ) : mode === 'edit' && !editImage?.url ? 'Select image' : 'Ready'
-            ) : (
-              <>
-                {mode === 'create' ? <Flame className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
-                {mode === 'create' ? 'Forge' : 'Refine'}
-              </>
-            )}
-          </Button>
         </div>
 
         {/* PIPE - Connects crucible to output */}
@@ -1049,6 +998,33 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* FLOATING PROMPT - Sticky at bottom */}
+      <div className="floating-prompt-container">
+        <div className="floating-prompt-inner">
+          <div className="floating-prompt-row">
+            <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
+            <Textarea
+              ref={promptRef}
+              className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''}`}
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              placeholder="Describe what you want to create..."
+              rows={1}
+              disabled={isGenerating}
+            />
+            <ModeSwitch mode={mode} onChange={setMode} disabled={isGenerating} />
+            <Button
+              variant={canGenerate || isGenerating ? 'accent' : 'dark'}
+              onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
+              disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
+              className="floating-forge-btn"
+            >
+              {isGenerating ? 'Cancel' : 'Forge'}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Output Lightbox */}
       <AnimatePresence>
