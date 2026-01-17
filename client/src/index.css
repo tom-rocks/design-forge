@@ -1496,23 +1496,8 @@ body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
-  /* Hide alt text and broken image icon */
+  /* Hide alt text */
   color: transparent;
-  font-size: 0;
-}
-
-/* Hide broken image icon in various browsers */
-.highrise-item img::before {
-  content: '';
-  display: block;
-  position: absolute;
-  inset: 0;
-  background: var(--bg);
-}
-
-.highrise-item img:not([src]), 
-.highrise-item img[src=""] {
-  visibility: hidden;
 }
 
 .highrise-item:hover {

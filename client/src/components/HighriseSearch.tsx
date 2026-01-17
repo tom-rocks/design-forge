@@ -426,18 +426,23 @@ export default function HighriseSearch({
                         // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
                         if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+                          // Skip if we're currently proxying (wait for it to complete)
+                          if (proxyingImages.has(item.id)) return
+                          
                           if (item.apImageUrl && !proxiedImages.has(item.id)) {
                             // First time seeing 1x1 - try AP proxy
                             proxyImageViaAP(item)
-                          } else {
+                          } else if (proxiedImages.has(item.id)) {
                             // Already tried AP proxy and still got 1x1 - mark as failed
                             setFailedImages(prev => new Set(prev).add(item.id))
                           }
                         }
                       }}
                       onError={() => {
+                        // Skip if we're currently proxying (wait for it to complete)
+                        if (proxyingImages.has(item.id)) return
+                        
                         // Image failed to load - try AP proxy if available
-                        console.log(`[Highrise] Image error for ${item.id}, url: ${item.imageUrl}, apUrl: ${item.apImageUrl}`)
                         if (item.apImageUrl && !proxiedImages.has(item.id)) {
                           proxyImageViaAP(item)
                         } else {
@@ -540,18 +545,23 @@ export default function HighriseSearch({
                         // CDN returns valid 1x1 PNG for new pipeline items - proxy via AP
                         const img = e.currentTarget
                         if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+                          // Skip if we're currently proxying (wait for it to complete)
+                          if (proxyingImages.has(item.id)) return
+                          
                           if (item.apImageUrl && !proxiedImages.has(item.id)) {
                             // First time seeing 1x1 - try AP proxy
                             proxyImageViaAP(item)
-                          } else {
+                          } else if (proxiedImages.has(item.id)) {
                             // Already tried AP proxy and still got 1x1 - mark as failed
                             setFailedImages(prev => new Set(prev).add(item.id))
                           }
                         }
                       }}
                       onError={() => {
+                        // Skip if we're currently proxying (wait for it to complete)
+                        if (proxyingImages.has(item.id)) return
+                        
                         // Image failed to load - try AP proxy if available
-                        console.log(`[Highrise] Image error for ${item.id}, url: ${item.imageUrl}, apUrl: ${item.apImageUrl}`)
                         if (item.apImageUrl && !proxiedImages.has(item.id)) {
                           proxyImageViaAP(item)
                         } else {
