@@ -526,18 +526,17 @@ body {
   border: none;
   padding: 4px 6px;
   margin: -4px -2px;
-  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .lcd-interactive button.lcd-spec-item:hover:not(:disabled):not(.lit) {
-  background: rgba(255, 255, 255, 0.15);
-  color: #5a5855;
+  color: #8a8885;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
 }
 
 .lcd-interactive button.lcd-spec-item:hover:not(:disabled).lit {
-  background: rgba(255, 255, 255, 0.1);
+  filter: brightness(1.2);
 }
 
 .lcd-interactive button.lcd-spec-item:active:not(:disabled) {
@@ -554,7 +553,7 @@ body {
 
 /* Hover on LCD container reveals inactive items */
 .lcd-interactive:hover button.lcd-spec-item:not(.lit):not(.unavailable) {
-  color: #6a6865;
+  color: #5a5855;
 }
 
 .lcd-interactive:hover button.lcd-spec-item.unavailable {
