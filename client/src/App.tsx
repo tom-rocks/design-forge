@@ -766,10 +766,12 @@ export default function App() {
               </PanelHeader>
               <motion.div
                 className="alloy-content"
+                initial={false}
                 animate={{ 
                   height: alloyExpanded ? 'auto' : 0,
                   opacity: alloyExpanded ? 1 : 0
                 }}
+                style={{ overflow: 'hidden' }}
                 transition={{ duration: 0.2 }}
               >
               <PanelBody>
@@ -861,36 +863,36 @@ export default function App() {
                   </>
                 )}
 
-                {/* Always visible: Selected references */}
-                {references.length > 0 && (
-                  <div className="active-refs">
-                    <div className="active-refs-header">
-                      <span className="led on" />
-                      <span>Active ({references.length}/14)</span>
-                      <button 
-                        className="active-refs-clear"
-                        onClick={() => setReferences([])}
-                        title="Clear all"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div className="thumb-grid">
-                      <AnimatePresence mode="popLayout">
-                        {references.map((ref) => (
-                          <Thumb
-                            key={ref.id}
-                            src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
-                            alt={ref.name}
-                            onRemove={() => removeReference(ref.id)}
-                          />
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                )}
               </PanelBody>
               </motion.div>
+              {/* Always visible: Selected references - outside collapsible area */}
+              {references.length > 0 && (
+                <div className="active-refs">
+                  <div className="active-refs-header">
+                    <span className="led on" />
+                    <span>Active ({references.length}/14)</span>
+                    <button 
+                      className="active-refs-clear"
+                      onClick={() => setReferences([])}
+                      title="Clear all"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="thumb-grid">
+                    <AnimatePresence mode="popLayout">
+                      {references.map((ref) => (
+                        <Thumb
+                          key={ref.id}
+                          src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
+                          alt={ref.name}
+                          onRemove={() => removeReference(ref.id)}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
             </Panel>
           </motion.div>
 

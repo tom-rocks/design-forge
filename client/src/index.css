@@ -716,8 +716,7 @@ body {
 
 /* Active references section */
 .active-refs {
-  margin-top: 12px;
-  padding-top: 12px;
+  padding: 12px 20px 20px;
   border-top: 1px solid var(--border);
 }
 
