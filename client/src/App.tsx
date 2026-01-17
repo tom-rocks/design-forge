@@ -61,7 +61,6 @@ export default function App() {
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
   // Forge specs state
-  const [specsExpanded, setSpecsExpanded] = useState(false)
   const [alloyExpanded, setAlloyExpanded] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [resolution, setResolution] = useState<string>('1K')
@@ -167,16 +166,11 @@ export default function App() {
   }, [isGenerating, result])
 
   // Replay animation state
-  const [replayAnimating, setReplayAnimating] = useState(false)
   const [promptHot, setPromptHot] = useState(false)
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
-    // Start animation state
-    setReplayAnimating(true)
-    
-    // Expand specs panel first so user sees the changes
-    setSpecsExpanded(true)
+    // Expand alloy panel so user sees the reference changes
     setAlloyExpanded(true)
     
     // Stagger the settings restoration for visual effect
@@ -232,8 +226,6 @@ export default function App() {
         clearInterval(typeInterval)
         // Cool down the prompt (orange → grey transition)
         setTimeout(() => setPromptHot(false), 200)
-        // End animation state
-        setTimeout(() => setReplayAnimating(false), 800)
       }
     }, 15) // Fast but visible typing
     
@@ -510,76 +502,6 @@ export default function App() {
 
         {/* INPUT BLOCK */}
         <div className="forge-block forge-input-block">
-          {/* FORGE SPECS - First */}
-          <motion.div className="specs-frame">
-            <Panel>
-              <PanelHeader className="collapsible" onClick={() => setSpecsExpanded(!specsExpanded)}>
-                Forge Specs <span className="header-subtitle">advanced settings</span>
-                <div className="header-right">
-                  <motion.div 
-                    animate={{ rotate: specsExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.div>
-                  <span className={`led ${genModel !== 'flash' || aspectRatio !== '1:1' || resolution !== '1K' ? 'on' : ''}`} />
-                </div>
-              </PanelHeader>
-              <motion.div
-                className="specs-options"
-                animate={{ 
-                  height: specsExpanded ? 'auto' : 0,
-                  opacity: specsExpanded ? 1 : 0
-                }}
-                transition={{ duration: 0.2 }}
-              >
-                <PanelBody>
-                  <div className="specs-row">
-                    <span className="specs-label">MODEL</span>
-                    <div className="specs-buttons">
-                      <button 
-                        className={`specs-btn ${genModel === 'flash' ? 'active' : ''} ${replayAnimating && genModel === 'flash' ? 'replay-highlight' : ''}`}
-                        onClick={() => handleModelChange('flash')}
-                        disabled={isGenerating}
-                      >Flash</button>
-                      <button 
-                        className={`specs-btn ${genModel === 'pro' ? 'active' : ''} ${replayAnimating && genModel === 'pro' ? 'replay-highlight' : ''}`}
-                        onClick={() => handleModelChange('pro')}
-                        disabled={isGenerating}
-                      >Pro</button>
-                    </div>
-                  </div>
-                  <div className="specs-row">
-                    <span className="specs-label">RATIO</span>
-                    <div className="specs-buttons">
-                      {['1:1', '4:3', '3:4', '16:9', '9:16'].map(r => (
-                        <button 
-                          key={r}
-                          className={`specs-btn ${aspectRatio === r ? 'active' : ''} ${replayAnimating && aspectRatio === r ? 'replay-highlight' : ''}`}
-                          onClick={() => setAspectRatio(r)}
-                          disabled={isGenerating}
-                        >{r}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="specs-row">
-                    <span className="specs-label">SIZE</span>
-                    <div className="specs-buttons">
-                      {['1K', '2K', '4K'].map(s => (
-                        <button 
-                          key={s}
-                          className={`specs-btn ${resolution === s ? 'active' : ''} ${replayAnimating && resolution === s ? 'replay-highlight' : ''}`}
-                          onClick={() => setResolution(s)}
-                          disabled={isGenerating || (genModel === 'flash' && s !== '1K')}
-                        >{s}</button>
-                      ))}
-                    </div>
-                  </div>
-                </PanelBody>
-              </motion.div>
-            </Panel>
-          </motion.div>
-
           <motion.div
             className="edit-panel-wrapper"
             animate={{ 
@@ -969,14 +891,22 @@ export default function App() {
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
         <div className="floating-prompt-inner">
-          {/* LCD status display */}
-          <div className="lcd-screen lcd-floating">
-            <span className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}>
+          {/* LCD status display - interactive */}
+          <div className="lcd-screen lcd-floating lcd-interactive">
+            <button 
+              className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}
+              onClick={() => !isGenerating && handleModelChange('flash')}
+              disabled={isGenerating}
+            >
               <Zap className="lcd-icon" /> FLASH
-            </span>
-            <span className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}>
+            </button>
+            <button 
+              className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}
+              onClick={() => !isGenerating && handleModelChange('pro')}
+              disabled={isGenerating}
+            >
               <Gem className="lcd-icon" /> PRO
-            </span>
+            </button>
             <span className="lcd-spec-sep">│</span>
             {[
               { ratio: '1:1', w: 10, h: 10 },
@@ -985,12 +915,17 @@ export default function App() {
               { ratio: '16:9', w: 14, h: 8 },
               { ratio: '9:16', w: 8, h: 14 },
             ].map(({ ratio, w, h }) => (
-              <span key={ratio} className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}>
+              <button 
+                key={ratio} 
+                className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}
+                onClick={() => !isGenerating && setAspectRatio(ratio)}
+                disabled={isGenerating}
+              >
                 <svg className="lcd-ratio-icon" viewBox="0 0 16 16" width="14" height="14">
                   <rect x={(16-w)/2} y={(16-h)/2} width={w} height={h} fill="currentColor" rx="1" />
                 </svg>
                 {ratio}
-              </span>
+              </button>
             ))}
             <span className="lcd-spec-sep">│</span>
             {[
@@ -998,7 +933,14 @@ export default function App() {
               { res: '2K', cls: 'lcd-2k' },
               { res: '4K', cls: 'lcd-4k' },
             ].map(({ res, cls }) => (
-              <span key={res} className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''} ${genModel === 'flash' && res !== '1K' ? 'unavailable' : ''}`}>{res}</span>
+              <button 
+                key={res} 
+                className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''} ${genModel === 'flash' && res !== '1K' ? 'unavailable' : ''}`}
+                onClick={() => !isGenerating && !(genModel === 'flash' && res !== '1K') && setResolution(res)}
+                disabled={isGenerating || (genModel === 'flash' && res !== '1K')}
+              >
+                {res}
+              </button>
             ))}
           </div>
           

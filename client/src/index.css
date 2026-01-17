@@ -524,6 +524,47 @@ body {
   font-weight: 600;
 }
 
+/* Interactive LCD - buttons */
+.lcd-interactive button.lcd-spec-item {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  margin: -4px -2px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lcd-interactive button.lcd-spec-item:hover:not(:disabled):not(.lit) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #5a5855;
+}
+
+.lcd-interactive button.lcd-spec-item:hover:not(:disabled).lit {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lcd-interactive button.lcd-spec-item:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.lcd-interactive button.lcd-spec-item:disabled {
+  cursor: not-allowed;
+}
+
+.lcd-interactive button.lcd-spec-item.unavailable {
+  cursor: not-allowed;
+}
+
+/* Hover on LCD container reveals inactive items */
+.lcd-interactive:hover button.lcd-spec-item:not(.lit):not(.unavailable) {
+  color: #6a6865;
+}
+
+.lcd-interactive:hover button.lcd-spec-item.unavailable {
+  opacity: 0.2;
+}
+
 /* Specs panel header */
 .panel-header.collapsible {
   cursor: pointer;
