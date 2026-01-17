@@ -314,7 +314,7 @@ export default function HighriseSearch({
     // Multi-select mode
     if (!onAddReference || !onRemoveReference) return
     
-    const existingRef = references.find(r => r.url === item.imageUrl)
+    const existingRef = references.find(r => r.url === getDisplayUrl(item) || r.url === item.imageUrl)
     if (existingRef) {
       onRemoveReference(existingRef.id)
     } else if (references.length < maxRefs) {
@@ -322,7 +322,7 @@ export default function HighriseSearch({
       await cacheForGeneration(item)
       onAddReference({
         id: `hr-${item.id}`,
-        url: item.imageUrl, // Proxy URL - now cached if new pipeline
+        url: getDisplayUrl(item), // Use data URL if proxied, otherwise proxy URL
         name: item.name,
         type: 'highrise'
       })
@@ -331,7 +331,10 @@ export default function HighriseSearch({
 
   // Memoize selected URLs for O(1) lookups
   const selectedUrls = useMemo(() => new Set(references.map(r => r.url)), [references])
-  const isSelected = useCallback((item: HighriseItem) => selectedUrls.has(item.imageUrl), [selectedUrls])
+  const isSelected = useCallback((item: HighriseItem) => 
+    selectedUrls.has(getDisplayUrl(item)) || selectedUrls.has(item.imageUrl), 
+    [selectedUrls, getDisplayUrl]
+  )
   
   // Display items: show pinned first when no query, otherwise just search results
   // Filter out items with failed images

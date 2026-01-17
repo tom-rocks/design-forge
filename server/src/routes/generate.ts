@@ -56,14 +56,27 @@ function addLog(type: DebugLog['type'], data: unknown) {
  */
 async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileUri: string; mimeType: string } | null> {
   try {
-    console.log(`[Gemini Files] Fetching image: ${url}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.log(`[Gemini Files] Failed to fetch: ${response.status}`);
-      return null;
-    }
+    let buffer: Buffer;
     
-    const buffer = Buffer.from(await response.arrayBuffer());
+    // Handle data URLs (base64 encoded images from AP proxy)
+    if (url.startsWith('data:')) {
+      console.log(`[Gemini Files] Decoding data URL (${url.length} chars)`);
+      const matches = url.match(/^data:([^;]+);base64,(.+)$/);
+      if (!matches) {
+        console.log(`[Gemini Files] Invalid data URL format`);
+        return null;
+      }
+      buffer = Buffer.from(matches[2], 'base64');
+    } else {
+      // Fetch from URL (proxy or external)
+      console.log(`[Gemini Files] Fetching image: ${url}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.log(`[Gemini Files] Failed to fetch: ${response.status}`);
+        return null;
+      }
+      buffer = Buffer.from(await response.arrayBuffer());
+    }
     
     // Flatten transparency to gray background, keep as PNG for crispy refs
     const processedBuffer = await sharp(buffer)
