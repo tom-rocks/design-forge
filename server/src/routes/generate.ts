@@ -50,6 +50,20 @@ function addLog(type: DebugLog['type'], data: unknown) {
   console.log(`[${type}]`, JSON.stringify(data, null, 2));
 }
 
+// Highrise CDN base URL
+const HIGHRISE_CDN = 'https://cdn.highrisegame.com';
+
+// Get the correct CDN URL for an item based on its disp_id
+function getItemCdnUrl(itemId: string): string {
+  if (itemId.startsWith('bg-')) {
+    return `${HIGHRISE_CDN}/background/${itemId}/full`;
+  } else if (itemId.startsWith('cn-')) {
+    return `${HIGHRISE_CDN}/container/${itemId}/full`;
+  } else {
+    return `${HIGHRISE_CDN}/avatar/${itemId}.png`;
+  }
+}
+
 /**
  * Upload an image to Gemini Files API and get back a file_uri
  * This is the proper way to handle reference images
@@ -67,8 +81,28 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
         return null;
       }
       buffer = Buffer.from(matches[2], 'base64');
-    } else {
-      // Fetch from URL (proxy or external)
+    } 
+    // Handle our own proxy URLs (relative URLs from client)
+    else if (url.includes('/api/highrise/proxy/')) {
+      // Extract item ID from URL like /api/highrise/proxy/item-id.png?v=3
+      const match = url.match(/\/api\/highrise\/proxy\/([^.?]+)/);
+      if (!match) {
+        console.log(`[Gemini Files] Could not parse proxy URL: ${url}`);
+        return null;
+      }
+      const itemId = match[1];
+      const cdnUrl = getItemCdnUrl(itemId);
+      console.log(`[Gemini Files] Proxy URL -> CDN: ${cdnUrl}`);
+      
+      const response = await fetch(cdnUrl);
+      if (!response.ok) {
+        console.log(`[Gemini Files] Failed to fetch from CDN: ${response.status}`);
+        return null;
+      }
+      buffer = Buffer.from(await response.arrayBuffer());
+    }
+    else {
+      // Fetch from external URL
       console.log(`[Gemini Files] Fetching image: ${url}`);
       const response = await fetch(url);
       if (!response.ok) {
