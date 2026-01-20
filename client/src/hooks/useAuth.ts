@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { API_URL } from '../config'
 
 export interface User {
@@ -20,6 +20,8 @@ export function useAuth() {
     authenticated: false,
     user: null,
   })
+  
+  const popupRef = useRef<Window | null>(null)
 
   // Check authentication status
   const checkAuth = useCallback(async () => {
@@ -44,9 +46,27 @@ export function useAuth() {
     }
   }, [])
 
-  // Login with Google
+  // Login with Google - use popup to handle third-party cookie issues
   const login = useCallback(() => {
-    window.location.href = `${API_URL}/api/auth/google`
+    // If we're not in an iframe, use direct navigation
+    const isInIframe = window.self !== window.top
+    
+    if (!isInIframe) {
+      window.location.href = `${API_URL}/api/auth/google`
+      return
+    }
+    
+    // In iframe: use popup window for OAuth (avoids third-party cookie issues)
+    const width = 500
+    const height = 600
+    const left = window.screenX + (window.outerWidth - width) / 2
+    const top = window.screenY + (window.outerHeight - height) / 2
+    
+    popupRef.current = window.open(
+      `${API_URL}/api/auth/google?popup=true`,
+      'Design Forge Login',
+      `width=${width},height=${height},left=${left},top=${top},popup=yes`
+    )
   }, [])
 
   // Logout
@@ -70,12 +90,33 @@ export function useAuth() {
   useEffect(() => {
     checkAuth()
     
-    // Check if we just completed OAuth
+    // Check if we just completed OAuth (direct navigation)
     const params = new URLSearchParams(window.location.search)
     if (params.get('auth') === 'success' || params.get('auth') === 'failed') {
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname)
     }
+  }, [checkAuth])
+  
+  // Listen for popup auth completion
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin matches our API
+      const apiOrigin = API_URL || window.location.origin
+      if (event.origin !== apiOrigin) return
+      
+      if (event.data?.type === 'auth-complete') {
+        // Close popup if still open
+        popupRef.current?.close()
+        popupRef.current = null
+        
+        // Refresh auth state
+        checkAuth()
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
   }, [checkAuth])
 
   return {

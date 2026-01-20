@@ -71,7 +71,13 @@ export function setupPassport() {
 }
 
 // Start Google OAuth flow
-router.get('/google', passport.authenticate('google', {
+router.get('/google', (req, res, next) => {
+  // Store popup flag in session for callback
+  if (req.query.popup === 'true') {
+    (req.session as any).isPopup = true;
+  }
+  next();
+}, passport.authenticate('google', {
   scope: ['profile', 'email'],
 }));
 
@@ -84,7 +90,32 @@ router.get('/google/callback',
     // Successful authentication
     console.log(`[Auth] OAuth callback success for user: ${req.user?.email}`);
     console.log(`[Auth] Session ID: ${req.sessionID}`);
-    res.redirect('/?auth=success');
+    
+    const isPopup = (req.session as any).isPopup;
+    delete (req.session as any).isPopup;
+    
+    if (isPopup) {
+      // For popup: send message to opener and close
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Login Complete</title></head>
+        <body>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ type: 'auth-complete', success: true }, '*');
+            }
+            window.close();
+          </script>
+          <p>Login successful! This window should close automatically.</p>
+          <p>If it doesn't, you can close it manually.</p>
+        </body>
+        </html>
+      `);
+    } else {
+      // For direct navigation: redirect as before
+      res.redirect('/?auth=success');
+    }
   }
 );
 
