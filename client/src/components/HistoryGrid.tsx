@@ -322,13 +322,12 @@ export default function HistoryGrid({
           return (
             <motion.div
               key={gen.id}
-              layout
-              layoutId={`history-${gen.id}`}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className={`history-item ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
               onClick={() => !disabled && toggleGeneration(gen)}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
               title={gen.prompt}
             >
               {gen.thumbnailUrl ? (
