@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, History, Download, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Flame, Hammer } from 'lucide-react'
+import { Search, History, Download, Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Flame, Hammer, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -65,6 +65,7 @@ export default function App() {
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [resolution, setResolution] = useState<string>('1K')
   const [genModel, setGenModel] = useState<string>('flash')
+  const [outputCount, setOutputCount] = useState<1 | 2 | 4>(1)
   
   // Handle model change - auto-correct resolution if needed
   const handleModelChange = useCallback((model: string) => {
@@ -275,6 +276,7 @@ export default function App() {
           aspectRatio: '1:1',
           styleImages: references.map(r => ({ url: r.url, strength: 1 })),
           mode,
+          numImages: outputCount,
           ...(mode === 'edit' && editImage?.url ? { editImageValue: editImage.url, editImageType: 'url' } : {}),
         }),
         signal,
@@ -342,6 +344,10 @@ export default function App() {
 
   const removeReference = (id: string) => {
     setReferences(references.filter(r => r.id !== id))
+  }
+
+  const cycleOutputCount = () => {
+    setOutputCount(prev => prev === 1 ? 2 : prev === 2 ? 4 : 1)
   }
 
   const downloadOutputImage = useCallback((url: string) => {
@@ -786,6 +792,16 @@ export default function App() {
               <PanelHeader led={isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : 'off'}>
                 <span className="panel-icon icon-output" />
                 Output
+                <div className="header-right">
+                  <button 
+                    className="output-count-btn"
+                    onClick={cycleOutputCount}
+                    title={`Generate ${outputCount === 1 ? '2' : outputCount === 2 ? '4' : '1'} image${outputCount === 1 ? 's' : outputCount === 2 ? 's' : ''}`}
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span className="output-count-label">{outputCount}</span>
+                  </button>
+                </div>
               </PanelHeader>
             <PanelBody>
               <motion.div 
