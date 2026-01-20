@@ -1188,8 +1188,7 @@ body {
 .output-preview-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
 
 .output-preview-slot {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-inset);
   border-radius: var(--radius-md);
   min-height: 120px;
 }
