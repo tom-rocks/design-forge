@@ -102,6 +102,9 @@ export default function App() {
   
   // Ref for output container (scroll target)
   const outputRef = useRef<HTMLDivElement>(null)
+  
+  // Ref for refine panel (scroll target when selecting image to refine)
+  const refineRef = useRef<HTMLDivElement>(null)
 
   const canGenerate = prompt.trim() && (mode === 'create' || editImage?.url)
   
@@ -109,6 +112,11 @@ export default function App() {
   const scrollToPrompt = useCallback(() => {
     promptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => promptRef.current?.focus(), 300)
+  }, [])
+  
+  // Scroll to refine panel
+  const scrollToRefine = useCallback(() => {
+    refineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
   
   // Check bridge status (either via server WebSocket or AP iframe context)
@@ -519,6 +527,7 @@ export default function App() {
         <div className="forge-block forge-input-block">
           <motion.div
             className="edit-panel-wrapper"
+            ref={refineRef}
             animate={{ 
               gridTemplateRows: mode === 'edit' ? '1fr' : '0fr',
               marginTop: mode === 'edit' ? 12 : 0
@@ -741,6 +750,7 @@ export default function App() {
                         onRefine={(url) => {
                           setEditImage({ url })
                           setMode('edit')
+                          setTimeout(scrollToRefine, 100)
                         }}
                       />
                     </div>
@@ -883,6 +893,7 @@ export default function App() {
                               onClick={() => {
                                 setEditImage({ url })
                                 setMode('edit')
+                                setTimeout(scrollToRefine, 100)
                               }}
                               title="Refine this image"
                             >
@@ -1082,6 +1093,7 @@ export default function App() {
                       setEditImage({ url: outputLightbox })
                       setMode('edit')
                       setOutputLightbox(null)
+                      setTimeout(scrollToRefine, 100)
                     }}
                     title="Refine this image"
                   >
