@@ -348,6 +348,10 @@ export default function App() {
 
   const cycleOutputCount = () => {
     setOutputCount(prev => prev === 1 ? 2 : prev === 2 ? 4 : 1)
+    // Clear any existing output to show preview grid
+    setResult(null)
+    setLoadedImages(new Set())
+    setFailedImages(new Set())
   }
 
   const downloadOutputImage = useCallback((url: string) => {
