@@ -39,7 +39,8 @@ export function LCDFireGrid({
   const lastFrameRef = useRef<number>(0)
   
   useEffect(() => {
-    const frameInterval = 1000 / 30
+    // Slower frame rate for smoother feel
+    const frameInterval = 1000 / 10
     
     const simulate = (timestamp: number) => {
       if (timestamp - lastFrameRef.current < frameInterval) {
@@ -52,30 +53,49 @@ export function LCDFireGrid({
         const next = [...prev]
         
         if (active) {
-          // Bottom row: generate heat
+          // Bottom row: gentler heat generation, blend with existing
           for (let x = 0; x < cols; x++) {
             const idx = (rows - 1) * cols + x
-            if (Math.random() < 0.4) next[idx] = Math.floor(Math.random() * 5) + 8
-            else if (Math.random() < 0.6) next[idx] = Math.floor(Math.random() * 4) + 4
-            else next[idx] = Math.floor(Math.random() * 4)
+            const current = prev[idx]
+            let target: number
+            
+            // Less frequent changes, more stable base
+            if (Math.random() < 0.25) {
+              target = Math.floor(Math.random() * 3) + 10 // hot spots
+            } else if (Math.random() < 0.4) {
+              target = Math.floor(Math.random() * 3) + 7 // warm
+            } else {
+              target = Math.floor(Math.random() * 3) + 4 // ember
+            }
+            
+            // Blend toward target instead of jumping
+            next[idx] = Math.round(current * 0.6 + target * 0.4)
           }
           
-          // Propagate upward
+          // Propagate upward with smoother blending
           for (let y = 0; y < rows - 1; y++) {
             for (let x = 0; x < cols; x++) {
               const idx = y * cols + x
+              const current = prev[idx]
               const below = next[(y + 1) * cols + x]
               const belowLeft = next[(y + 1) * cols + Math.max(0, x - 1)]
               const belowRight = next[(y + 1) * cols + Math.min(cols - 1, x + 1)]
-              const avg = (below * 2 + belowLeft + belowRight) / 4
-              const decay = Math.random() < 0.7 ? 1 : 2
-              next[idx] = Math.max(0, Math.round(avg) - decay)
+              
+              // Weighted average favoring center
+              const avg = (below * 3 + belowLeft + belowRight) / 5
+              const decay = 1 + (y * 0.5) // More decay higher up
+              const target = Math.max(0, avg - decay)
+              
+              // Smooth transition
+              next[idx] = Math.round(current * 0.5 + target * 0.5)
             }
           }
         } else {
-          // Cool down
+          // Gradual cool down
           for (let i = 0; i < next.length; i++) {
-            if (next[i] > 0) next[i]--
+            if (next[i] > 0) {
+              next[i] = Math.max(0, next[i] - 1)
+            }
           }
         }
         
@@ -109,6 +129,7 @@ export function LCDFireGrid({
             borderRadius: 1,
             backgroundColor: FIRE_COLORS[Math.min(value, FIRE_COLORS.length - 1)],
             boxShadow: value >= 8 ? `0 0 ${dotSize}px ${FIRE_COLORS[value]}` : undefined,
+            transition: 'background-color 120ms ease, box-shadow 120ms ease',
           }}
         />
       ))}
