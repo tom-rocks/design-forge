@@ -282,7 +282,7 @@ export default function App() {
           styleImages: references.map(r => ({ url: r.url, strength: 1 })),
           mode,
           numImages: outputCount,
-          ...(mode === 'edit' && editImage?.url ? { editImageValue: editImage.url, editImageType: 'url' } : {}),
+          ...(mode === 'edit' && editImage?.url ? { editImage: editImage.url } : {}),
         }),
         signal,
       })

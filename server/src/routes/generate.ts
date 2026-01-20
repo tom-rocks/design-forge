@@ -408,7 +408,16 @@ router.post('/generate', async (req: Request, res: Response) => {
         id 
       });
       
-      const editData = await uploadBase64ToGeminiFiles(editImage, apiKey);
+      // Handle both URLs and base64 data URLs
+      let editData: { fileUri: string; mimeType: string } | null = null;
+      if (editImage.startsWith('data:')) {
+        // Base64 data URL
+        editData = await uploadBase64ToGeminiFiles(editImage, apiKey);
+      } else {
+        // HTTP URL - use the same upload function as style images
+        editData = await uploadToGeminiFiles(editImage, apiKey);
+      }
+      
       if (editData) {
         editImagePart = {
           file_data: {
