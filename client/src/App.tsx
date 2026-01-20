@@ -789,7 +789,7 @@ export default function App() {
             transition={{ duration: outputHot ? 1.2 : 2.5, ease: 'easeOut' }}
           >
             <Panel>
-              <PanelHeader led={isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : 'off'}>
+              <PanelHeader>
                 <span className="panel-icon icon-output" />
                 Output
                 <div className="header-right">
@@ -800,6 +800,7 @@ export default function App() {
                   >
                     <Plus className="w-4 h-4" />
                   </button>
+                  <span className={`led ${isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : ''}`} />
                 </div>
               </PanelHeader>
             <PanelBody>
