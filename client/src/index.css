@@ -337,12 +337,32 @@ body {
 }
 
 /* LCD in floating prompt */
+.lcd-floating-wrapper {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.lcd-fire-canvas {
+  display: block;
+  background: #1a1918;
+}
+
+.lcd-fire-left {
+  border-radius: var(--radius-lg) 0 0 0;
+}
+
+.lcd-fire-right {
+  border-radius: 0 var(--radius-lg) 0 0;
+}
+
 .lcd-floating {
+  flex: 1;
   justify-content: center;
   padding: 6px 12px;
   border-radius: 0;
   margin: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: none;
 }
 
 .floating-prompt-row {

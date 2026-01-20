@@ -10,7 +10,7 @@ import {
   Textarea,
   Thumb,
   MoltenPipe,
-  LCDFire,
+  LCDFireCanvas,
   HighriseSearch,
   HistoryGrid,
   type ReplayConfig
@@ -596,7 +596,7 @@ export default function App() {
           >
             {/* LCD Status Display */}
             <div className="lcd-screen">
-              <LCDFire active={isGenerating} columns={56} rows={3} />
+              <LCDFireCanvas active={isGenerating} width={224} height={17} cols={56} rows={3} />
               <div className="lcd-refs">
                 {[...Array(14)].map((_, i) => (
                   <div 
@@ -891,8 +891,10 @@ export default function App() {
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
         <div className="floating-prompt-inner">
-          {/* LCD status display - interactive */}
-          <div className="lcd-screen lcd-floating lcd-interactive">
+          {/* LCD status display - interactive with fire grids */}
+          <div className="lcd-floating-wrapper">
+            <LCDFireCanvas active={isGenerating} width={50} height={17} cols={14} rows={3} className="lcd-fire-left" />
+            <div className="lcd-screen lcd-floating lcd-interactive">
             <button 
               className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}
               onClick={() => !isGenerating && handleModelChange('flash')}
@@ -942,6 +944,8 @@ export default function App() {
                 {res}
               </button>
             ))}
+            </div>
+            <LCDFireCanvas active={isGenerating} width={50} height={17} cols={14} rows={3} className="lcd-fire-right" />
           </div>
           
           {/* Main input row */}
