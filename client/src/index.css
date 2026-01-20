@@ -1340,7 +1340,7 @@ body {
 .auth-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .auth-avatar {
@@ -1373,12 +1373,12 @@ body {
 }
 
 .auth-logout {
-  padding: 10px !important;
+  padding: 6px !important;
 }
 
 .auth-logout svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .auth-login {
