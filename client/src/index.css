@@ -416,6 +416,7 @@ body {
   background: var(--bg-input);
   border-radius: var(--radius-md);
   padding: 0 14px;
+  align-self: stretch;
 }
 
 .floating-prompt-input-wrapper .led {
@@ -424,12 +425,13 @@ body {
 
 .floating-prompt-input {
   flex: 1;
-  min-height: 44px;
+  min-height: unset;
+  height: 100%;
   max-height: 120px;
   resize: none;
   border: none;
   background: transparent;
-  padding: 12px 0;
+  padding: 10px 0;
   font-size: 14px;
   line-height: 1.4;
 }
