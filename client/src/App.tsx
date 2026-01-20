@@ -816,34 +816,33 @@ export default function App() {
                 <AnimatePresence mode="popLayout">
                   {isGenerating || isLoadingImages ? (
                     <motion.div 
-                      key="waiting"
-                      className="output-waiting"
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.98 }}
-                      transition={{ duration: 0.25 }}
+                      key="forging"
+                      className={`output-preview output-preview-${outputCount}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      <div className="output-loader">
-                        <div className="loader-label">{isGenerating ? 'CASTING' : 'LOADING'}</div>
-                        <div className="loader-track">
-                          {[...Array(12)].map((_, i) => (
-                            <motion.div
-                              key={i}
-                              className="loader-segment"
-                              animate={{ 
-                                opacity: [0.2, 1, 0.2],
-                                backgroundColor: ['#4a4540', '#ff5722', '#4a4540']
-                              }}
-                              transition={{
-                                duration: 1.2,
-                                delay: i * 0.08,
-                                repeat: Infinity,
-                                ease: 'easeInOut'
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      {[...Array(outputCount)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="output-preview-slot forging"
+                          animate={{
+                            opacity: [0.3, 1, 0.3],
+                            boxShadow: [
+                              'inset 0 2px 8px rgba(0,0,0,0.3)',
+                              'inset 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255,87,34,0.4)',
+                              'inset 0 2px 8px rgba(0,0,0,0.3)'
+                            ]
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            delay: i * (0.8 / outputCount),
+                            repeat: Infinity,
+                            ease: 'easeInOut'
+                          }}
+                        />
+                      ))}
                     </motion.div>
                   ) : validImages.length > 0 && loadedImages.size > 0 ? (
                     <motion.div 
