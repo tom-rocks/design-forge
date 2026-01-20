@@ -68,6 +68,8 @@ interface HistoryGridProps {
   onSingleSelect?: (gen: Generation) => void
   // Replay a generation's settings
   onReplay?: (config: ReplayConfig) => void
+  // Refine an image
+  onRefine?: (imageUrl: string) => void
 }
 
 export default function HistoryGrid({
@@ -82,6 +84,7 @@ export default function HistoryGrid({
   singleSelect = false,
   onSingleSelect,
   onReplay,
+  onRefine,
 }: HistoryGridProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -450,15 +453,27 @@ export default function HistoryGrid({
                 <div className="lightbox-actions">
                   {onReplay && (
                     <button
-                      className="lightbox-download"
+                      className="lightbox-btn"
                       onClick={() => replayGeneration(lightbox)}
                       title="Replay settings"
                     >
                       <RotateCcw className="w-5 h-5" />
                     </button>
                   )}
+                  {onRefine && (
+                    <button
+                      className="lightbox-btn"
+                      onClick={() => {
+                        onRefine(`${API_URL}${lightbox.imageUrls[0]}`)
+                        setLightbox(null)
+                      }}
+                      title="Refine this image"
+                    >
+                      <Hammer className="w-5 h-5" />
+                    </button>
+                  )}
                   <button
-                    className="lightbox-download"
+                    className="lightbox-btn"
                     onClick={() => downloadImage(lightbox)}
                     title="Download"
                   >

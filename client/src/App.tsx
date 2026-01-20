@@ -738,6 +738,10 @@ export default function App() {
                         disabled={isGenerating}
                         isActive={refSource === 'history'}
                         onReplay={handleReplay}
+                        onRefine={(url) => {
+                          setEditImage({ url })
+                          setMode('edit')
+                        }}
                       />
                     </div>
                   </>
