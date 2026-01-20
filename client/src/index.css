@@ -2229,7 +2229,8 @@ body {
   background: rgba(0, 0, 0, 0.8);
 }
 
-.lightbox-btn {
+.lightbox-btn,
+.lightbox-download {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
@@ -2247,12 +2248,14 @@ body {
     0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
-.lightbox-btn:hover {
+.lightbox-btn:hover,
+.lightbox-download:hover {
   background: #e8e4e0;
   color: var(--text);
 }
 
-.lightbox-btn:active {
+.lightbox-btn:active,
+.lightbox-download:active {
   background: #d0ccc8;
 }
 
