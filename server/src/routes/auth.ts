@@ -72,27 +72,28 @@ export function setupPassport() {
 
 // Start Google OAuth flow
 router.get('/google', (req, res, next) => {
-  // Store popup flag in session for callback
-  if (req.query.popup === 'true') {
-    (req.session as any).isPopup = true;
-  }
-  next();
-}, passport.authenticate('google', {
-  scope: ['profile', 'email'],
-}));
+  const isPopup = req.query.popup === 'true';
+  
+  // Use state parameter to pass popup flag through OAuth flow
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    state: isPopup ? 'popup' : undefined,
+  })(req, res, next);
+});
 
 // Google OAuth callback
-router.get('/google/callback',
+router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', {
     failureRedirect: '/?auth=failed',
-  }),
-  (req, res) => {
+  })(req, res, (err) => {
+    if (err) return next(err);
+    
     // Successful authentication
     console.log(`[Auth] OAuth callback success for user: ${req.user?.email}`);
     console.log(`[Auth] Session ID: ${req.sessionID}`);
+    console.log(`[Auth] State: ${req.query.state}`);
     
-    const isPopup = (req.session as any).isPopup;
-    delete (req.session as any).isPopup;
+    const isPopup = req.query.state === 'popup';
     
     if (isPopup) {
       // For popup: send message to opener and close
@@ -116,8 +117,8 @@ router.get('/google/callback',
       // For direct navigation: redirect as before
       res.redirect('/?auth=success');
     }
-  }
-);
+  });
+});
 
 // Get current user
 router.get('/me', (req, res) => {
