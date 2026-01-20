@@ -837,6 +837,7 @@ export default function App() {
                     <motion.div 
                       key="forging"
                       className={`output-preview output-preview-${outputCount}`}
+                      layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -846,6 +847,7 @@ export default function App() {
                         <motion.div
                           key={i}
                           className="output-preview-slot"
+                          layout
                           animate={{
                             opacity: [0.4, 0.8, 0.4],
                           }}
@@ -914,14 +916,25 @@ export default function App() {
                     <motion.div 
                       key="empty"
                       className={`output-preview output-preview-${outputCount}`}
+                      layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      {[...Array(outputCount)].map((_, i) => (
-                        <div key={i} className="output-preview-slot" />
-                      ))}
+                      <AnimatePresence mode="popLayout">
+                        {[...Array(outputCount)].map((_, i) => (
+                          <motion.div 
+                            key={i} 
+                            className="output-preview-slot"
+                            layout
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.2, delay: i * 0.05 }}
+                          />
+                        ))}
+                      </AnimatePresence>
                     </motion.div>
                   )}
                 </AnimatePresence>
