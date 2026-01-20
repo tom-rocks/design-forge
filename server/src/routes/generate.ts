@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
-import { saveGeneration } from '../db.js';
+import { saveGeneration, getGeneration } from '../db.js';
 import { saveImage, createThumbnail, getImagePath } from '../storage.js';
 import fs from 'fs/promises';
 
@@ -110,9 +110,23 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
         return null;
       }
       const [, generationId, imageIndex] = match;
-      const filename = `${generationId}-${imageIndex}.png`;
+      
+      // Look up actual filename from database instead of assuming format
+      const gen = await getGeneration(generationId);
+      if (!gen) {
+        console.log(`[Gemini Files] Generation not found: ${generationId}`);
+        return null;
+      }
+      
+      const idx = parseInt(imageIndex);
+      if (idx < 0 || idx >= gen.image_paths.length) {
+        console.log(`[Gemini Files] Image index out of range: ${idx}`);
+        return null;
+      }
+      
+      const filename = gen.image_paths[idx];
       const filepath = getImagePath(filename);
-      console.log(`[Gemini Files] Reading local file: ${filepath}`);
+      console.log(`[Gemini Files] Reading local file: ${filepath} (from DB: ${filename})`);
       try {
         buffer = await fs.readFile(filepath);
       } catch (err) {
