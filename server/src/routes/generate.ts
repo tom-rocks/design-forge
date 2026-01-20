@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
 import { saveGeneration } from '../db.js';
-import { saveImage, createThumbnail } from '../storage.js';
+import { saveImage, createThumbnail, getImagePath } from '../storage.js';
+import fs from 'fs/promises';
 
 const router = Router();
 
@@ -100,6 +101,24 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
         return null;
       }
       buffer = Buffer.from(await response.arrayBuffer());
+    }
+    // Handle our own generation URLs (relative paths like /api/generations/{id}/image/{idx})
+    else if (url.startsWith('/api/generations/')) {
+      const match = url.match(/\/api\/generations\/([^/]+)\/image\/(\d+)/);
+      if (!match) {
+        console.log(`[Gemini Files] Could not parse generation URL: ${url}`);
+        return null;
+      }
+      const [, generationId, imageIndex] = match;
+      const filename = `${generationId}-${imageIndex}.png`;
+      const filepath = getImagePath(filename);
+      console.log(`[Gemini Files] Reading local file: ${filepath}`);
+      try {
+        buffer = await fs.readFile(filepath);
+      } catch (err) {
+        console.log(`[Gemini Files] Failed to read local file: ${err}`);
+        return null;
+      }
     }
     else {
       // Fetch from external URL
