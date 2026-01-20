@@ -424,14 +424,14 @@ export default function App() {
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
   
-  // Scroll to output when generation completes
+  // Scroll to output when first image loads
   useEffect(() => {
-    if (result && !isGenerating) {
+    if (result && !isGenerating && loadedImages.size > 0) {
       setTimeout(() => {
-        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 300)
+        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
     }
-  }, [result, isGenerating])
+  }, [result, isGenerating, loadedImages.size])
   // Check if all images have been processed (loaded or failed)
   const allProcessed = images.length > 0 && (loadedImages.size + failedImages.size) >= images.length
   const isLoadingImages = images.length > 0 && !allProcessed && !isGenerating
