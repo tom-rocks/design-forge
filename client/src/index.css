@@ -755,10 +755,24 @@ body {
   mask-position: center;
 }
 
-.panel-icon.icon-drop { -webkit-mask-image: url('/drop.svg'); mask-image: url('/drop.svg'); }
-.panel-icon.icon-alloy { -webkit-mask-image: url('/alloy.svg'); mask-image: url('/alloy.svg'); }
-.panel-icon.icon-output { -webkit-mask-image: url('/output.svg'); mask-image: url('/output.svg'); }
-.panel-icon.icon-items { -webkit-mask-image: url('/items.svg'); mask-image: url('/items.svg'); }
+.panel-icon.icon-drop, .btn-icon.icon-drop { -webkit-mask-image: url('/drop.svg'); mask-image: url('/drop.svg'); }
+.panel-icon.icon-alloy, .btn-icon.icon-alloy { -webkit-mask-image: url('/alloy.svg'); mask-image: url('/alloy.svg'); }
+.panel-icon.icon-output, .btn-icon.icon-output { -webkit-mask-image: url('/output.svg'); mask-image: url('/output.svg'); }
+.panel-icon.icon-items, .btn-icon.icon-items { -webkit-mask-image: url('/items.svg'); mask-image: url('/items.svg'); }
+.panel-icon.icon-works, .btn-icon.icon-works { -webkit-mask-image: url('/works.svg'); mask-image: url('/works.svg'); }
+
+.btn-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
 
 .header-subtitle {
   font-weight: 300;

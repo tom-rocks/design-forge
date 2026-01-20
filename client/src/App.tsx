@@ -538,21 +538,21 @@ export default function App() {
                           className={`btn ${refineSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
                           onClick={() => setRefineSource('drop')}
                         >
-                          <Download className="w-4 h-4" />
+                          <span className="btn-icon icon-drop" />
                           Drop
                         </button>
                         <button 
                           className={`btn ${refineSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
                           onClick={() => setRefineSource('items')}
                         >
-                          <Search className="w-4 h-4" />
+                          <span className="btn-icon icon-items" />
                           Items
                         </button>
                         <button 
                           className={`btn ${refineSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
                           onClick={() => setRefineSource('history')}
                         >
-                          <History className="w-4 h-4" />
+                          <span className="btn-icon icon-works" />
                           Works
                         </button>
                       </div>
@@ -659,7 +659,7 @@ export default function App() {
                       }
                     }}
                   >
-                    <Download className="w-3 h-3" />
+                    <span className="btn-icon icon-drop" />
                     Drop
                   </button>
                   <button 
@@ -673,7 +673,7 @@ export default function App() {
                       }
                     }}
                   >
-                    <Search className="w-3 h-3" />
+                    <span className="btn-icon icon-items" />
                     Items
                   </button>
                   <button 
@@ -687,7 +687,7 @@ export default function App() {
                       }
                     }}
                   >
-                    <History className="w-3 h-3" />
+                    <span className="btn-icon icon-works" />
                     Works
                   </button>
                 </div>
