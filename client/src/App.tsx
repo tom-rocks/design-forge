@@ -1053,13 +1053,26 @@ export default function App() {
               <img src={outputLightbox} alt="Output full size" />
               <div className="lightbox-footer">
                 <div className="lightbox-prompt">{prompt}</div>
-                <button 
-                    className="lightbox-download"
+                <div className="lightbox-actions">
+                  <button 
+                    className="lightbox-btn"
+                    onClick={() => {
+                      setEditImage({ url: outputLightbox })
+                      setMode('edit')
+                      setOutputLightbox(null)
+                    }}
+                    title="Refine this image"
+                  >
+                    <Hammer className="w-5 h-5" />
+                  </button>
+                  <button 
+                    className="lightbox-btn"
                     onClick={() => downloadOutputImage(outputLightbox)}
                     title="Download"
                   >
                     <Download className="w-5 h-5" />
                   </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
