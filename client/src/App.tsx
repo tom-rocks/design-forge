@@ -868,6 +868,25 @@ export default function App() {
                           >
                             <Maximize2 className="w-4 h-4" />
                           </button>
+                          <div className="output-actions">
+                            <button 
+                              className="output-action-btn"
+                              onClick={() => {
+                                setEditImage({ url })
+                                setMode('edit')
+                              }}
+                              title="Refine this image"
+                            >
+                              <Hammer className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="output-action-btn"
+                              onClick={() => downloadOutputImage(url)}
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
                         </motion.div>
                       ))}
                     </motion.div>

@@ -1241,6 +1241,38 @@ body {
   background: rgba(0, 0, 0, 0.8);
 }
 
+.output-actions {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.output-image-wrapper:hover .output-actions {
+  opacity: 1;
+}
+
+.output-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.output-action-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
 /* ============================================
    FORGING STATE - Button animation
    ============================================ */
