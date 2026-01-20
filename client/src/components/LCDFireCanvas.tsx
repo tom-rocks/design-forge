@@ -29,6 +29,17 @@ export function LCDFireCanvas({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     
+    // Handle high-DPI displays
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = width * dpr
+    canvas.height = height * dpr
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
+    ctx.scale(dpr, dpr)
+    
+    // Disable image smoothing for crisp pixels
+    ctx.imageSmoothingEnabled = false
+    
     if (!fireStateRef.current || fireStateRef.current.length !== cols * rows) {
       fireStateRef.current = new Uint8Array(cols * rows)
     }
@@ -72,7 +83,12 @@ export function LCDFireCanvas({
           const value = Math.min(fireState[y * cols + x], FIRE_PALETTE.length - 1)
           const [r, g, b] = FIRE_PALETTE[value]
           ctx.fillStyle = `rgb(${r},${g},${b})`
-          ctx.fillRect(x * pixelWidth, y * pixelHeight, pixelWidth - 1, pixelHeight - 1)
+          ctx.fillRect(
+            Math.floor(x * pixelWidth), 
+            Math.floor(y * pixelHeight), 
+            Math.ceil(pixelWidth) - 1, 
+            Math.ceil(pixelHeight) - 1
+          )
         }
       }
     }
@@ -91,5 +107,5 @@ export function LCDFireCanvas({
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current) }
   }, [active, width, height, cols, rows])
   
-  return <canvas ref={canvasRef} width={width} height={height} className={`lcd-fire-canvas ${className}`} />
+  return <canvas ref={canvasRef} className={`lcd-fire-canvas ${className}`} />
 }

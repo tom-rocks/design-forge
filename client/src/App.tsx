@@ -891,10 +891,9 @@ export default function App() {
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
         <div className="floating-prompt-inner">
-          {/* LCD status display - interactive with fire grids */}
-          <div className="lcd-floating-wrapper">
+          {/* LCD status display - interactive with fire grids inside */}
+          <div className="lcd-screen lcd-floating lcd-interactive">
             <LCDFireCanvas active={isGenerating} width={50} height={17} cols={14} rows={3} className="lcd-fire-left" />
-            <div className="lcd-screen lcd-floating lcd-interactive">
             <button 
               className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}
               onClick={() => !isGenerating && handleModelChange('flash')}
@@ -944,7 +943,6 @@ export default function App() {
                 {res}
               </button>
             ))}
-            </div>
             <LCDFireCanvas active={isGenerating} width={50} height={17} cols={14} rows={3} className="lcd-fire-right" />
           </div>
           
