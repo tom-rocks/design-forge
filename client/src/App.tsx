@@ -513,6 +513,7 @@ export default function App() {
             <div className="edit-panel-inner">
               <Panel>
                 <PanelHeader>
+                  <span className="panel-icon icon-drop" />
                   Refine <span className="header-subtitle">edit an image</span>
                   <div className="header-right">
                     <span className={`led ${mode === 'edit' && prompt.trim() && !editImage?.url && !isGenerating ? 'blink' : editImage?.url ? 'on' : ''}`} />
@@ -616,6 +617,7 @@ export default function App() {
             </div>
             <Panel>
               <PanelHeader className="collapsible" onClick={() => setAlloyExpanded(!alloyExpanded)}>
+                <span className="panel-icon icon-alloy" />
                 Alloy <span className="header-subtitle">image references</span>
                 <div className="header-right">
                   <motion.div 
@@ -782,6 +784,7 @@ export default function App() {
           >
             <Panel>
               <PanelHeader led={isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : 'off'}>
+                <span className="panel-icon icon-output" />
                 Output
               </PanelHeader>
             <PanelBody>
