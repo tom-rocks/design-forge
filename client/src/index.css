@@ -727,6 +727,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
+  min-height: 120px;
   text-align: center;
   background: var(--surface-inset);
   border-radius: var(--radius-md);
