@@ -964,6 +964,20 @@ export default function App() {
                 {res}
               </button>
             ))}
+            <span className="lcd-spec-sep">│</span>
+            <button 
+              className="lcd-spec-item lcd-output-count"
+              onClick={cycleOutputCount}
+              disabled={isGenerating}
+            >
+              <span className="lcd-grid-icon">
+                <span className={`lcd-grid-cell ${outputCount >= 1 ? 'lit' : ''}`} />
+                <span className={`lcd-grid-cell ${outputCount >= 2 ? 'lit' : ''}`} />
+                <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
+                <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
+              </span>
+              {outputCount}
+            </button>
             <LCDFireGrid active={isGenerating} cols={12} rows={3} dotSize={4} gap={1} className="lcd-fire-right" />
           </div>
           

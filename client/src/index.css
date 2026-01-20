@@ -568,6 +568,28 @@ body {
   opacity: 0.2;
 }
 
+/* Output count grid icon */
+.lcd-grid-icon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 10px;
+  height: 10px;
+}
+
+.lcd-grid-cell {
+  background: #3a3835;
+  border-radius: 1px;
+}
+
+.lcd-grid-cell.lit {
+  background: currentColor;
+}
+
+.lcd-output-count.lit .lcd-grid-cell.lit {
+  background: #ffffff;
+}
+
 /* Specs panel header */
 .panel-header.collapsible {
   cursor: pointer;
