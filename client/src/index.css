@@ -1180,12 +1180,11 @@ body {
 .output-preview {
   display: grid;
   gap: 10px;
-  justify-content: center;
 }
 
-.output-preview-1 { grid-template-columns: minmax(0, 300px); }
-.output-preview-2 { grid-template-columns: repeat(2, minmax(0, 200px)); }
-.output-preview-4 { grid-template-columns: repeat(2, minmax(0, 180px)); }
+.output-preview-1 { grid-template-columns: 1fr; }
+.output-preview-2 { grid-template-columns: 1fr 1fr; }
+.output-preview-4 { grid-template-columns: 1fr 1fr; }
 
 .output-preview-slot {
   background: var(--surface-inset);
