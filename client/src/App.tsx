@@ -826,18 +826,13 @@ export default function App() {
                       {[...Array(outputCount)].map((_, i) => (
                         <motion.div
                           key={i}
-                          className="output-preview-slot forging"
+                          className="output-preview-slot"
                           animate={{
-                            opacity: [0.3, 1, 0.3],
-                            boxShadow: [
-                              'inset 0 2px 8px rgba(0,0,0,0.3)',
-                              'inset 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255,87,34,0.4)',
-                              'inset 0 2px 8px rgba(0,0,0,0.3)'
-                            ]
+                            opacity: [0.4, 0.8, 0.4],
                           }}
                           transition={{
-                            duration: 0.8,
-                            delay: i * (0.8 / outputCount),
+                            duration: 1.5,
+                            delay: i * (1.5 / outputCount),
                             repeat: Infinity,
                             ease: 'easeInOut'
                           }}
