@@ -523,7 +523,7 @@ export default function App() {
             <div className="edit-panel-inner">
               <Panel>
                 <PanelHeader>
-                  <span className="panel-icon icon-drop" />
+                  <span className="panel-icon icon-refinement" />
                   Refine <span className="header-subtitle">edit an image</span>
                   <div className="header-right">
                     <span className={`led ${mode === 'edit' && prompt.trim() && !editImage?.url && !isGenerating ? 'blink' : editImage?.url ? 'on' : ''}`} />
