@@ -171,8 +171,12 @@ export default function App() {
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
-    // Expand alloy panel so user sees the reference changes
-    setAlloyExpanded(true)
+    // Collapse alloy panel and tabs - references will show in the "Active" section
+    setAlloyExpanded(false)
+    setRefSourceCollapsed(true)
+    
+    // Clear existing references first
+    setReferences([])
     
     // Stagger the settings restoration for visual effect
     setTimeout(() => {
@@ -201,19 +205,6 @@ export default function App() {
       }
     }, 400)
     
-    setTimeout(() => {
-      // Set references from style images
-      if (config.references && config.references.length > 0) {
-        const newRefs = config.references.map((ref, i) => ({
-          id: `replay-${i}-${Date.now()}`,
-          url: ref.url,
-          name: ref.name,
-          type: 'generation' as const,
-        }))
-        setReferences(newRefs)
-      }
-    }, 500)
-    
     // Type out the prompt character by character
     const fullPrompt = config.prompt || ''
     setPrompt('')
@@ -229,6 +220,20 @@ export default function App() {
         setTimeout(() => setPromptHot(false), 200)
       }
     }, 15) // Fast but visible typing
+    
+    // Add references one by one, staggered with the typing
+    if (config.references && config.references.length > 0) {
+      config.references.forEach((ref, i) => {
+        setTimeout(() => {
+          setReferences(prev => [...prev, {
+            id: `replay-${i}-${Date.now()}`,
+            url: ref.url,
+            name: ref.name,
+            type: 'generation' as const,
+          }])
+        }, 500 + (i * 200)) // Start at 500ms, add one every 200ms
+      })
+    }
     
     // Scroll to prompt
     setTimeout(() => {
