@@ -837,7 +837,6 @@ export default function App() {
                     <motion.div 
                       key="forging"
                       className={`output-preview output-preview-${outputCount}`}
-                      layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -847,15 +846,19 @@ export default function App() {
                         <motion.div
                           key={i}
                           className="output-preview-slot"
-                          layout
+                          initial={{ opacity: 0, scale: 0.9 }}
                           animate={{
                             opacity: [0.4, 0.8, 0.4],
+                            scale: 1,
                           }}
                           transition={{
-                            duration: 1.5,
-                            delay: i * (1.5 / outputCount),
-                            repeat: Infinity,
-                            ease: 'easeInOut'
+                            opacity: {
+                              duration: 1.5,
+                              delay: i * (1.5 / outputCount),
+                              repeat: Infinity,
+                              ease: 'easeInOut'
+                            },
+                            scale: { duration: 0.2, delay: i * 0.05 }
                           }}
                         />
                       ))}
@@ -914,27 +917,22 @@ export default function App() {
                     </motion.div>
                   ) : (
                     <motion.div 
-                      key="empty"
+                      key={`empty-${outputCount}`}
                       className={`output-preview output-preview-${outputCount}`}
-                      layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      <AnimatePresence mode="popLayout">
-                        {[...Array(outputCount)].map((_, i) => (
-                          <motion.div 
-                            key={i} 
-                            className="output-preview-slot"
-                            layout
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ duration: 0.2, delay: i * 0.05 }}
-                          />
-                        ))}
-                      </AnimatePresence>
+                      {[...Array(outputCount)].map((_, i) => (
+                        <motion.div 
+                          key={i} 
+                          className="output-preview-slot"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.2, delay: i * 0.05 }}
+                        />
+                      ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
