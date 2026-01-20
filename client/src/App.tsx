@@ -794,12 +794,11 @@ export default function App() {
                 Output
                 <div className="header-right">
                   <button 
-                    className="output-count-btn"
+                    className="header-btn"
                     onClick={cycleOutputCount}
-                    title={`Generate ${outputCount === 1 ? '2' : outputCount === 2 ? '4' : '1'} image${outputCount === 1 ? 's' : outputCount === 2 ? 's' : ''}`}
+                    title={`Generate ${outputCount === 1 ? '2' : outputCount === 2 ? '4' : '1'} images`}
                   >
-                    <Plus className="w-3 h-3" />
-                    <span className="output-count-label">{outputCount}</span>
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </PanelHeader>
@@ -876,13 +875,15 @@ export default function App() {
                   ) : (
                     <motion.div 
                       key="empty"
-                      className="output-empty"
+                      className={`output-preview output-preview-${outputCount}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <span>Ready to cast</span>
+                      {[...Array(outputCount)].map((_, i) => (
+                        <div key={i} className="output-preview-slot" />
+                      ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
