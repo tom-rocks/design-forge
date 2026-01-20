@@ -976,7 +976,6 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
-              {outputCount}
             </button>
             <LCDFireGrid active={isGenerating} cols={12} rows={3} dotSize={4} gap={1} className="lcd-fire-right" />
           </div>

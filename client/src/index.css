@@ -583,11 +583,8 @@ body {
 }
 
 .lcd-grid-cell.lit {
-  background: currentColor;
-}
-
-.lcd-output-count.lit .lcd-grid-cell.lit {
   background: #ffffff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
 /* Specs panel header */
