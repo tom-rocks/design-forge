@@ -292,6 +292,15 @@ export default function App() {
     }
 
     try {
+      // Debug: log what we're sending
+      console.log('[Generate] Sending request:', { 
+        mode, 
+        numImages: outputCount, 
+        model: genModel, 
+        aspectRatio,
+        hasEditImage: !!editImage?.url 
+      })
+      
       const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
