@@ -237,10 +237,9 @@ export default function HistoryGrid({
     return () => grid.removeEventListener('scroll', handleScroll)
   }, [hasMore, loadingMore, fetchGenerations])
 
-  // Toggle selection
-  const toggleGeneration = (gen: Generation) => {
-    const imageUrl = gen.imageUrls[0]
-    if (!imageUrl) return
+  // Toggle selection for individual image
+  const toggleImage = (img: DisplayImage) => {
+    const gen = img.generation
     
     // Single select mode - just call the callback
     if (singleSelect && onSingleSelect) {
@@ -251,14 +250,14 @@ export default function HistoryGrid({
     // Multi-select mode
     if (!onAddReference || !onRemoveReference) return
     
-    const fullUrl = `${API_URL}${imageUrl}`
+    const fullUrl = `${API_URL}${img.imageUrl}`
     const existingRef = references.find(r => r.url === fullUrl)
     
     if (existingRef) {
       onRemoveReference(existingRef.id)
     } else if (references.length < maxRefs) {
       onAddReference({
-        id: `gen-${gen.id}`,
+        id: `img-${img.id}`,
         url: fullUrl,
         name: gen.prompt.slice(0, 30),
         type: 'generation',
@@ -266,10 +265,8 @@ export default function HistoryGrid({
     }
   }
 
-  const isSelected = (gen: Generation) => {
-    const imageUrl = gen.imageUrls[0]
-    if (!imageUrl) return false
-    const fullUrl = `${API_URL}${imageUrl}`
+  const isImageSelected = (img: DisplayImage) => {
+    const fullUrl = `${API_URL}${img.imageUrl}`
     return references.some(r => r.url === fullUrl)
   }
 
@@ -361,7 +358,7 @@ export default function HistoryGrid({
       <div className="history-grid" ref={gridRef}>
         {displayImages.map(img => {
           const gen = img.generation
-          const selected = isSelected(gen)
+          const selected = isImageSelected(img)
           const pinned = pinnedImageIds.has(img.id)
           return (
             <motion.div
@@ -371,7 +368,7 @@ export default function HistoryGrid({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
               className={`history-item ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
-              onClick={() => !disabled && toggleGeneration(gen)}
+              onClick={() => !disabled && toggleImage(img)}
               title={gen.prompt}
             >
               <img
