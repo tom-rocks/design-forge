@@ -97,16 +97,37 @@ router.get('/google/callback', (req, res, next) => {
     
     if (isPopup) {
       // For popup: send message to opener and close
+      // Include user data so iframe doesn't need to call /api/auth/me (which may fail due to third-party cookies)
+      const userData = req.user ? {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.name,
+        avatarUrl: req.user.avatar_url,
+      } : null;
+      
       res.send(`
         <!DOCTYPE html>
         <html>
         <head><title>Login Complete</title></head>
         <body>
           <script>
+            const userData = ${JSON.stringify(userData)};
+            console.log('[Auth Popup] Sending auth-complete message', userData);
+            
             if (window.opener) {
-              window.opener.postMessage({ type: 'auth-complete', success: true }, '*');
+              // Send message with user data
+              window.opener.postMessage({ 
+                type: 'auth-complete', 
+                success: true,
+                user: userData
+              }, '*');
+              
+              // Small delay before closing to ensure message is received
+              setTimeout(() => window.close(), 100);
+            } else {
+              // No opener, redirect to main app
+              window.location.href = '/?auth=success';
             }
-            window.close();
           </script>
           <p>Login successful! This window should close automatically.</p>
           <p>If it doesn't, you can close it manually.</p>

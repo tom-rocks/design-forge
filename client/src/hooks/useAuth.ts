@@ -101,17 +101,27 @@ export function useAuth() {
   // Listen for popup auth completion
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Verify origin matches our API
-      const apiOrigin = API_URL || window.location.origin
-      if (event.origin !== apiOrigin) return
+      console.log('[Auth] Received message:', event.data, 'from:', event.origin)
       
       if (event.data?.type === 'auth-complete') {
+        console.log('[Auth] Auth complete message received')
+        
         // Close popup if still open
         popupRef.current?.close()
         popupRef.current = null
         
-        // Refresh auth state
-        checkAuth()
+        // If user data is included, use it directly (avoids third-party cookie issues)
+        if (event.data.user) {
+          console.log('[Auth] Using user data from popup:', event.data.user)
+          setState({
+            loading: false,
+            authenticated: true,
+            user: event.data.user,
+          })
+        } else {
+          // Fallback to checking auth (may not work in iframe due to cookies)
+          checkAuth()
+        }
       }
     }
     
