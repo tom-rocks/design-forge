@@ -2210,7 +2210,7 @@ body {
 
 .lightbox-content {
   position: relative;
-  max-width: 90vw;
+  max-width: min(90vw, 800px);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -2274,8 +2274,9 @@ body {
 
 .lightbox-footer {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  min-width: 0;
 }
 
 .lightbox-actions {
@@ -2286,12 +2287,15 @@ body {
 
 .lightbox-prompt {
   flex: 1;
+  min-width: 0;
   font-size: 14px;
   color: var(--text-dim);
   margin: 0;
   line-height: 1.4;
-  max-height: 60px;
+  max-height: 80px;
   overflow-y: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .lightbox-prompt strong {
