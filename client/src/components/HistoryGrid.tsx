@@ -16,6 +16,7 @@ const getAspectDimensions = (ratio: string | undefined) => {
 }
 
 const PINNED_GENS_KEY = 'pinned-generations'
+const PINNED_IMAGES_KEY = 'pinned-history-images'
 
 // Full generation data from API - includes all settings for replay
 interface Generation {
@@ -52,6 +53,14 @@ interface Reference {
   url: string
   name?: string
   type: 'file' | 'highrise' | 'generation'
+}
+
+// Flattened image for display - each image is its own entry
+interface DisplayImage {
+  id: string // unique: gen.id + imageIndex
+  imageUrl: string
+  generation: Generation
+  imageIndex: number
 }
 
 interface HistoryGridProps {
@@ -91,7 +100,7 @@ export default function HistoryGrid({
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
-  const [lightbox, setLightbox] = useState<Generation | null>(null)
+  const [lightbox, setLightbox] = useState<DisplayImage | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const gridRef = useRef<HTMLDivElement>(null)
@@ -104,50 +113,64 @@ export default function HistoryGrid({
     }
   }, [lightbox?.id])
   
-  // Pinned generations - persisted to localStorage
-  const [pinnedGens, setPinnedGens] = useState<Generation[]>(() => {
+  // Pinned individual images (by image ID)
+  const [pinnedImageIds, setPinnedImageIds] = useState<Set<string>>(() => {
     try {
-      const stored = localStorage.getItem(PINNED_GENS_KEY)
-      return stored ? JSON.parse(stored) : []
+      const stored = localStorage.getItem(PINNED_IMAGES_KEY)
+      return stored ? new Set(JSON.parse(stored)) : new Set()
     } catch {
-      return []
+      return new Set()
     }
   })
   
-  // Save pinned generations to localStorage
+  // Save pinned image IDs to localStorage
   useEffect(() => {
-    localStorage.setItem(PINNED_GENS_KEY, JSON.stringify(pinnedGens))
-  }, [pinnedGens])
+    localStorage.setItem(PINNED_IMAGES_KEY, JSON.stringify([...pinnedImageIds]))
+  }, [pinnedImageIds])
   
-  // Toggle pin status
-  const togglePin = (gen: Generation, e: React.MouseEvent) => {
+  // Toggle pin for individual image
+  const toggleImagePin = (imageId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    setPinnedGens(prev => {
-      const isPinned = prev.some(p => p.id === gen.id)
-      if (isPinned) {
-        return prev.filter(p => p.id !== gen.id)
+    setPinnedImageIds(prev => {
+      const next = new Set(prev)
+      if (next.has(imageId)) {
+        next.delete(imageId)
       } else {
-        return [...prev, gen]
+        next.add(imageId)
       }
+      return next
     })
   }
   
-  const isPinned = useCallback((gen: Generation) => 
-    pinnedGens.some(p => p.id === gen.id), [pinnedGens])
-  
-  // Display generations: filter by search, then pinned first
-  const displayGenerations = useMemo(() => {
-    const pinnedIds = new Set(pinnedGens.map(p => p.id))
-    const allGens = [...pinnedGens, ...generations.filter(g => !pinnedIds.has(g.id))]
+  // Flatten generations into individual images, pinned first
+  const displayImages = useMemo((): DisplayImage[] => {
+    // Flatten all generations into individual images
+    const allImages: DisplayImage[] = []
     
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      return allGens.filter(g => g.prompt?.toLowerCase().includes(query))
+    for (const gen of generations) {
+      for (let i = 0; i < gen.imageUrls.length; i++) {
+        allImages.push({
+          id: `${gen.id}-${i}`,
+          imageUrl: gen.imageUrls[i],
+          generation: gen,
+          imageIndex: i,
+        })
+      }
     }
     
-    return allGens
-  }, [generations, pinnedGens, searchQuery])
+    // Filter by search query
+    let filtered = allImages
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = allImages.filter(img => img.generation.prompt?.toLowerCase().includes(query))
+    }
+    
+    // Sort: pinned first, then by date (newest first - already sorted from API)
+    const pinned = filtered.filter(img => pinnedImageIds.has(img.id))
+    const unpinned = filtered.filter(img => !pinnedImageIds.has(img.id))
+    
+    return [...pinned, ...unpinned]
+  }, [generations, searchQuery, pinnedImageIds])
 
   // Fetch user's generations
   const fetchGenerations = useCallback(async (append = false) => {
@@ -251,18 +274,17 @@ export default function HistoryGrid({
     return references.some(r => r.url === fullUrl)
   }
 
-  // Download image
-  const downloadImage = async (gen: Generation) => {
-    const imageUrl = gen.imageUrls[0]
-    if (!imageUrl) return
-    
+  // Download image from URL
+  const downloadImageFromUrl = async (imageUrl: string, prompt?: string) => {
     try {
-      const res = await fetch(`${API_URL}${imageUrl}`)
+      const res = await fetch(imageUrl)
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `generation-${gen.id}.png`
+      // Create filename from prompt or use generic name
+      const safeName = prompt?.slice(0, 30).replace(/[^a-z0-9]/gi, '-') || 'image'
+      a.download = `${safeName}.png`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -316,7 +338,7 @@ export default function HistoryGrid({
   }
 
   // Empty
-  if (generations.length === 0 && pinnedGens.length === 0) {
+  if (generations.length === 0) {
     return (
       <div className="history-empty">
         <span>No generations yet</span>
@@ -338,12 +360,13 @@ export default function HistoryGrid({
         />
       </div>
       <div className="history-grid" ref={gridRef}>
-        {displayGenerations.map(gen => {
+        {displayImages.map(img => {
+          const gen = img.generation
           const selected = isSelected(gen)
-          const pinned = isPinned(gen)
+          const pinned = pinnedImageIds.has(img.id)
           return (
             <motion.div
-              key={gen.id}
+              key={img.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -352,17 +375,11 @@ export default function HistoryGrid({
               onClick={() => !disabled && toggleGeneration(gen)}
               title={gen.prompt}
             >
-              {gen.thumbnailUrl ? (
-                <img
-                  src={`${API_URL}${gen.thumbnailUrl}`}
-                  alt={gen.prompt}
-                  loading="lazy"
-                />
-              ) : (
-                <div className="history-item-placeholder">
-                  <ImageOff className="w-5 h-5" />
-                </div>
-              )}
+              <img
+                src={`${API_URL}${img.imageUrl}`}
+                alt={gen.prompt}
+                loading="lazy"
+              />
               {selected && (
                 <div className="history-item-check">
                   <span>✓</span>
@@ -371,7 +388,7 @@ export default function HistoryGrid({
               {/* Pin button */}
               <button
                 className={`item-pin ${pinned ? 'active' : ''}`}
-                onClick={(e) => togglePin(gen, e)}
+                onClick={(e) => toggleImagePin(img.id, e)}
                 title={pinned ? 'Unpin' : 'Pin to top'}
               >
                 <Pin className="w-3 h-3" />
@@ -381,7 +398,7 @@ export default function HistoryGrid({
                 className="history-item-expand"
                 onClick={(e) => {
                   e.stopPropagation()
-                  setLightbox(gen)
+                  setLightbox(img)
                 }}
                 title="View full size"
               >
@@ -422,8 +439,8 @@ export default function HistoryGrid({
                   </div>
                 )}
                 <motion.img
-                  src={`${API_URL}${lightbox.imageUrls[0]}`}
-                  alt={lightbox.prompt}
+                  src={`${API_URL}${lightbox.imageUrl}`}
+                  alt={lightbox.generation.prompt}
                   onLoad={() => setLightboxImageLoaded(true)}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
@@ -433,47 +450,47 @@ export default function HistoryGrid({
               {/* Specs bar */}
               <div className="lightbox-specs">
                 {/* Mode */}
-                <span className="lightbox-spec" title={lightbox.mode === 'edit' ? 'Refined' : 'Created'}>
-                  {lightbox.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+                <span className="lightbox-spec" title={lightbox.generation.mode === 'edit' ? 'Refined' : 'Created'}>
+                  {lightbox.generation.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
                 </span>
                 <span className="lightbox-spec-sep">·</span>
                 {/* Model */}
-                <span className="lightbox-spec" title={lightbox.model === 'flash' ? 'Flash' : 'Pro'}>
-                  {lightbox.model === 'flash' ? <Zap className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
-                  {lightbox.model === 'flash' ? 'Flash' : 'Pro'}
+                <span className="lightbox-spec" title={lightbox.generation.model === 'flash' ? 'Flash' : 'Pro'}>
+                  {lightbox.generation.model === 'flash' ? <Zap className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
+                  {lightbox.generation.model === 'flash' ? 'Flash' : 'Pro'}
                 </span>
                 <span className="lightbox-spec-sep">·</span>
                 {/* Aspect Ratio */}
-                {lightbox.aspect_ratio && (
+                {lightbox.generation.aspect_ratio && (
                   <>
-                    <span className="lightbox-spec" title={`Ratio ${lightbox.aspect_ratio}`}>
+                    <span className="lightbox-spec" title={`Ratio ${lightbox.generation.aspect_ratio}`}>
                       <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
                         <rect 
-                          x={(14 - getAspectDimensions(lightbox.aspect_ratio).w) / 2} 
-                          y={(14 - getAspectDimensions(lightbox.aspect_ratio).h) / 2} 
-                          width={getAspectDimensions(lightbox.aspect_ratio).w} 
-                          height={getAspectDimensions(lightbox.aspect_ratio).h} 
+                          x={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).w) / 2} 
+                          y={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).h) / 2} 
+                          width={getAspectDimensions(lightbox.generation.aspect_ratio).w} 
+                          height={getAspectDimensions(lightbox.generation.aspect_ratio).h} 
                           fill="currentColor" 
                           rx="1" 
                         />
                       </svg>
-                      {lightbox.aspect_ratio}
+                      {lightbox.generation.aspect_ratio}
                     </span>
                     <span className="lightbox-spec-sep">·</span>
                   </>
                 )}
                 {/* Resolution */}
-                <span className="lightbox-spec" title={`Resolution ${lightbox.resolution || '1K'}`}>
-                  {lightbox.resolution || '1K'}
+                <span className="lightbox-spec" title={`Resolution ${lightbox.generation.resolution || '1K'}`}>
+                  {lightbox.generation.resolution || '1K'}
                 </span>
               </div>
               <div className="lightbox-footer">
-                <p className="lightbox-prompt">{lightbox.prompt}</p>
+                <p className="lightbox-prompt">{lightbox.generation.prompt}</p>
                 <div className="lightbox-actions">
                   {onReplay && (
                     <button
                       className="lightbox-btn"
-                      onClick={() => replayGeneration(lightbox)}
+                      onClick={() => replayGeneration(lightbox.generation)}
                       title="Replay settings"
                     >
                       <RotateCcw className="w-5 h-5" />
@@ -483,7 +500,7 @@ export default function HistoryGrid({
                     <button
                       className="lightbox-btn"
                       onClick={() => {
-                        onRefine(`${API_URL}${lightbox.imageUrls[0]}`)
+                        onRefine(`${API_URL}${lightbox.imageUrl}`)
                         setLightbox(null)
                       }}
                       title="Refine this image"
@@ -493,7 +510,7 @@ export default function HistoryGrid({
                   )}
                   <button
                     className="lightbox-btn"
-                    onClick={() => downloadImage(lightbox)}
+                    onClick={() => downloadImageFromUrl(`${API_URL}${lightbox.imageUrl}`, lightbox.generation.prompt)}
                     title="Download"
                   >
                     <Download className="w-5 h-5" />
