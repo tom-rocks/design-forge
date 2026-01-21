@@ -28,6 +28,7 @@ interface Generation {
   model?: string
   resolution?: string
   aspect_ratio?: string
+  parent_id?: string | null  // For edit mode - reference to parent generation
   settings?: {
     styleImages?: { url: string; name?: string }[]
     negativePrompt?: string
@@ -43,6 +44,7 @@ export interface ReplayConfig {
   resolution?: string
   aspectRatio?: string
   references?: { url: string; name?: string }[]
+  editImageUrl?: string  // For edit mode - the image being refined
   // Spread any additional settings for future compatibility
   [key: string]: any
 }
@@ -303,6 +305,10 @@ export default function HistoryGrid({
       resolution: gen.resolution,
       aspectRatio: gen.aspect_ratio,
       references: gen.settings?.styleImages,
+      // For edit mode, include the parent image URL
+      editImageUrl: gen.mode === 'edit' && gen.parent_id 
+        ? `/api/generations/${gen.parent_id}/image/0`
+        : undefined,
       ...gen.settings, // Include any additional settings for future compatibility
     }
     

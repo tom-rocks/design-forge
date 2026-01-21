@@ -245,6 +245,17 @@ export default function App() {
       })
     }
     
+    // For edit mode, set the edit image
+    if (config.mode === 'edit' && config.editImageUrl) {
+      setTimeout(() => {
+        setEditImage({ url: `${API_URL}${config.editImageUrl}` })
+        setRefineSource('drop') // Ensure we're on drop mode to show the image
+      }, 150)
+    } else {
+      // Clear edit image if not in edit mode
+      setEditImage(null)
+    }
+    
     // Scroll to prompt
     setTimeout(() => {
       promptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
