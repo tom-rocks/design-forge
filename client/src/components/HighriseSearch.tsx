@@ -413,13 +413,12 @@ export default function HighriseSearch({
                 return (
                   <motion.div
                     key={item.id}
-                    layout
-                    layoutId={`highrise-${item.id}`}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} ${pinned ? 'pinned' : ''} ${proxyingImages.has(item.id) ? 'loading' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     title={item.name}
                   >
                     <img
@@ -531,13 +530,12 @@ export default function HighriseSearch({
                 return (
                   <motion.div
                     key={item.id}
-                    layout
-                    layoutId={`highrise-${item.id}`}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     className={`highrise-item ${getRarityColor(item.rarity)} ${selected ? 'selected' : ''} pinned ${proxyingImages.has(item.id) ? 'loading' : ''} ${!selected && references.length >= maxRefs ? 'disabled' : ''}`}
                     onClick={() => !disabled && toggleItem(item)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     title={item.name}
                   >
                     <img
