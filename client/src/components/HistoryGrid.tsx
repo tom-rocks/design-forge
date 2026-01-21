@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, ImageOff, LogIn, Expand, Download, Pin, RotateCcw, Zap, Gem, Flame, Hammer, Search } from 'lucide-react'
+import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Zap, Gem, Flame, Hammer, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -15,7 +15,6 @@ const getAspectDimensions = (ratio: string | undefined) => {
   }
 }
 
-const PINNED_GENS_KEY = 'pinned-generations'
 const PINNED_IMAGES_KEY = 'pinned-history-images'
 
 // Full generation data from API - includes all settings for replay
