@@ -738,7 +738,15 @@ body {
   cursor: pointer;
 }
 
+/* Selected as paste target */
 .edit-dropzone.active {
+  border-color: var(--accent);
+  border-style: solid;
+  color: var(--text);
+}
+
+/* Dragging over */
+.edit-dropzone.dragging {
   border-color: var(--accent);
   background: rgba(255, 136, 0, 0.08);
   color: var(--accent);
@@ -1081,10 +1089,27 @@ body {
 
 .dropzone-refs {
   min-height: 120px;
+  cursor: pointer;
 }
 
+/* Selected as paste target */
 .dropzone.active {
+  border-color: var(--accent);
+  border-style: solid;
+}
+
+.dropzone.active .dropzone-text {
+  color: var(--text);
+}
+
+/* Dragging over */
+.dropzone.dragging {
   background: rgba(255, 109, 58, 0.08);
+  border-color: var(--accent);
+}
+
+.dropzone.dragging .dropzone-text {
+  color: var(--accent);
 }
 
 .dropzone-text {

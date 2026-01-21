@@ -57,6 +57,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
+  const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs'>('refs') // Which dropzone receives paste
   const [refSource, setRefSource] = useState<RefSource>('drop')
   const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
@@ -432,15 +433,11 @@ export default function App() {
     }
   }, [])
 
-  // Handle paste from clipboard (Ctrl+V)
-  // Goes to refinement if mode='edit' and refineSource='drop', otherwise to references
+  // Handle paste from clipboard (Ctrl+V) - goes to active drop target
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
-      
-      // Determine target based on current mode and source selection
-      const pasteToRefine = mode === 'edit' && refineSource === 'drop' && !editImage
       
       for (const item of items) {
         if (item.type.startsWith('image/')) {
@@ -451,7 +448,7 @@ export default function App() {
           reader.onload = (ev) => {
             const url = ev.target?.result as string
             
-            if (pasteToRefine) {
+            if (activeDropTarget === 'refine') {
               // Paste to refinement
               setEditImage({ url })
             } else {
@@ -472,7 +469,7 @@ export default function App() {
     
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [references, mode, refineSource, editImage])
+  }, [references, activeDropTarget])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
@@ -607,12 +604,13 @@ export default function App() {
                       <div className="refine-content">
                         {refineSource === 'drop' && (
                           <div 
-                            className={`edit-dropzone ${isDraggingRefine ? 'active' : ''}`}
+                            className={`edit-dropzone ${isDraggingRefine ? 'dragging' : ''} ${activeDropTarget === 'refine' ? 'active' : ''}`}
+                            onClick={() => setActiveDropTarget('refine')}
                             onDragOver={(e) => { e.preventDefault(); setIsDraggingRefine(true) }}
                             onDragLeave={() => setIsDraggingRefine(false)}
                             onDrop={handleRefineDrop}
                           >
-                            {isDraggingRefine ? 'Drop to refine' : 'Drop or paste image'}
+                            {isDraggingRefine ? 'Drop to refine' : activeDropTarget === 'refine' ? 'Paste here (Ctrl+V)' : 'Click to paste here'}
                           </div>
                         )}
                         {refineSource === 'items' && (
@@ -750,13 +748,14 @@ export default function App() {
                   <>
                     <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
                       <div 
-                        className={`dropzone dropzone-refs ${isDragging ? 'active' : ''}`}
+                        className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
+                        onClick={() => setActiveDropTarget('refs')}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                       >
                         <span className="dropzone-text">
-                          {isDragging ? 'Drop to add' : 'Drop or paste images'}
+                          {isDragging ? 'Drop to add' : activeDropTarget === 'refs' ? 'Paste here (Ctrl+V)' : 'Click to paste here'}
                         </span>
                       </div>
                     </div>
