@@ -285,9 +285,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          model: 'pro',
-          resolution: '1024',
-          aspectRatio: '1:1',
+          model: genModel,
+          resolution,
+          aspectRatio,
           styleImages: references.map(r => ({ url: r.url, strength: 1 })),
           mode,
           numImages: outputCount,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, ImageOff, LogIn, Expand, Download, Pin, RotateCcw, Zap, Gem, Flame, Hammer } from 'lucide-react'
+import { Loader2, ImageOff, LogIn, Expand, Download, Pin, RotateCcw, Zap, Gem, Flame, Hammer, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -93,6 +93,7 @@ export default function HistoryGrid({
   const [offset, setOffset] = useState(0)
   const [lightbox, setLightbox] = useState<Generation | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
   
@@ -134,12 +135,19 @@ export default function HistoryGrid({
   const isPinned = useCallback((gen: Generation) => 
     pinnedGens.some(p => p.id === gen.id), [pinnedGens])
   
-  // Display generations: pinned first, then rest
+  // Display generations: filter by search, then pinned first
   const displayGenerations = useMemo(() => {
     const pinnedIds = new Set(pinnedGens.map(p => p.id))
-    const nonPinnedGens = generations.filter(g => !pinnedIds.has(g.id))
-    return [...pinnedGens, ...nonPinnedGens]
-  }, [generations, pinnedGens])
+    const allGens = [...pinnedGens, ...generations.filter(g => !pinnedIds.has(g.id))]
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      return allGens.filter(g => g.prompt?.toLowerCase().includes(query))
+    }
+    
+    return allGens
+  }, [generations, pinnedGens, searchQuery])
 
   // Fetch user's generations
   const fetchGenerations = useCallback(async (append = false) => {
@@ -308,7 +316,7 @@ export default function HistoryGrid({
   }
 
   // Empty
-  if (generations.length === 0) {
+  if (generations.length === 0 && pinnedGens.length === 0) {
     return (
       <div className="history-empty">
         <span>No generations yet</span>
@@ -318,6 +326,17 @@ export default function HistoryGrid({
 
   return (
     <>
+      {/* Search bar */}
+      <div className="history-search">
+        <Search className="search-icon" />
+        <input
+          type="text"
+          placeholder="Search by prompt..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="input"
+        />
+      </div>
       <div className="history-grid" ref={gridRef}>
         {displayGenerations.map(gen => {
           const selected = isSelected(gen)
