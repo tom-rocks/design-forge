@@ -56,6 +56,7 @@ export default function App() {
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [refSource, setRefSource] = useState<RefSource>('drop')
   const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
@@ -413,12 +414,33 @@ export default function App() {
       reader.readAsDataURL(file)
     })
   }, [references])
+  
+  // Handle drop on refinement dropzone
+  const handleRefineDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDraggingRefine(false)
+    
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
+    if (files.length > 0) {
+      const file = files[0] // Only take first image for refinement
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const url = ev.target?.result as string
+        setEditImage({ url })
+      }
+      reader.readAsDataURL(file)
+    }
+  }, [])
 
   // Handle paste from clipboard (Ctrl+V)
+  // Goes to refinement if mode='edit' and refineSource='drop', otherwise to references
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
+      
+      // Determine target based on current mode and source selection
+      const pasteToRefine = mode === 'edit' && refineSource === 'drop' && !editImage
       
       for (const item of items) {
         if (item.type.startsWith('image/')) {
@@ -428,21 +450,29 @@ export default function App() {
           const reader = new FileReader()
           reader.onload = (ev) => {
             const url = ev.target?.result as string
-            addReference({
-              id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              url,
-              name: `Pasted image`,
-              type: 'file'
-            })
+            
+            if (pasteToRefine) {
+              // Paste to refinement
+              setEditImage({ url })
+            } else {
+              // Paste to references
+              addReference({
+                id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                url,
+                name: `Pasted image`,
+                type: 'file'
+              })
+            }
           }
           reader.readAsDataURL(file)
+          break // Only process first image
         }
       }
     }
     
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [references])
+  }, [references, mode, refineSource, editImage])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
@@ -576,8 +606,13 @@ export default function App() {
                       </div>
                       <div className="refine-content">
                         {refineSource === 'drop' && (
-                          <div className="edit-dropzone">
-                            Drop or paste image
+                          <div 
+                            className={`edit-dropzone ${isDraggingRefine ? 'active' : ''}`}
+                            onDragOver={(e) => { e.preventDefault(); setIsDraggingRefine(true) }}
+                            onDragLeave={() => setIsDraggingRefine(false)}
+                            onDrop={handleRefineDrop}
+                          >
+                            {isDraggingRefine ? 'Drop to refine' : 'Drop or paste image'}
                           </div>
                         )}
                         {refineSource === 'items' && (
