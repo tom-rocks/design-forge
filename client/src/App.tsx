@@ -338,7 +338,7 @@ export default function App() {
       setIsGenerating(false)
       abortControllerRef.current = null
     }
-  }, [prompt, references, mode, editImage, canGenerate, isGenerating])
+  }, [prompt, references, mode, editImage, canGenerate, isGenerating, genModel, resolution, aspectRatio, outputCount])
 
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
