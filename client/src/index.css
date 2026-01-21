@@ -1236,6 +1236,7 @@ body {
 .output-image-wrapper {
   position: relative;
   width: 100%;
+  cursor: pointer;
 }
 
 .output-image {
@@ -1244,32 +1245,34 @@ body {
   box-shadow:
     0 2px 0 rgba(0, 0, 0, 0.06),
     0 4px 12px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
 }
 
-.output-expand {
+.output-expand-center {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s, background 0.2s;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+  pointer-events: none;
 }
 
-.output-image-wrapper:hover .output-expand {
+.output-image-wrapper:hover .output-expand-center {
   opacity: 1;
 }
 
-.output-expand:hover {
-  background: rgba(0, 0, 0, 0.8);
+.output-image-wrapper:active .output-expand-center {
+  transform: translate(-50%, -50%) scale(0.95);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .output-actions {

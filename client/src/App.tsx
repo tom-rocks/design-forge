@@ -913,20 +913,17 @@ export default function App() {
                           initial={{ opacity: 0, scale: 0.98 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: i * 0.15, duration: 0.4 }}
+                          onClick={() => setOutputLightbox(url)}
                         >
                           <img 
                             src={url}
                             alt={`Output ${i + 1}`}
                             className="output-image"
                           />
-                          <button 
-                            className="output-expand"
-                            onClick={() => setOutputLightbox(url)}
-                            title="View full size"
-                          >
-                            <Maximize2 className="w-4 h-4" />
-                          </button>
-                          <div className="output-actions">
+                          <div className="output-expand-center" title="View full size">
+                            <Maximize2 className="w-5 h-5" />
+                          </div>
+                          <div className="output-actions" onClick={(e) => e.stopPropagation()}>
                             <button 
                               className="output-action-btn"
                               onClick={() => {
