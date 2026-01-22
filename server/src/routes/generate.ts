@@ -547,13 +547,13 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
     parts.push(...imageParts);
     
     // Build the request payload
-    // Note: Including both TEXT and IMAGE in responseModalities per Google's examples
+    // Flash model needs IMAGE only to force image generation, Pro can use both
     const payload: any = {
       contents: [{
         parts: parts,
       }],
       generationConfig: {
-        responseModalities: ['TEXT', 'IMAGE'],
+        responseModalities: modelType === 'flash' ? ['IMAGE'] : ['TEXT', 'IMAGE'],
       },
     };
     
