@@ -88,7 +88,7 @@ export function LCDFireGrid({
       // Center spread - fire spreads from center outward to both edges
       const center = Math.floor(cols / 2)
       const distanceFromCenter = Math.abs(x - center)
-      return distanceFromCenter < ignitionProgress
+      return distanceFromCenter <= ignitionProgress
     }
   }
   
