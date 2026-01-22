@@ -585,11 +585,16 @@ export default function App() {
             ) : refineExpanded ? (
               // Expanded - show picker
               <Panel>
-                <PanelHeader onClick={() => setRefineExpanded(false)}>
+                <PanelHeader className="collapsible" onClick={() => setRefineExpanded(false)}>
                   <span className="panel-icon icon-refinement" />
                   Refine <span className="header-subtitle">select image to edit</span>
                   <div className="header-right">
-                    <span className="collapse-icon">−</span>
+                    <motion.div 
+                      animate={{ rotate: 180 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.div>
                   </div>
                 </PanelHeader>
                 <PanelBody>
@@ -653,15 +658,21 @@ export default function App() {
                 </PanelBody>
               </Panel>
             ) : (
-              // Collapsed - show add button
-              <button 
-                className="refine-add-btn"
-                onClick={() => setRefineExpanded(true)}
-              >
-                <span className="panel-icon icon-refinement" />
-                <span>Add image to refine</span>
-                <span className="collapse-icon">＋</span>
-              </button>
+              // Collapsed - show panel header like Alloy
+              <Panel>
+                <PanelHeader className="collapsible" onClick={() => setRefineExpanded(true)}>
+                  <span className="panel-icon icon-refinement" />
+                  Refine <span className="header-subtitle">edit an image</span>
+                  <div className="header-right">
+                    <motion.div 
+                      animate={{ rotate: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.div>
+                  </div>
+                </PanelHeader>
+              </Panel>
             )}
           </div>
 
