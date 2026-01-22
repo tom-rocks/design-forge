@@ -111,11 +111,12 @@ export function LCDFireGrid({
   
   const gridStyle = useMemo(() => ({
     display: 'grid',
-    gridTemplateColumns: `repeat(${cols}, ${dotSize}px)`,
+    gridTemplateColumns: `repeat(${cols}, 1fr)`,
     gridTemplateRows: `repeat(${rows}, ${dotSize}px)`,
     gap: `${gap}px`,
     background: '#1a1918',
     padding: `${gap}px`,
+    minWidth: cols * (dotSize + gap) + gap, // Minimum based on original sizing
   }), [cols, rows, dotSize, gap])
   
   return (
@@ -124,7 +125,7 @@ export function LCDFireGrid({
         <div
           key={i}
           style={{
-            width: dotSize,
+            width: '100%',
             height: dotSize,
             borderRadius: 1,
             backgroundColor: FIRE_COLORS[Math.min(value, FIRE_COLORS.length - 1)],

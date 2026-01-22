@@ -342,11 +342,20 @@ body {
   flex-shrink: 0;
 }
 
-/* Fire grids at edges of floating LCD - expand to fill */
+/* Fire grids at edges of floating LCD - expand to fill and align */
 .lcd-fire-left,
 .lcd-fire-right {
   flex: 1;
   min-width: 0;
+  display: flex;
+}
+
+.lcd-fire-left {
+  justify-content: flex-start;
+}
+
+.lcd-fire-right {
+  justify-content: flex-end;
 }
 
 .lcd-floating {
@@ -1608,7 +1617,8 @@ body {
 .lcd-grid-fire {
   display: flex;
   gap: 1px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .lcd-column {
