@@ -1372,22 +1372,19 @@ export default function App() {
                 </div>
                 <div className="gallery-content">
                   {galleryLoading ? (
-                    <div className="gallery-loading">Loading...</div>
+                    <div className="gallery-loading">Loading your works...</div>
                   ) : galleryImages.length === 0 ? (
                     <div className="gallery-empty">No works yet. Start creating!</div>
                   ) : (
                     <div className="gallery-grid">
-                      {galleryImages.map((img, i) => (
-                        <motion.div
+                      {galleryImages.map((img) => (
+                        <div
                           key={img.id}
                           className="gallery-item"
                           onClick={() => setGalleryExpanded(img.url)}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i * 0.01, 0.5) }}
                         >
                           <img src={img.url} alt={img.prompt} loading="lazy" />
-                        </motion.div>
+                        </div>
                       ))}
                     </div>
                   )}
