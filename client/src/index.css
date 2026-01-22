@@ -2482,35 +2482,22 @@ body {
 .gallery-search {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--surface-inset);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
+  gap: 8px;
+  position: relative;
 }
 
 .gallery-search .search-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--text-light);
-  flex-shrink: 0;
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-dim);
+  pointer-events: none;
 }
 
 .gallery-search .input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 0;
-  font-size: 14px;
-  color: var(--text);
-  min-width: 0;
-}
-
-.gallery-search .input:focus {
-  outline: none;
-}
-
-.gallery-search .input::placeholder {
-  color: var(--text-light);
+  width: 100%;
+  padding-left: 32px;
 }
 
 .gallery-close {
