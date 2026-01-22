@@ -1115,7 +1115,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" />
+            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" />
             <button 
               className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}
               onClick={() => !isGenerating && handleModelChange('flash')}
@@ -1178,7 +1178,7 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
             </button>
-            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" />
+            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" />
           </div>
           
           {/* Main input row */}

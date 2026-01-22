@@ -7,6 +7,8 @@ interface LCDFireGridProps {
   dotSize?: number
   gap?: number
   className?: string
+  /** Direction fire spreads when igniting: 'left' = from right edge toward left, 'right' = from left edge toward right */
+  spreadDirection?: 'left' | 'right' | 'none'
 }
 
 // Fire color palette
@@ -32,11 +34,56 @@ export function LCDFireGrid({
   rows = 3, 
   dotSize = 4,
   gap = 1,
-  className = '' 
+  className = '',
+  spreadDirection = 'none'
 }: LCDFireGridProps) {
   const [grid, setGrid] = useState<number[]>(() => new Array(cols * rows).fill(0))
+  const [ignitionProgress, setIgnitionProgress] = useState(0) // 0 to cols, how many columns are lit
   const frameRef = useRef<number>(0)
   const lastFrameRef = useRef<number>(0)
+  const wasActiveRef = useRef(false)
+  
+  // Handle ignition spread when active changes
+  useEffect(() => {
+    if (active && !wasActiveRef.current && spreadDirection !== 'none') {
+      // Just became active - start ignition spread
+      setIgnitionProgress(0)
+      const ignitionDuration = 600 // ms to fully ignite
+      const startTime = Date.now()
+      
+      const spread = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(1, elapsed / ignitionDuration)
+        // Ease out for natural flame spread
+        const eased = 1 - Math.pow(1 - progress, 2)
+        setIgnitionProgress(Math.floor(eased * cols))
+        
+        if (progress < 1) {
+          requestAnimationFrame(spread)
+        }
+      }
+      requestAnimationFrame(spread)
+    } else if (active && spreadDirection === 'none') {
+      // No spread animation, light all at once
+      setIgnitionProgress(cols)
+    } else if (!active) {
+      // Reset ignition when turning off
+      setIgnitionProgress(cols) // Keep full while cooling down
+    }
+    wasActiveRef.current = active
+  }, [active, cols, spreadDirection])
+  
+  // Check if a column is currently ignited based on spread direction
+  const isColumnIgnited = (x: number): boolean => {
+    if (!active || spreadDirection === 'none') return active
+    if (spreadDirection === 'right') {
+      // Fire spreads from left (0) to right (cols-1)
+      return x < ignitionProgress
+    } else {
+      // Fire spreads from right (cols-1) to left (0)
+      return x >= (cols - ignitionProgress)
+    }
+  }
   
   useEffect(() => {
     // Slower frame rate for smoother feel
@@ -57,6 +104,16 @@ export function LCDFireGrid({
           for (let x = 0; x < cols; x++) {
             const idx = (rows - 1) * cols + x
             const current = prev[idx]
+            
+            // Only generate fire for ignited columns
+            if (!isColumnIgnited(x)) {
+              // Not yet ignited - stay cool
+              if (current > 0) {
+                next[idx] = Math.max(0, current - 1)
+              }
+              continue
+            }
+            
             let target: number
             
             // Less frequent changes, more stable base
@@ -107,7 +164,7 @@ export function LCDFireGrid({
     
     frameRef.current = requestAnimationFrame(simulate)
     return () => cancelAnimationFrame(frameRef.current)
-  }, [active, cols, rows])
+  }, [active, cols, rows, ignitionProgress, spreadDirection])
   
   const gridStyle = useMemo(() => ({
     display: 'grid',
