@@ -647,6 +647,7 @@ export default function App() {
         <div className="app-auth">
           <button onClick={openGallery} className="btn btn-ghost gallery-btn" title="View all works">
             <span className="btn-icon icon-works" />
+            PAST WORKS
           </button>
           <div className="auth-user">
             {user?.avatarUrl ? (
