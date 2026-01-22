@@ -342,6 +342,13 @@ body {
   flex-shrink: 0;
 }
 
+/* Fire grids at edges of floating LCD - expand to fill */
+.lcd-fire-left,
+.lcd-fire-right {
+  flex: 1;
+  min-width: 0;
+}
+
 .lcd-floating {
   justify-content: center;
   padding: 6px 12px;
