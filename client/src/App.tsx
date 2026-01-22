@@ -65,8 +65,8 @@ export default function App() {
   // Forge specs state
   const [alloyExpanded, setAlloyExpanded] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
-  const [resolution, setResolution] = useState<string>('1K')
-  const [genModel, setGenModel] = useState<string>('flash')
+  const [resolution, setResolution] = useState<string>('2K')
+  const [genModel, setGenModel] = useState<string>('pro')
   const [outputCount, setOutputCount] = useState<1 | 2 | 4>(1)
   
   // Handle model change - auto-correct resolution if needed
@@ -121,6 +121,40 @@ export default function App() {
   // Scroll to refine panel
   const scrollToRefine = useCallback(() => {
     refineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+  
+  // Available aspect ratios and their decimal values
+  const ASPECT_RATIOS = [
+    { label: '1:1', value: 1 },
+    { label: '4:3', value: 4/3 },
+    { label: '3:4', value: 3/4 },
+    { label: '16:9', value: 16/9 },
+    { label: '9:16', value: 9/16 },
+    { label: '3:2', value: 3/2 },
+    { label: '2:3', value: 2/3 },
+    { label: '5:4', value: 5/4 },
+    { label: '4:5', value: 4/5 },
+    { label: '21:9', value: 21/9 },
+  ]
+  
+  // Detect aspect ratio from image and set closest match
+  const detectAndSetAspectRatio = useCallback((imageUrl: string) => {
+    const img = new Image()
+    img.onload = () => {
+      const ratio = img.width / img.height
+      // Find closest matching aspect ratio
+      let closest = ASPECT_RATIOS[0]
+      let minDiff = Math.abs(ratio - closest.value)
+      for (const ar of ASPECT_RATIOS) {
+        const diff = Math.abs(ratio - ar.value)
+        if (diff < minDiff) {
+          minDiff = diff
+          closest = ar
+        }
+      }
+      setAspectRatio(closest.label)
+    }
+    img.src = imageUrl
   }, [])
   
   // Check bridge status (either via server WebSocket or AP iframe context)
@@ -193,8 +227,10 @@ export default function App() {
     
     // For edit mode, set the edit image (this derives mode automatically)
     if (config.mode === 'edit' && config.editImageUrl) {
+      const fullUrl = `${API_URL}${config.editImageUrl}`
       setTimeout(() => {
-        setEditImage({ url: `${API_URL}${config.editImageUrl}` })
+        setEditImage({ url: fullUrl })
+        detectAndSetAspectRatio(fullUrl)
       }, 100)
     } else {
       // Clear edit image for create mode
@@ -444,6 +480,7 @@ export default function App() {
       reader.onload = (ev) => {
         const url = ev.target?.result as string
         setEditImage({ url })
+        detectAndSetAspectRatio(url)
       }
       reader.readAsDataURL(file)
     }
@@ -467,6 +504,7 @@ export default function App() {
             if (activeDropTarget === 'refine') {
               // Paste to refinement
               setEditImage({ url })
+              detectAndSetAspectRatio(url)
             } else {
               // Paste to references
               addReference({
@@ -636,7 +674,11 @@ export default function App() {
                     {refineSource === 'items' && (
                       <HighriseSearch 
                         singleSelect
-                        onSingleSelect={(item) => { setEditImage({ url: item.imageUrl }); setRefineExpanded(false) }} 
+                        onSingleSelect={(item) => { 
+                          setEditImage({ url: item.imageUrl })
+                          detectAndSetAspectRatio(item.imageUrl)
+                          setRefineExpanded(false) 
+                        }} 
                         bridgeConnected={bridgeConnected}
                         useAPBridge={inAPContext}
                       />
@@ -645,10 +687,12 @@ export default function App() {
                       <HistoryGrid 
                         singleSelect
                         onSingleSelect={(gen) => { 
+                          const url = `${API_URL}${gen.imageUrls[0]}`
                           setEditImage({ 
-                            url: `${API_URL}${gen.imageUrls[0]}`,
+                            url,
                             thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
                           })
+                          detectAndSetAspectRatio(url)
                           setRefineExpanded(false)
                         }}
                         isActive={refineExpanded}
@@ -820,6 +864,7 @@ export default function App() {
                         onReplay={handleReplay}
                         onRefine={(url) => {
                           setEditImage({ url })
+                          detectAndSetAspectRatio(url)
                           setRefineExpanded(false) // Collapse picker since we have image
                           setTimeout(scrollToRefine, 100)
                         }}
@@ -965,6 +1010,7 @@ export default function App() {
                               className="output-action-btn"
                               onClick={() => {
                                 setEditImage({ url })
+                                detectAndSetAspectRatio(url)
                                 setRefineExpanded(false)
                                 setTimeout(scrollToRefine, 100)
                               }}
@@ -1150,6 +1196,7 @@ export default function App() {
                     className="lightbox-btn"
                     onClick={() => {
                       setEditImage({ url: outputLightbox })
+                      detectAndSetAspectRatio(outputLightbox)
                       setRefineExpanded(false)
                       setOutputLightbox(null)
                       setTimeout(scrollToRefine, 100)
