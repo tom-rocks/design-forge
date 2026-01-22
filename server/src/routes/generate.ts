@@ -547,13 +547,15 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
     parts.push(...imageParts);
     
     // Build the request payload
-    // Flash model needs IMAGE only to force image generation, Pro can use both
+    // Flash in create mode needs IMAGE only to force generation (otherwise returns text)
+    // Flash in edit mode and Pro always use both TEXT and IMAGE
+    const useImageOnly = modelType === 'flash' && mode !== 'edit';
     const payload: any = {
       contents: [{
         parts: parts,
       }],
       generationConfig: {
-        responseModalities: modelType === 'flash' ? ['IMAGE'] : ['TEXT', 'IMAGE'],
+        responseModalities: useImageOnly ? ['IMAGE'] : ['TEXT', 'IMAGE'],
       },
     };
     
