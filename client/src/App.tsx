@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -124,6 +124,7 @@ export default function App() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [galleryExpanded, setGalleryExpanded] = useState<GalleryImage | null>(null)
+  const [gallerySearch, setGallerySearch] = useState('')
   
   // Abort controller for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -165,6 +166,7 @@ export default function App() {
     setGalleryOpen(true)
     setGalleryLoading(true)
     setGalleryExpanded(null)
+    setGallerySearch('')
     try {
       const res = await fetch(`${API_URL}/api/generations/my`, { credentials: 'include' })
       if (res.ok) {
@@ -1427,6 +1429,16 @@ export default function App() {
               >
                 <div className="gallery-header">
                   <h2><span className="btn-icon icon-works" /> Past Works</h2>
+                  <div className="gallery-search">
+                    <Search className="search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search by prompt..."
+                      value={gallerySearch}
+                      onChange={e => setGallerySearch(e.target.value)}
+                      className="input"
+                    />
+                  </div>
                   <button className="gallery-close" onClick={() => setGalleryOpen(false)}>
                     <X className="w-5 h-5" />
                   </button>
@@ -1438,7 +1450,9 @@ export default function App() {
                     <div className="gallery-empty">No works yet. Start creating!</div>
                   ) : (
                     <div className="gallery-grid">
-                      {galleryImages.map((img) => (
+                      {galleryImages
+                        .filter(img => !gallerySearch.trim() || img.prompt.toLowerCase().includes(gallerySearch.toLowerCase()))
+                        .map((img) => (
                         <div
                           key={img.id}
                           className="gallery-item"

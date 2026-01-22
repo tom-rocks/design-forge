@@ -2473,6 +2473,42 @@ body {
   height: 16px;
 }
 
+.gallery-search {
+  flex: 1;
+  max-width: 300px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+.gallery-search .search-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
+.gallery-search .input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text);
+  min-width: 0;
+}
+
+.gallery-search .input:focus {
+  outline: none;
+}
+
+.gallery-search .input::placeholder {
+  color: var(--text-light);
+}
+
 .gallery-close {
   width: 36px;
   height: 36px;
