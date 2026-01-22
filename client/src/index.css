@@ -1617,8 +1617,7 @@ body {
 .lcd-grid-fire {
   display: flex;
   gap: 1px;
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .lcd-column {
