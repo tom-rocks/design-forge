@@ -593,8 +593,14 @@ export default function App() {
                 <PanelBody>
                   {editImage ? (
                     <div className="edit-image-preview">
-                      <img src={editImage.thumbnail || editImage.url} alt="Refine" />
-                      <button onClick={() => setEditImage(null)} className="thumb-remove">×</button>
+                      <img src={editImage.url} alt="Image to refine" />
+                      <button 
+                        onClick={() => setEditImage(null)} 
+                        className="edit-image-remove"
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
                     </div>
                   ) : (
                     <>

@@ -709,16 +709,43 @@ body {
 
 .edit-image-preview {
   position: relative;
-  display: inline-block;
+  width: 100%;
 }
 
 .edit-image-preview img {
-  max-height: 96px;
+  width: 100%;
   border-radius: var(--radius-md);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.edit-image-preview .thumb-remove {
+.edit-image-preview .edit-image-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.edit-image-preview:hover .edit-image-remove {
   opacity: 1;
+}
+
+.edit-image-preview .edit-image-remove:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 .edit-dropzone {
