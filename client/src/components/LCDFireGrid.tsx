@@ -48,7 +48,7 @@ export function LCDFireGrid({
     if (active && !wasActiveRef.current && spreadDirection !== 'none') {
       // Just became active - start ignition spread
       setIgnitionProgress(0)
-      const ignitionDuration = spreadDirection === 'center' ? 800 : 600 // longer for center spread
+      const ignitionDuration = spreadDirection === 'center' ? 1400 : 1000 // ms to fully ignite
       const startTime = Date.now()
       // For center spread, max progress is half the columns (distance from center to edge)
       const maxProgress = spreadDirection === 'center' ? Math.ceil(cols / 2) : cols
