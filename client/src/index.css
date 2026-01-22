@@ -342,19 +342,23 @@ body {
   flex-shrink: 0;
 }
 
-/* Fire grids at edges of floating LCD - fixed size, no expansion */
-.lcd-fire-left,
+/* Fire grids at edges of floating LCD - push to edges */
+.lcd-fire-left {
+  flex-shrink: 0;
+  margin-right: auto; /* Push content after it to the right */
+}
+
 .lcd-fire-right {
   flex-shrink: 0;
+  margin-left: auto; /* Push content before it to the left */
 }
 
 .lcd-floating {
-  justify-content: center;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   margin: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  gap: 8px;
+  gap: 10px;
 }
 
 .floating-prompt-row {
