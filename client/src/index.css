@@ -1601,8 +1601,7 @@ body {
 .lcd-grid-fire {
   display: flex;
   gap: 1px;
-  flex: 1;
-  min-width: 0; /* Allow flex shrink */
+  flex-shrink: 0;
 }
 
 .lcd-column {
@@ -1666,6 +1665,7 @@ body {
   display: flex;
   gap: 12px;
   flex-shrink: 0;
+  margin-left: auto; /* Push to far right */
 }
 
 .lcd-label {
