@@ -701,31 +701,12 @@ export default function App() {
                   </div>
                 </PanelBody>
               </Panel>
-            ) : editImage ? (
-              // Collapsed with image - show image prominently
-              <div className="edit-image-preview">
-                <img src={editImage.url} alt="Image to refine" />
-                <button 
-                  onClick={() => setEditImage(null)} 
-                  className="edit-image-remove"
-                  title="Remove image"
-                >
-                  ×
-                </button>
-                <button 
-                  onClick={() => setRefineExpanded(true)} 
-                  className="edit-image-change"
-                  title="Change image"
-                >
-                  Change
-                </button>
-              </div>
             ) : (
-              // Collapsed - show panel header like Alloy
+              // Collapsed - show panel header like Alloy (with LED when image selected)
               <Panel>
                 <PanelHeader className="collapsible" onClick={() => setRefineExpanded(true)}>
                   <span className="panel-icon icon-refinement" />
-                  Refine <span className="header-subtitle">edit an image</span>
+                  Refine <span className="header-subtitle">{editImage ? 'image selected' : 'edit an image'}</span>
                   <div className="header-right">
                     <motion.div 
                       animate={{ rotate: 0 }}
@@ -733,6 +714,7 @@ export default function App() {
                     >
                       <ChevronDown className="w-4 h-4" />
                     </motion.div>
+                    <span className={`led ${editImage ? 'on' : ''}`} />
                   </div>
                 </PanelHeader>
               </Panel>
