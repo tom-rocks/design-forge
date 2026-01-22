@@ -99,9 +99,9 @@ export default function App() {
   
   // Works gallery
   const [galleryOpen, setGalleryOpen] = useState(false)
-  const [galleryImages, setGalleryImages] = useState<{ url: string; prompt: string; id: string }[]>([])
+  const [galleryImages, setGalleryImages] = useState<{ url: string; thumbUrl: string; prompt: string; id: string }[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
-  const [galleryExpanded, setGalleryExpanded] = useState<string | null>(null) // URL of expanded image
+  const [galleryExpanded, setGalleryExpanded] = useState<{ url: string; prompt: string } | null>(null)
   
   // Abort controller for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -147,12 +147,17 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/generations`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        // Flatten all images from all generations
-        const images: { url: string; prompt: string; id: string }[] = []
+        // Flatten all images from all generations, using thumbnails for grid
+        const images: { url: string; thumbUrl: string; prompt: string; id: string }[] = []
         for (const gen of data.generations || []) {
+          // Use generation thumbnail for first image, fall back to full URL
+          const thumbBase = gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : null
           for (let i = 0; i < gen.imageUrls.length; i++) {
+            const fullUrl = `${API_URL}${gen.imageUrls[i]}`
             images.push({
-              url: `${API_URL}${gen.imageUrls[i]}`,
+              url: fullUrl,
+              // Use thumbnail for first image of each generation, otherwise use full
+              thumbUrl: i === 0 && thumbBase ? thumbBase : fullUrl,
               prompt: gen.prompt,
               id: `${gen.id}-${i}`
             })
@@ -1321,17 +1326,15 @@ export default function App() {
                     exit={{ scale: 0.9, opacity: 0 }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <img src={galleryExpanded} alt="Full size" />
+                    <img src={galleryExpanded.url} alt="Full size" />
                     <div className="lightbox-footer">
-                      <div className="lightbox-prompt">
-                        {galleryImages.find(img => img.url === galleryExpanded)?.prompt}
-                      </div>
+                      <div className="lightbox-prompt">{galleryExpanded.prompt}</div>
                       <div className="lightbox-actions">
                         <button 
                           className="lightbox-btn"
                           onClick={() => {
-                            setEditImage({ url: galleryExpanded })
-                            detectAndSetAspectRatio(galleryExpanded)
+                            setEditImage({ url: galleryExpanded.url })
+                            detectAndSetAspectRatio(galleryExpanded.url)
                             setRefineExpanded(false)
                             setGalleryOpen(false)
                             setGalleryExpanded(null)
@@ -1343,7 +1346,7 @@ export default function App() {
                         </button>
                         <button 
                           className="lightbox-btn"
-                          onClick={() => downloadOutputImage(galleryExpanded)}
+                          onClick={() => downloadOutputImage(galleryExpanded.url)}
                           title="Download"
                         >
                           <Download className="w-5 h-5" />
@@ -1381,9 +1384,9 @@ export default function App() {
                         <div
                           key={img.id}
                           className="gallery-item"
-                          onClick={() => setGalleryExpanded(img.url)}
+                          onClick={() => setGalleryExpanded({ url: img.url, prompt: img.prompt })}
                         >
-                          <img src={img.url} alt={img.prompt} loading="lazy" />
+                          <img src={img.thumbUrl} alt={img.prompt} loading="lazy" />
                         </div>
                       ))}
                     </div>
