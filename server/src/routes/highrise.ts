@@ -54,9 +54,10 @@ const VALID_ITEM_TYPES = ['DAvatarItemArchetype', 'DBackgroundArchetype', 'DCont
 const AVATAR_CATEGORIES = [
   'shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
   'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
-  'gloves', 'watch', 'sock', 'hair_front', 'hair_back', 'eye', 'eyebrow',
+  'gloves', 'watch', 'sock', 'hair_front', 'eye', 'eyebrow',
   'mouth', 'nose', 'body', 'blush', 'freckle', 'mole', 'lashes', 'face_hair',
   'tattoo', 'aura', 'emote'
+  // Note: hair_back excluded - same image as hair_front
 ];
 
 // Filter out items without valid images
@@ -66,7 +67,8 @@ const hasValidThumbnail = (item: BridgeItem): boolean => {
   // Skip items that don't have displayable thumbnails
   // - room items, grab bags
   // - btd (background decals) - game-only assets, no thumbnails
-  if (id.startsWith('room-') || id.startsWith('grab-') || id.startsWith('btd-') || id.startsWith('btd_')) {
+  // - hair_back items (same image as hair_front)
+  if (id.startsWith('room-') || id.startsWith('grab-') || id.startsWith('btd-') || id.startsWith('btd_') || id.startsWith('hair_back-')) {
     return false;
   }
   
