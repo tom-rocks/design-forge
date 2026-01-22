@@ -13,6 +13,7 @@ interface HighriseItem {
   rarity: string
   imageUrl: string
   apImageUrl?: string // Fallback for new pipeline items
+  apImageUrlCrisp?: string // Higher quality version for clothing (used when adding as reference)
 }
 
 interface Reference {
@@ -236,6 +237,7 @@ export default function HighriseSearch({
             
             // AP fallback URL depends on item type
             let apImageUrl: string
+            let apImageUrlCrisp: string | undefined
             
             if (dispId.startsWith('cn-')) {
               // Container - AP can fetch CDN URL with auth
@@ -245,14 +247,17 @@ export default function HighriseSearch({
               apImageUrl = `https://cdn.highrisegame.com/background/${dispId}/full`
             } else {
               // Avatar item - AP has internal endpoint
-              // Clothing items use ?crisp=1 for higher quality
-              apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png${isClothing ? '?crisp=1' : ''}`
+              apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+              // Clothing items have a crisp version for higher quality (used when adding as reference)
+              if (isClothing) {
+                apImageUrlCrisp = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
+              }
             }
             
-            // For clothing items in AP context, use crisp AP URL directly
+            // For avatar items in AP context, use AP URL directly (faster, no proxy hop)
             // For other items, try our proxy first (server handles different URL patterns)
-            const primaryImageUrl = (useAPBridge && isClothing && !dispId.startsWith('cn-') && !dispId.startsWith('bg-'))
-              ? apImageUrl  // Use crisp AP URL directly for clothing when in AP
+            const primaryImageUrl = (useAPBridge && !dispId.startsWith('cn-') && !dispId.startsWith('bg-'))
+              ? apImageUrl  // Use AP URL directly when in AP context
               : `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
             
             return {
@@ -262,6 +267,7 @@ export default function HighriseSearch({
               rarity: item.rarity || 'common',
               imageUrl: primaryImageUrl,
               apImageUrl,
+              apImageUrlCrisp,  // Higher quality version for clothing when used as reference
             }
           })
         
@@ -355,9 +361,30 @@ export default function HighriseSearch({
     } else if (references.length < maxRefs) {
       // Cache for generation if it's a new pipeline item
       await cacheForGeneration(item)
+      
+      // For clothing items with crisp URL available, fetch and use crisp version
+      let referenceUrl = getDisplayUrl(item)
+      if (item.apImageUrlCrisp && useAPBridge && checkAPContext()) {
+        try {
+          const crispDataUrl = await fetchImageViaAP(item.apImageUrlCrisp)
+          if (crispDataUrl) {
+            referenceUrl = crispDataUrl
+            // Also cache the crisp version on server
+            await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}-crisp`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ base64: crispDataUrl })
+            })
+            console.log(`[Highrise] Using crisp version for ${item.id}`)
+          }
+        } catch (e) {
+          console.warn(`[Highrise] Failed to get crisp version for ${item.id}, using standard`)
+        }
+      }
+      
       onAddReference({
         id: `hr-${item.id}`,
-        url: getDisplayUrl(item), // Use data URL if proxied, otherwise proxy URL
+        url: referenceUrl,
         name: item.name,
         type: 'highrise'
       })
