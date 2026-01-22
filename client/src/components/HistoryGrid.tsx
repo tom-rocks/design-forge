@@ -104,6 +104,7 @@ export default function HistoryGrid({
   const [lightbox, setLightbox] = useState<DisplayImage | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
   
@@ -381,6 +382,8 @@ export default function HistoryGrid({
                 src={`${API_URL}${img.imageUrl}`}
                 alt={gen.prompt}
                 loading="lazy"
+                className={loadedImages.has(img.id) ? 'loaded' : ''}
+                onLoad={() => setLoadedImages(prev => new Set(prev).add(img.id))}
               />
               {selected && (
                 <div className="history-item-check">

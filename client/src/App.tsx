@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
@@ -125,6 +125,7 @@ export default function App() {
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [galleryExpanded, setGalleryExpanded] = useState<GalleryImage | null>(null)
   const [gallerySearch, setGallerySearch] = useState('')
+  const [galleryLoadedImages, setGalleryLoadedImages] = useState<Set<string>>(new Set())
   
   // Abort controller for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -167,6 +168,7 @@ export default function App() {
     setGalleryLoading(true)
     setGalleryExpanded(null)
     setGallerySearch('')
+    setGalleryLoadedImages(new Set())
     try {
       const res = await fetch(`${API_URL}/api/generations/my`, { credentials: 'include' })
       if (res.ok) {
@@ -197,6 +199,18 @@ export default function App() {
     } finally {
       setGalleryLoading(false)
     }
+  }, [])
+  
+  // Memoized filtered gallery images - prevents recomputation on every render
+  const filteredGalleryImages = useMemo(() => {
+    if (!gallerySearch.trim()) return galleryImages
+    const searchLower = gallerySearch.toLowerCase()
+    return galleryImages.filter(img => img.prompt.toLowerCase().includes(searchLower))
+  }, [galleryImages, gallerySearch])
+  
+  // Handle gallery image load
+  const handleGalleryImageLoad = useCallback((id: string) => {
+    setGalleryLoadedImages(prev => new Set(prev).add(id))
   }, [])
   
   // Available aspect ratios and their decimal values
@@ -1450,17 +1464,26 @@ export default function App() {
                     <div className="gallery-loading">Loading your works...</div>
                   ) : galleryImages.length === 0 ? (
                     <div className="gallery-empty">No works yet. Start creating!</div>
+                  ) : filteredGalleryImages.length === 0 ? (
+                    <div className="gallery-empty">No works match your search</div>
                   ) : (
                     <div className="gallery-grid">
-                      {galleryImages
-                        .filter(img => !gallerySearch.trim() || img.prompt.toLowerCase().includes(gallerySearch.toLowerCase()))
-                        .map((img) => (
+                      {filteredGalleryImages.map((img) => (
                         <div
                           key={img.id}
                           className="gallery-item"
                           onClick={() => setGalleryExpanded(img)}
                         >
-                          <img src={img.thumbUrl} alt={img.prompt} loading="lazy" />
+                          {!galleryLoadedImages.has(img.id) && (
+                            <div className="gallery-item-skeleton" />
+                          )}
+                          <img 
+                            src={img.thumbUrl} 
+                            alt={img.prompt} 
+                            loading="lazy"
+                            className={galleryLoadedImages.has(img.id) ? 'loaded' : ''}
+                            onLoad={() => handleGalleryImageLoad(img.id)}
+                          />
                         </div>
                       ))}
                     </div>

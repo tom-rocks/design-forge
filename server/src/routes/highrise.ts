@@ -45,6 +45,8 @@ interface BridgeItem {
   rarity?: string;
   category?: string;
   type?: string;
+  icon_url?: string; // Direct image URL (used by emotes)
+  image_url?: string; // Alternative image URL field
 }
 
 // Item types that have valid images (avatar items, backgrounds, containers)
@@ -114,14 +116,21 @@ interface SearchResult {
 const transformBridgeItem = (item: BridgeItem): SearchResult => {
   const id = item.disp_id || item.id || item.item_id || '';
   const resolvedName = item.disp_name || item.name || item.display_name || item.item_name || id;
+  const category = item.category || item.type || 'unknown';
+  
+  // Emotes have their images at a different URL (icon_url/image_url field)
+  // Use direct URL for emotes since there's no predictable CDN pattern
+  let imageUrl = `/api/highrise/proxy/${id}.png`;
+  if (category === 'emote' && (item.icon_url || item.image_url)) {
+    imageUrl = item.icon_url || item.image_url || imageUrl;
+  }
   
   return {
     id,
     name: resolvedName,
-    category: item.category || item.type || 'unknown',
+    category,
     rarity: item.rarity || 'common',
-    // Use proxy URL so we can debug/log image fetches
-    imageUrl: `/api/highrise/proxy/${id}.png`,
+    imageUrl,
   };
 };
 
@@ -156,11 +165,6 @@ router.get('/items', async (req: Request, res: Response) => {
           limit: requestedLimit,
           offset: pageNum * requestedLimit,
         }) as { items?: BridgeItem[]; pages?: number };
-
-        // Debug: log first item to see what fields we're getting
-        if (bridgeResult.items?.[0]) {
-          console.log('[Highrise] Bridge item sample:', JSON.stringify(bridgeResult.items[0], null, 2));
-        }
 
         // Filter out items without valid thumbnails (containers, etc.)
         const validItems = (bridgeResult.items || []).filter(hasValidThumbnail);
@@ -277,12 +281,18 @@ router.get('/items/:itemId', async (req: Request, res: Response) => {
     const data = await response.json();
     const item = data.item;
 
+    // Emotes have their images at icon_url, not the standard CDN path
+    let imageUrl = `/api/highrise/proxy/${item.item_id}.png`;
+    if (item.category === 'emote' && (item.icon_url || item.image_url)) {
+      imageUrl = item.icon_url || item.image_url;
+    }
+
     res.json({
       id: item.item_id,
       name: item.item_name,
       category: item.category,
       rarity: item.rarity,
-      imageUrl: `/api/highrise/proxy/${item.item_id}.png`,
+      imageUrl,
     });
 
   } catch (error) {
@@ -369,8 +379,35 @@ router.get('/proxy/*', async (req: Request, res: Response) => {
     return;
   }
   
-  // Get correct CDN URL based on item type (avatar, background, container)
-  const imageUrl = getItemCdnUrl(itemId);
+  // For emotes, we need to fetch the item metadata to get the actual image URL
+  // since there's no predictable CDN pattern for emotes
+  let imageUrl: string;
+  if (itemId.startsWith('emote-')) {
+    try {
+      const metaResponse = await fetch(`${HIGHRISE_API}/items/${itemId}`);
+      if (metaResponse.ok) {
+        const metaData = await metaResponse.json();
+        imageUrl = metaData.item?.icon_url || metaData.item?.image_url;
+        if (!imageUrl) {
+          logProxy(itemId, 'NO_ICON_URL', 'Emote has no icon_url in metadata');
+          res.status(404).send('Emote image not found');
+          return;
+        }
+        logProxy(itemId, 'EMOTE_URL', imageUrl);
+      } else {
+        logProxy(itemId, 'METADATA_ERROR', `Status ${metaResponse.status}`);
+        res.status(404).send('Emote not found');
+        return;
+      }
+    } catch (e) {
+      logProxy(itemId, 'METADATA_EXCEPTION', String(e));
+      res.status(500).send('Failed to fetch emote metadata');
+      return;
+    }
+  } else {
+    // Get correct CDN URL based on item type (avatar, background, container)
+    imageUrl = getItemCdnUrl(itemId);
+  }
   logProxy(itemId, 'FETCHING', imageUrl);
   
   try {

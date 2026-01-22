@@ -201,34 +201,52 @@ export default function HighriseSearch({
         // Transform AP response to our format
         // Route ALL items through our proxy first - server knows correct CDN URLs
         // Falls back to AP proxy if server can't fetch (auth required, new pipeline, etc.)
-        const items = (result.items || []).map((item: any) => {
-          const dispId = item.disp_id || item.id
-          
-          // All items go through our proxy first (server handles different URL patterns)
-          // AP fallback URL depends on item type
-          let apImageUrl: string
-          
-          if (dispId.startsWith('cn-')) {
-            // Container - AP can fetch CDN URL with auth
-            apImageUrl = `https://cdn.highrisegame.com/container/${dispId}/full`
-          } else if (dispId.startsWith('bg-')) {
-            // Background - AP can fetch CDN URL with auth
-            apImageUrl = `https://cdn.highrisegame.com/background/${dispId}/full`
-          } else {
-            // Avatar item - AP has internal endpoint
-            apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
-          }
-          
-          return {
-            id: item._id || dispId,
-            name: item.disp_name || item.name,
-            category: item.category || 'unknown',
-            rarity: item.rarity || 'common',
-            // Always try our proxy first - server handles bg/cn/avatar URL patterns
-            imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`,
-            apImageUrl,
-          }
-        })
+        const items = (result.items || [])
+          // Filter out hair_back items (same image as hair_front)
+          .filter((item: any) => {
+            const dispId = item.disp_id || item.id || ''
+            return !dispId.startsWith('hair_back-')
+          })
+          .map((item: any) => {
+            const dispId = item.disp_id || item.id
+            const category = item.category || 'unknown'
+            
+            // Emotes have their image at icon_url/image_url - use directly
+            if (category === 'emote' && (item.icon_url || item.image_url)) {
+              return {
+                id: item._id || dispId,
+                name: item.disp_name || item.name,
+                category,
+                rarity: item.rarity || 'common',
+                imageUrl: item.icon_url || item.image_url,
+              }
+            }
+            
+            // All items go through our proxy first (server handles different URL patterns)
+            // AP fallback URL depends on item type
+            let apImageUrl: string
+            
+            if (dispId.startsWith('cn-')) {
+              // Container - AP can fetch CDN URL with auth
+              apImageUrl = `https://cdn.highrisegame.com/container/${dispId}/full`
+            } else if (dispId.startsWith('bg-')) {
+              // Background - AP can fetch CDN URL with auth
+              apImageUrl = `https://cdn.highrisegame.com/background/${dispId}/full`
+            } else {
+              // Avatar item - AP has internal endpoint
+              apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+            }
+            
+            return {
+              id: item._id || dispId,
+              name: item.disp_name || item.name,
+              category,
+              rarity: item.rarity || 'common',
+              // Always try our proxy first - server handles bg/cn/avatar URL patterns
+              imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`,
+              apImageUrl,
+            }
+          })
         
         data = {
           items,
