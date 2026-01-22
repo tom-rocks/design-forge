@@ -45,7 +45,7 @@ type RefSource = 'drop' | 'items' | 'history'
 
 export default function App() {
   // Auth
-  const { loading: authLoading, authenticated, user, login, logout } = useAuth()
+  const { loading: authLoading, authenticated, user, login } = useAuth()
   
   // State
   const [prompt, setPrompt] = useState('')
@@ -183,7 +183,7 @@ export default function App() {
   
   // Detect aspect ratio from image and set closest match
   const detectAndSetAspectRatio = useCallback((imageUrl: string) => {
-    const img = new Image()
+    const img = document.createElement('img')
     img.onload = () => {
       const ratio = img.width / img.height
       // Find closest matching aspect ratio
@@ -603,7 +603,7 @@ export default function App() {
     if (!result || images.length === 0) return
     
     images.forEach(url => {
-      const img = new Image()
+      const img = document.createElement('img')
       img.onload = () => setLoadedImages(prev => new Set(prev).add(url))
       img.onerror = () => setFailedImages(prev => new Set(prev).add(url))
       img.src = url
