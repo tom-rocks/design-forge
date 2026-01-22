@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -42,6 +42,18 @@ interface GenerationResult {
    ============================================ */
 
 type RefSource = 'drop' | 'items' | 'history'
+
+// Helper to get aspect ratio icon dimensions
+const getAspectDimensions = (ratio: string | undefined) => {
+  switch (ratio) {
+    case '1:1': return { w: 10, h: 10 }
+    case '3:4': return { w: 9, h: 12 }
+    case '4:3': return { w: 12, h: 9 }
+    case '9:16': return { w: 7, h: 12 }
+    case '16:9': return { w: 12, h: 7 }
+    default: return { w: 10, h: 10 }
+  }
+}
 
 export default function App() {
   // Auth
@@ -98,10 +110,20 @@ export default function App() {
   const [outputLightbox, setOutputLightbox] = useState<string | null>(null)
   
   // Works gallery
+  interface GalleryImage {
+    url: string
+    thumbUrl: string
+    prompt: string
+    id: string
+    mode: 'create' | 'edit'
+    model?: string
+    resolution?: string
+    aspectRatio?: string
+  }
   const [galleryOpen, setGalleryOpen] = useState(false)
-  const [galleryImages, setGalleryImages] = useState<{ url: string; thumbUrl: string; prompt: string; id: string }[]>([])
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
-  const [galleryExpanded, setGalleryExpanded] = useState<{ url: string; prompt: string } | null>(null)
+  const [galleryExpanded, setGalleryExpanded] = useState<GalleryImage | null>(null)
   
   // Abort controller for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -148,7 +170,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json()
         // Flatten all images from all generations, using thumbnails for grid
-        const images: { url: string; thumbUrl: string; prompt: string; id: string }[] = []
+        const images: GalleryImage[] = []
         for (const gen of data.generations || []) {
           // Use generation thumbnail for first image, fall back to full URL
           const thumbBase = gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : null
@@ -156,10 +178,13 @@ export default function App() {
             const fullUrl = `${API_URL}${gen.imageUrls[i]}`
             images.push({
               url: fullUrl,
-              // Use thumbnail for first image of each generation, otherwise use full
               thumbUrl: i === 0 && thumbBase ? thumbBase : fullUrl,
               prompt: gen.prompt,
-              id: `${gen.id}-${i}`
+              id: `${gen.id}-${i}`,
+              mode: gen.mode || 'create',
+              model: gen.model,
+              resolution: gen.resolution,
+              aspectRatio: gen.aspect_ratio
             })
           }
         }
@@ -1327,6 +1352,39 @@ export default function App() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <img src={galleryExpanded.url} alt="Full size" />
+                    {/* Specs bar - same as Works lightbox */}
+                    <div className="lightbox-specs">
+                      <span className="lightbox-spec" title={galleryExpanded.mode === 'edit' ? 'Refined' : 'Created'}>
+                        {galleryExpanded.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+                      </span>
+                      <span className="lightbox-spec-sep">·</span>
+                      <span className="lightbox-spec" title={galleryExpanded.model === 'flash' ? 'Flash' : 'Pro'}>
+                        {galleryExpanded.model === 'flash' ? <Zap className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
+                        {galleryExpanded.model === 'flash' ? 'Flash' : 'Pro'}
+                      </span>
+                      <span className="lightbox-spec-sep">·</span>
+                      {galleryExpanded.aspectRatio && (
+                        <>
+                          <span className="lightbox-spec" title={`Ratio ${galleryExpanded.aspectRatio}`}>
+                            <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
+                              <rect 
+                                x={(14 - getAspectDimensions(galleryExpanded.aspectRatio).w) / 2} 
+                                y={(14 - getAspectDimensions(galleryExpanded.aspectRatio).h) / 2} 
+                                width={getAspectDimensions(galleryExpanded.aspectRatio).w} 
+                                height={getAspectDimensions(galleryExpanded.aspectRatio).h} 
+                                fill="currentColor" 
+                                rx="1" 
+                              />
+                            </svg>
+                            {galleryExpanded.aspectRatio}
+                          </span>
+                          <span className="lightbox-spec-sep">·</span>
+                        </>
+                      )}
+                      <span className="lightbox-spec" title={`Resolution ${galleryExpanded.resolution || '1K'}`}>
+                        {galleryExpanded.resolution || '1K'}
+                      </span>
+                    </div>
                     <div className="lightbox-footer">
                       <div className="lightbox-prompt">{galleryExpanded.prompt}</div>
                       <div className="lightbox-actions">
@@ -1384,7 +1442,7 @@ export default function App() {
                         <div
                           key={img.id}
                           className="gallery-item"
-                          onClick={() => setGalleryExpanded({ url: img.url, prompt: img.prompt })}
+                          onClick={() => setGalleryExpanded(img)}
                         >
                           <img src={img.thumbUrl} alt={img.prompt} loading="lazy" />
                         </div>
