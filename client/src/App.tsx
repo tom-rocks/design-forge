@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, Image, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -97,6 +97,12 @@ export default function App() {
   // Output lightbox
   const [outputLightbox, setOutputLightbox] = useState<string | null>(null)
   
+  // Works gallery
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [galleryImages, setGalleryImages] = useState<{ url: string; prompt: string; id: string }[]>([])
+  const [galleryLoading, setGalleryLoading] = useState(false)
+  const [galleryIndex, setGalleryIndex] = useState(0)
+  
   // Abort controller for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null)
   
@@ -130,6 +136,35 @@ export default function App() {
   // Scroll to alloy/crucible block
   const scrollToAlloy = useCallback(() => {
     crucibleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+  
+  // Open works gallery
+  const openGallery = useCallback(async () => {
+    setGalleryOpen(true)
+    setGalleryLoading(true)
+    setGalleryIndex(0)
+    try {
+      const res = await fetch(`${API_URL}/api/generations`, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        // Flatten all images from all generations
+        const images: { url: string; prompt: string; id: string }[] = []
+        for (const gen of data.generations || []) {
+          for (let i = 0; i < gen.imageUrls.length; i++) {
+            images.push({
+              url: `${API_URL}${gen.imageUrls[i]}`,
+              prompt: gen.prompt,
+              id: `${gen.id}-${i}`
+            })
+          }
+        }
+        setGalleryImages(images)
+      }
+    } catch (e) {
+      console.error('Failed to load gallery:', e)
+    } finally {
+      setGalleryLoading(false)
+    }
   }, [])
   
   // Available aspect ratios and their decimal values
@@ -610,6 +645,9 @@ export default function App() {
         <img src="/forge_logo.svg" alt="Design Forge" className="app-logo" />
         
         <div className="app-auth">
+          <button onClick={openGallery} className="btn btn-ghost gallery-btn" title="View all works">
+            <Image className="w-4 h-4" />
+          </button>
           <div className="auth-user">
             {user?.avatarUrl ? (
               <img src={user.avatarUrl} alt={user.name || ''} className="auth-avatar" />
@@ -617,9 +655,6 @@ export default function App() {
               <User className="auth-avatar-icon" />
             )}
             <span className="auth-name">{user?.name || user?.email}</span>
-            <button onClick={logout} className="btn btn-ghost auth-logout" title="Sign out">
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </header>
@@ -1253,6 +1288,84 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Works Gallery Lightbox */}
+      <AnimatePresence>
+        {galleryOpen && (
+          <motion.div 
+            className="gallery-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setGalleryOpen(false)}
+          >
+            <motion.div 
+              className="gallery-container"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="gallery-header">
+                <h2>Your Works</h2>
+                <button className="gallery-close" onClick={() => setGalleryOpen(false)}>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="gallery-content">
+                {galleryLoading ? (
+                  <div className="gallery-loading">Loading...</div>
+                ) : galleryImages.length === 0 ? (
+                  <div className="gallery-empty">No works yet. Start creating!</div>
+                ) : (
+                  <div className="gallery-grid">
+                    {galleryImages.map((img, i) => (
+                      <motion.div
+                        key={img.id}
+                        className={`gallery-item ${galleryIndex === i ? 'selected' : ''}`}
+                        onClick={() => setGalleryIndex(i)}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.02 }}
+                      >
+                        <img src={img.url} alt={img.prompt} loading="lazy" />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {galleryImages.length > 0 && galleryImages[galleryIndex] && (
+                <div className="gallery-preview">
+                  <img src={galleryImages[galleryIndex].url} alt="Preview" />
+                  <div className="gallery-preview-prompt">{galleryImages[galleryIndex].prompt}</div>
+                  <div className="gallery-preview-actions">
+                    <button 
+                      className="lightbox-btn"
+                      onClick={() => {
+                        setEditImage({ url: galleryImages[galleryIndex].url })
+                        detectAndSetAspectRatio(galleryImages[galleryIndex].url)
+                        setRefineExpanded(false)
+                        setGalleryOpen(false)
+                        setTimeout(scrollToRefine, 100)
+                      }}
+                      title="Refine this image"
+                    >
+                      <Hammer className="w-5 h-5" />
+                    </button>
+                    <button 
+                      className="lightbox-btn"
+                      onClick={() => downloadOutputImage(galleryImages[galleryIndex].url)}
+                      title="Download"
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
