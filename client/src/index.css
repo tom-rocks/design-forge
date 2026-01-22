@@ -300,6 +300,7 @@ body {
   position: relative;
   border-radius: var(--radius-lg);
   padding: 6px;
+  overflow: hidden; /* Clip children to rounded corners */
   background: linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%);
   box-shadow:
     inset 2px 2px 4px rgba(0,0,0,0.15),
@@ -669,6 +670,7 @@ body {
   position: relative;
   border-radius: var(--radius-lg);
   padding: 6px;
+  overflow: hidden; /* Clip children to rounded corners */
   background: linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%);
   box-shadow:
     inset 2px 2px 4px rgba(0,0,0,0.15),
@@ -1592,6 +1594,7 @@ body {
   position: relative;
   border-radius: var(--radius-lg);
   padding: 6px;
+  overflow: hidden; /* Clip children to rounded corners */
   /* Base styles - Framer Motion handles animation */
 }
 
@@ -1712,6 +1715,7 @@ body {
   position: relative;
   border-radius: var(--radius-lg);
   padding: 6px;
+  overflow: hidden; /* Clip children to rounded corners */
   /* Base styles - Framer Motion handles animation */
 }
 
