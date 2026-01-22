@@ -107,6 +107,9 @@ export default function App() {
   
   // Ref for refine panel (scroll target when selecting image to refine)
   const refineRef = useRef<HTMLDivElement>(null)
+  
+  // Ref for crucible/alloy block (scroll target when generating)
+  const crucibleRef = useRef<HTMLDivElement>(null)
 
   // Mode is derived from whether there's an edit image
   const mode: Mode = editImage ? 'edit' : 'create'
@@ -121,6 +124,11 @@ export default function App() {
   // Scroll to refine panel
   const scrollToRefine = useCallback(() => {
     refineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+  
+  // Scroll to alloy/crucible block
+  const scrollToAlloy = useCallback(() => {
+    crucibleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
   
   // Available aspect ratios and their decimal values
@@ -310,6 +318,9 @@ export default function App() {
     setFailedImages(new Set())
     setPipeFill(0)
     setOutputHot(false)
+    
+    // Scroll to show the alloy block (generation progress area)
+    setTimeout(scrollToAlloy, 100)
 
     if (window.location.hostname === 'localhost') {
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -390,7 +401,7 @@ export default function App() {
       setIsGenerating(false)
       abortControllerRef.current = null
     }
-  }, [prompt, references, editImage, canGenerate, isGenerating, genModel, resolution, aspectRatio, outputCount])
+  }, [prompt, references, editImage, canGenerate, isGenerating, genModel, resolution, aspectRatio, outputCount, scrollToAlloy])
 
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
@@ -607,7 +618,19 @@ export default function App() {
         {/* INPUT BLOCK */}
         <div className="forge-block forge-input-block">
           {/* REFINE PANEL - Always visible at top */}
-          <div className="refine-panel" ref={refineRef}>
+          <motion.div 
+            className="refine-panel" 
+            ref={refineRef}
+            animate={{
+              background: editImage 
+                ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
+                : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
+              boxShadow: editImage
+                ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
+                : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            transition={{ duration: editImage ? 0.8 : 1.5, ease: 'easeOut' }}
+          >
             {refineExpanded ? (
               // Expanded - show picker (and image preview if selected)
               <Panel>
@@ -719,10 +742,11 @@ export default function App() {
                 </PanelHeader>
               </Panel>
             )}
-          </div>
+          </motion.div>
 
           {/* CRUCIBLE - References panel with hot border when forging */}
           <motion.div 
+            ref={crucibleRef}
             className="crucible-frame"
             animate={{
               background: pipeFill > 0 
