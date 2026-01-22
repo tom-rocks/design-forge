@@ -48,6 +48,17 @@
   --radius-lg: 8px;
 }
 
+/* Scale up UI slightly for non-Retina/low-DPI displays */
+@media (-webkit-max-device-pixel-ratio: 1.5), (max-resolution: 144dpi) {
+  html {
+    font-size: 17px; /* Bump from default 16px */
+  }
+  
+  .app {
+    zoom: 1.08; /* Subtle scale increase */
+  }
+}
+
 * {
   box-sizing: border-box;
 }
