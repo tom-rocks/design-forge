@@ -646,9 +646,21 @@ body {
 }
 
 
-/* Refine panel - always visible at top */
+/* Refine panel - always visible at top, matches crucible-frame style */
 .refine-panel {
   margin-bottom: 12px;
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  background: linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%);
+  box-shadow:
+    inset 2px 2px 4px rgba(0,0,0,0.15),
+    inset -1px -1px 2px rgba(255,255,255,0.3),
+    0 2px 4px rgba(0,0,0,0.1);
+}
+
+.refine-panel .panel {
+  border-radius: var(--radius-md);
 }
 
 .edit-image-preview {
