@@ -57,7 +57,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
-  const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs'>('refs') // Which dropzone receives paste
+  const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
   const [refSource, setRefSource] = useState<RefSource>('drop')
   const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
