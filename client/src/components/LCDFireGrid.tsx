@@ -180,6 +180,9 @@ export function LCDFireGrid({
     gap: `${gap}px`,
     background: '#1a1918',
     padding: `${gap}px`,
+    // Force GPU rendering for consistent subpixel handling
+    transform: 'translateZ(0)',
+    willChange: 'contents',
   }), [cols, rows, dotSize, gap])
   
   return (
