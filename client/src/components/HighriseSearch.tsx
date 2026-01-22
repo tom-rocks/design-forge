@@ -198,6 +198,13 @@ export default function HighriseSearch({
           offset: currentPage * 40,
         })
         
+        // Clothing categories that support crisp=1 for higher quality images
+        const CLOTHING_CATEGORIES = [
+          'shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+          'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+          'gloves', 'watch', 'sock'
+        ]
+        
         // Transform AP response to our format
         // Route ALL items through our proxy first - server knows correct CDN URLs
         // Falls back to AP proxy if server can't fetch (auth required, new pipeline, etc.)
@@ -210,6 +217,7 @@ export default function HighriseSearch({
           .map((item: any) => {
             const dispId = item.disp_id || item.id
             const category = item.category || 'unknown'
+            const isClothing = CLOTHING_CATEGORIES.includes(category)
             
             // Emotes have their image at icon_url/image_url - use directly if available
             if (category === 'emote') {
@@ -226,7 +234,6 @@ export default function HighriseSearch({
               // No icon_url - will be filtered by failed image handler
             }
             
-            // All items go through our proxy first (server handles different URL patterns)
             // AP fallback URL depends on item type
             let apImageUrl: string
             
@@ -238,16 +245,22 @@ export default function HighriseSearch({
               apImageUrl = `https://cdn.highrisegame.com/background/${dispId}/full`
             } else {
               // Avatar item - AP has internal endpoint
-              apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+              // Clothing items use ?crisp=1 for higher quality
+              apImageUrl = `https://production-ap.highrise.game/avataritem/front/${dispId}.png${isClothing ? '?crisp=1' : ''}`
             }
+            
+            // For clothing items in AP context, use crisp AP URL directly
+            // For other items, try our proxy first (server handles different URL patterns)
+            const primaryImageUrl = (useAPBridge && isClothing && !dispId.startsWith('cn-') && !dispId.startsWith('bg-'))
+              ? apImageUrl  // Use crisp AP URL directly for clothing when in AP
+              : `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
             
             return {
               id: item._id || dispId,
               name: item.disp_name || item.name,
               category,
               rarity: item.rarity || 'common',
-              // Always try our proxy first - server handles bg/cn/avatar URL patterns
-              imageUrl: `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`,
+              imageUrl: primaryImageUrl,
               apImageUrl,
             }
           })
