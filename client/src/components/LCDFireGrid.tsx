@@ -7,8 +7,8 @@ interface LCDFireGridProps {
   dotSize?: number
   gap?: number
   className?: string
-  /** Direction fire spreads when igniting: 'left' = from right edge toward left, 'right' = from left edge toward right */
-  spreadDirection?: 'left' | 'right' | 'none'
+  /** Direction fire spreads when igniting: 'left' = from right toward left, 'right' = from left toward right, 'center' = from center outward */
+  spreadDirection?: 'left' | 'right' | 'center' | 'none'
 }
 
 // Fire color palette
@@ -48,15 +48,17 @@ export function LCDFireGrid({
     if (active && !wasActiveRef.current && spreadDirection !== 'none') {
       // Just became active - start ignition spread
       setIgnitionProgress(0)
-      const ignitionDuration = 600 // ms to fully ignite
+      const ignitionDuration = spreadDirection === 'center' ? 800 : 600 // longer for center spread
       const startTime = Date.now()
+      // For center spread, max progress is half the columns (distance from center to edge)
+      const maxProgress = spreadDirection === 'center' ? Math.ceil(cols / 2) : cols
       
       const spread = () => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(1, elapsed / ignitionDuration)
         // Ease out for natural flame spread
         const eased = 1 - Math.pow(1 - progress, 2)
-        setIgnitionProgress(Math.floor(eased * cols))
+        setIgnitionProgress(Math.floor(eased * maxProgress))
         
         if (progress < 1) {
           requestAnimationFrame(spread)
@@ -79,9 +81,14 @@ export function LCDFireGrid({
     if (spreadDirection === 'right') {
       // Fire spreads from left (0) to right (cols-1)
       return x < ignitionProgress
-    } else {
+    } else if (spreadDirection === 'left') {
       // Fire spreads from right (cols-1) to left (0)
       return x >= (cols - ignitionProgress)
+    } else {
+      // Center spread - fire spreads from center outward to both edges
+      const center = Math.floor(cols / 2)
+      const distanceFromCenter = Math.abs(x - center)
+      return distanceFromCenter < ignitionProgress
     }
   }
   

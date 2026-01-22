@@ -774,7 +774,7 @@ export default function App() {
           >
             {/* LCD Status Display */}
             <div className="lcd-screen">
-              <LCDFireGrid active={isGenerating} cols={70} rows={3} dotSize={4} gap={1} />
+              <LCDFireGrid active={isGenerating} cols={70} rows={3} dotSize={4} gap={1} spreadDirection="center" />
               <div className="lcd-refs">
                 {[...Array(14)].map((_, i) => (
                   <div 
