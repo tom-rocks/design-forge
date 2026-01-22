@@ -2452,10 +2452,16 @@ body {
 
 .gallery-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.gallery-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .gallery-header h2 {
@@ -2474,19 +2480,17 @@ body {
 }
 
 .gallery-search {
-  flex: 1;
-  max-width: 300px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: var(--surface-inset);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
 }
 
 .gallery-search .search-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   color: var(--text-light);
   flex-shrink: 0;
 }
@@ -2496,7 +2500,7 @@ body {
   border: none;
   background: transparent;
   padding: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text);
   min-width: 0;
 }

@@ -1428,7 +1428,12 @@ export default function App() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="gallery-header">
-                  <h2><span className="btn-icon icon-works" /> Past Works</h2>
+                  <div className="gallery-header-top">
+                    <h2><span className="btn-icon icon-works" /> Past Works</h2>
+                    <button className="gallery-close" onClick={() => setGalleryOpen(false)}>
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                   <div className="gallery-search">
                     <Search className="search-icon" />
                     <input
@@ -1439,9 +1444,6 @@ export default function App() {
                       className="input"
                     />
                   </div>
-                  <button className="gallery-close" onClick={() => setGalleryOpen(false)}>
-                    <X className="w-5 h-5" />
-                  </button>
                 </div>
                 <div className="gallery-content">
                   {galleryLoading ? (
