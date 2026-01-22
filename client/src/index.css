@@ -1837,6 +1837,26 @@ body {
   padding: 10px;
   background: var(--surface-inset);
   border-radius: var(--radius-md);
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.highrise-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.highrise-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.highrise-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.highrise-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .highrise-item {
@@ -2103,6 +2123,26 @@ body {
   padding: 10px;
   background: var(--surface-inset);
   border-radius: var(--radius-md);
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.history-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.history-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .history-item {
@@ -2807,6 +2847,26 @@ body {
 .dashboard-panel .panel-body {
   flex: 1;
   overflow-y: auto;
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.dashboard-panel .panel-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-panel .panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-panel .panel-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.dashboard-panel .panel-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* Chart */
