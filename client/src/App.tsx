@@ -608,24 +608,12 @@ export default function App() {
         <div className="forge-block forge-input-block">
           {/* REFINE PANEL - Always visible at top */}
           <div className="refine-panel" ref={refineRef}>
-            {editImage ? (
-              // Has image - show it prominently
-              <div className="edit-image-preview">
-                <img src={editImage.url} alt="Image to refine" />
-                <button 
-                  onClick={() => setEditImage(null)} 
-                  className="edit-image-remove"
-                  title="Remove image"
-                >
-                  ×
-                </button>
-              </div>
-            ) : refineExpanded ? (
-              // Expanded - show picker
+            {refineExpanded ? (
+              // Expanded - show picker (and image preview if selected)
               <Panel>
                 <PanelHeader className="collapsible" onClick={() => setRefineExpanded(false)}>
                   <span className="panel-icon icon-refinement" />
-                  Refine <span className="header-subtitle">select image to edit</span>
+                  Refine <span className="header-subtitle">{editImage ? 'image selected' : 'select image to edit'}</span>
                   <div className="header-right">
                     <motion.div 
                       animate={{ rotate: 180 }}
@@ -633,9 +621,23 @@ export default function App() {
                     >
                       <ChevronDown className="w-4 h-4" />
                     </motion.div>
+                    <span className={`led ${editImage ? 'on' : ''}`} />
                   </div>
                 </PanelHeader>
                 <PanelBody>
+                  {/* Show selected image preview at top if exists */}
+                  {editImage && (
+                    <div className="edit-image-preview" style={{ marginBottom: 12 }}>
+                      <img src={editImage.url} alt="Image to refine" />
+                      <button 
+                        onClick={() => setEditImage(null)} 
+                        className="edit-image-remove"
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
                   <div className="btn-group refine-tabs">
                     <button 
                       className={`btn ${refineSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
@@ -677,7 +679,6 @@ export default function App() {
                         onSingleSelect={(item) => { 
                           setEditImage({ url: item.imageUrl })
                           detectAndSetAspectRatio(item.imageUrl)
-                          setRefineExpanded(false) 
                         }} 
                         bridgeConnected={bridgeConnected}
                         useAPBridge={inAPContext}
@@ -693,7 +694,6 @@ export default function App() {
                             thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
                           })
                           detectAndSetAspectRatio(url)
-                          setRefineExpanded(false)
                         }}
                         isActive={refineExpanded}
                       />
@@ -701,6 +701,25 @@ export default function App() {
                   </div>
                 </PanelBody>
               </Panel>
+            ) : editImage ? (
+              // Collapsed with image - show image prominently
+              <div className="edit-image-preview">
+                <img src={editImage.url} alt="Image to refine" />
+                <button 
+                  onClick={() => setEditImage(null)} 
+                  className="edit-image-remove"
+                  title="Remove image"
+                >
+                  ×
+                </button>
+                <button 
+                  onClick={() => setRefineExpanded(true)} 
+                  className="edit-image-change"
+                  title="Change image"
+                >
+                  Change
+                </button>
+              </div>
             ) : (
               // Collapsed - show panel header like Alloy
               <Panel>
