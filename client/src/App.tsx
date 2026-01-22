@@ -166,7 +166,7 @@ export default function App() {
     setGalleryLoading(true)
     setGalleryExpanded(null)
     try {
-      const res = await fetch(`${API_URL}/api/generations`, { credentials: 'include' })
+      const res = await fetch(`${API_URL}/api/generations/my`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         // Flatten all images from all generations, using thumbnails for grid
