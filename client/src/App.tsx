@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Flame, Hammer, Plus, Download } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, LogOut, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -48,10 +48,10 @@ export default function App() {
   const { loading: authLoading, authenticated, user, login, logout } = useAuth()
   
   // State
-  const [mode, setMode] = useState<Mode>('create')
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
+  const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +108,8 @@ export default function App() {
   // Ref for refine panel (scroll target when selecting image to refine)
   const refineRef = useRef<HTMLDivElement>(null)
 
+  // Mode is derived from whether there's an edit image
+  const mode: Mode = editImage ? 'edit' : 'create'
   const canGenerate = prompt.trim() && (mode === 'create' || editImage?.url)
   
   // Scroll to prompt and focus
@@ -184,15 +186,20 @@ export default function App() {
     // Collapse alloy panel and tabs - references will show in the "Active" section
     setAlloyExpanded(false)
     setRefSourceCollapsed(true)
+    setRefineExpanded(false)
     
     // Clear existing references first
     setReferences([])
     
-    // Stagger the settings restoration for visual effect
-    setTimeout(() => {
-      // Set mode
-      if (config.mode) setMode(config.mode)
-    }, 100)
+    // For edit mode, set the edit image (this derives mode automatically)
+    if (config.mode === 'edit' && config.editImageUrl) {
+      setTimeout(() => {
+        setEditImage({ url: `${API_URL}${config.editImageUrl}` })
+      }, 100)
+    } else {
+      // Clear edit image for create mode
+      setEditImage(null)
+    }
     
     setTimeout(() => {
       // Set model
@@ -243,17 +250,6 @@ export default function App() {
           }])
         }, 500 + (i * 200)) // Start at 500ms, add one every 200ms
       })
-    }
-    
-    // For edit mode, set the edit image
-    if (config.mode === 'edit' && config.editImageUrl) {
-      setTimeout(() => {
-        setEditImage({ url: `${API_URL}${config.editImageUrl}` })
-        setRefineSource('drop') // Ensure we're on drop mode to show the image
-      }, 150)
-    } else {
-      // Clear edit image if not in edit mode
-      setEditImage(null)
     }
     
     // Scroll to prompt
@@ -358,7 +354,7 @@ export default function App() {
       setIsGenerating(false)
       abortControllerRef.current = null
     }
-  }, [prompt, references, mode, editImage, canGenerate, isGenerating, genModel, resolution, aspectRatio, outputCount])
+  }, [prompt, references, editImage, canGenerate, isGenerating, genModel, resolution, aspectRatio, outputCount])
 
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
@@ -572,98 +568,102 @@ export default function App() {
 
         {/* INPUT BLOCK */}
         <div className="forge-block forge-input-block">
-          <motion.div
-            className="edit-panel-wrapper"
-            ref={refineRef}
-            animate={{ 
-              gridTemplateRows: mode === 'edit' ? '1fr' : '0fr',
-              marginTop: mode === 'edit' ? 12 : 0
-            }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <div className="edit-panel-inner">
+          {/* REFINE PANEL - Always visible at top */}
+          <div className="refine-panel" ref={refineRef}>
+            {editImage ? (
+              // Has image - show it prominently
+              <div className="edit-image-preview">
+                <img src={editImage.url} alt="Image to refine" />
+                <button 
+                  onClick={() => setEditImage(null)} 
+                  className="edit-image-remove"
+                  title="Remove image"
+                >
+                  ×
+                </button>
+              </div>
+            ) : refineExpanded ? (
+              // Expanded - show picker
               <Panel>
-                <PanelHeader>
+                <PanelHeader onClick={() => setRefineExpanded(false)}>
                   <span className="panel-icon icon-refinement" />
-                  Refine <span className="header-subtitle">edit an image</span>
+                  Refine <span className="header-subtitle">select image to edit</span>
                   <div className="header-right">
-                    <span className={`led ${mode === 'edit' && prompt.trim() && !editImage?.url && !isGenerating ? 'blink' : editImage?.url ? 'on' : ''}`} />
+                    <span className="collapse-icon">−</span>
                   </div>
                 </PanelHeader>
                 <PanelBody>
-                  {editImage ? (
-                    <div className="edit-image-preview">
-                      <img src={editImage.url} alt="Image to refine" />
-                      <button 
-                        onClick={() => setEditImage(null)} 
-                        className="edit-image-remove"
-                        title="Remove image"
+                  <div className="btn-group refine-tabs">
+                    <button 
+                      className={`btn ${refineSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
+                      onClick={() => setRefineSource('drop')}
+                    >
+                      <span className="btn-icon icon-drop" />
+                      Drop
+                    </button>
+                    <button 
+                      className={`btn ${refineSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
+                      onClick={() => setRefineSource('items')}
+                    >
+                      <span className="btn-icon icon-items" />
+                      Items
+                    </button>
+                    <button 
+                      className={`btn ${refineSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
+                      onClick={() => setRefineSource('history')}
+                    >
+                      <span className="btn-icon icon-works" />
+                      Works
+                    </button>
+                  </div>
+                  <div className="refine-content">
+                    {refineSource === 'drop' && (
+                      <div 
+                        className={`edit-dropzone ${isDraggingRefine ? 'dragging' : ''} ${activeDropTarget === 'refine' ? 'active' : ''}`}
+                        onClick={() => setActiveDropTarget('refine')}
+                        onDragOver={(e) => { e.preventDefault(); setIsDraggingRefine(true) }}
+                        onDragLeave={() => setIsDraggingRefine(false)}
+                        onDrop={handleRefineDrop}
                       >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="btn-group refine-tabs">
-                        <button 
-                          className={`btn ${refineSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
-                          onClick={() => setRefineSource('drop')}
-                        >
-                          <span className="btn-icon icon-drop" />
-                          Drop
-                        </button>
-                        <button 
-                          className={`btn ${refineSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
-                          onClick={() => setRefineSource('items')}
-                        >
-                          <span className="btn-icon icon-items" />
-                          Items
-                        </button>
-                        <button 
-                          className={`btn ${refineSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
-                          onClick={() => setRefineSource('history')}
-                        >
-                          <span className="btn-icon icon-works" />
-                          Works
-                        </button>
+                        {isDraggingRefine ? 'Drop to refine' : activeDropTarget === 'refine' ? 'Paste here (Ctrl+V)' : 'Click to paste here'}
                       </div>
-                      <div className="refine-content">
-                        {refineSource === 'drop' && (
-                          <div 
-                            className={`edit-dropzone ${isDraggingRefine ? 'dragging' : ''} ${activeDropTarget === 'refine' ? 'active' : ''}`}
-                            onClick={() => setActiveDropTarget('refine')}
-                            onDragOver={(e) => { e.preventDefault(); setIsDraggingRefine(true) }}
-                            onDragLeave={() => setIsDraggingRefine(false)}
-                            onDrop={handleRefineDrop}
-                          >
-                            {isDraggingRefine ? 'Drop to refine' : activeDropTarget === 'refine' ? 'Paste here (Ctrl+V)' : 'Click to paste here'}
-                          </div>
-                        )}
-                        {refineSource === 'items' && (
-                          <HighriseSearch 
-                            singleSelect
-                            onSingleSelect={(item) => setEditImage({ url: item.imageUrl })} 
-                            bridgeConnected={bridgeConnected}
-                            useAPBridge={inAPContext}
-                          />
-                        )}
-                        {refineSource === 'history' && (
-                          <HistoryGrid 
-                            singleSelect
-                            onSingleSelect={(gen) => setEditImage({ 
-                              url: `${API_URL}${gen.imageUrls[0]}`,
-                              thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
-                            })}
-                            isActive={mode === 'edit'}
-                          />
-                        )}
-                      </div>
-                    </>
-                  )}
+                    )}
+                    {refineSource === 'items' && (
+                      <HighriseSearch 
+                        singleSelect
+                        onSingleSelect={(item) => { setEditImage({ url: item.imageUrl }); setRefineExpanded(false) }} 
+                        bridgeConnected={bridgeConnected}
+                        useAPBridge={inAPContext}
+                      />
+                    )}
+                    {refineSource === 'history' && (
+                      <HistoryGrid 
+                        singleSelect
+                        onSingleSelect={(gen) => { 
+                          setEditImage({ 
+                            url: `${API_URL}${gen.imageUrls[0]}`,
+                            thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
+                          })
+                          setRefineExpanded(false)
+                        }}
+                        isActive={refineExpanded}
+                      />
+                    )}
+                  </div>
                 </PanelBody>
               </Panel>
-            </div>
-          </motion.div>
+            ) : (
+              // Collapsed - show add button
+              <button 
+                className="refine-add-btn"
+                onClick={() => setRefineExpanded(true)}
+              >
+                <span className="panel-icon icon-refinement" />
+                <span>Add image to refine</span>
+                <span className="collapse-icon">＋</span>
+              </button>
+            )}
+          </div>
 
           {/* CRUCIBLE - References panel with hot border when forging */}
           <motion.div 
@@ -809,7 +809,7 @@ export default function App() {
                         onReplay={handleReplay}
                         onRefine={(url) => {
                           setEditImage({ url })
-                          setMode('edit')
+                          setRefineExpanded(false) // Collapse picker since we have image
                           setTimeout(scrollToRefine, 100)
                         }}
                       />
@@ -954,7 +954,7 @@ export default function App() {
                               className="output-action-btn"
                               onClick={() => {
                                 setEditImage({ url })
-                                setMode('edit')
+                                setRefineExpanded(false)
                                 setTimeout(scrollToRefine, 100)
                               }}
                               title="Refine this image"
@@ -1087,26 +1087,6 @@ export default function App() {
           
           {/* Main input row */}
           <div className="floating-prompt-row">
-            {/* Mode buttons - stacked */}
-            <div className="floating-mode-group">
-              <button 
-                className={`floating-mode-btn ${mode === 'create' ? 'active' : ''}`}
-                onClick={() => setMode('create')}
-                disabled={isGenerating}
-              >
-                <Flame className="w-3 h-3" />
-                Create
-              </button>
-              <button 
-                className={`floating-mode-btn ${mode === 'edit' ? 'active' : ''}`}
-                onClick={() => setMode('edit')}
-                disabled={isGenerating}
-              >
-                <Hammer className="w-3 h-3" />
-                Refine
-              </button>
-            </div>
-            
             {/* Prompt input */}
             <div className="floating-prompt-input-wrapper">
               <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
@@ -1159,7 +1139,7 @@ export default function App() {
                     className="lightbox-btn"
                     onClick={() => {
                       setEditImage({ url: outputLightbox })
-                      setMode('edit')
+                      setRefineExpanded(false)
                       setOutputLightbox(null)
                       setTimeout(scrollToRefine, 100)
                     }}
