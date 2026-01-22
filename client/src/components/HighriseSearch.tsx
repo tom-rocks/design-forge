@@ -202,25 +202,19 @@ export default function HighriseSearch({
         // Route ALL items through our proxy first - server knows correct CDN URLs
         // Falls back to AP proxy if server can't fetch (auth required, new pipeline, etc.)
         const items = (result.items || [])
-          // Filter out hair_back items (same image as hair_front)
+          // Filter out items we can't display:
+          // - hair_back items (same image as hair_front)
+          // - emotes (search results don't include icon_url, only single-item fetch does)
           .filter((item: any) => {
             const dispId = item.disp_id || item.id || ''
-            return !dispId.startsWith('hair_back-')
+            const category = item.category || ''
+            if (dispId.startsWith('hair_back-')) return false
+            if (category === 'emote') return false // No reliable image URL in search results
+            return true
           })
           .map((item: any) => {
             const dispId = item.disp_id || item.id
             const category = item.category || 'unknown'
-            
-            // Emotes have their image at icon_url/image_url - use directly
-            if (category === 'emote' && (item.icon_url || item.image_url)) {
-              return {
-                id: item._id || dispId,
-                name: item.disp_name || item.name,
-                category,
-                rarity: item.rarity || 'common',
-                imageUrl: item.icon_url || item.image_url,
-              }
-            }
             
             // All items go through our proxy first (server handles different URL patterns)
             // AP fallback URL depends on item type

@@ -58,8 +58,9 @@ const AVATAR_CATEGORIES = [
   'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
   'gloves', 'watch', 'sock', 'hair_front', 'eye', 'eyebrow',
   'mouth', 'nose', 'body', 'blush', 'freckle', 'mole', 'lashes', 'face_hair',
-  'tattoo', 'aura', 'emote'
+  'tattoo', 'aura'
   // Note: hair_back excluded - same image as hair_front
+  // Note: emote excluded - search results don't include icon_url needed for their images
 ];
 
 // Filter out items without valid images
