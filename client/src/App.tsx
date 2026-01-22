@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame, Search } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame, Search, BarChart3 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -15,6 +15,7 @@ import {
   HistoryGrid,
   type ReplayConfig
 } from './components'
+import { Dashboard } from './Dashboard'
 
 
 
@@ -56,6 +57,26 @@ const getAspectDimensions = (ratio: string | undefined) => {
 }
 
 export default function App() {
+  // Simple routing based on pathname
+  const [currentPage, setCurrentPage] = useState<'forge' | 'dashboard'>(() => {
+    return window.location.pathname === '/dashboard' ? 'dashboard' : 'forge'
+  })
+  
+  // Handle browser navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPage(window.location.pathname === '/dashboard' ? 'dashboard' : 'forge')
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+  
+  const navigateTo = useCallback((page: 'forge' | 'dashboard') => {
+    const path = page === 'dashboard' ? '/dashboard' : '/'
+    window.history.pushState(null, '', path)
+    setCurrentPage(page)
+  }, [])
+  
   // Auth
   const { loading: authLoading, authenticated, user, login } = useAuth()
   
@@ -684,6 +705,11 @@ export default function App() {
     )
   }
 
+  // Dashboard page
+  if (currentPage === 'dashboard') {
+    return <Dashboard onBack={() => navigateTo('forge')} />
+  }
+
   return (
     <div className="app">
       {/* HEADER */}
@@ -694,6 +720,10 @@ export default function App() {
           <button onClick={openGallery} className="btn btn-ghost gallery-btn" title="View all works">
             <span className="btn-icon icon-works" />
             PAST WORKS
+          </button>
+          <button onClick={() => navigateTo('dashboard')} className="btn btn-ghost gallery-btn" title="Operations Dashboard">
+            <BarChart3 className="w-4 h-4" />
+            DASHBOARD
           </button>
           <div className="auth-user">
             {user?.avatarUrl ? (
