@@ -630,7 +630,7 @@ export default function App() {
                         onDragLeave={() => setIsDraggingRefine(false)}
                         onDrop={handleRefineDrop}
                       >
-                        {isDraggingRefine ? 'Drop to refine' : activeDropTarget === 'refine' ? 'Paste here (Ctrl+V)' : 'Click to paste here'}
+                        DROP OR PASTE IMAGE
                       </div>
                     )}
                     {refineSource === 'items' && (
@@ -792,7 +792,7 @@ export default function App() {
                         onDrop={handleDrop}
                       >
                         <span className="dropzone-text">
-                          {isDragging ? 'Drop to add' : activeDropTarget === 'refs' ? 'Paste here (Ctrl+V)' : 'Click to paste here'}
+                          DROP OR PASTE IMAGES
                         </span>
                       </div>
                     </div>

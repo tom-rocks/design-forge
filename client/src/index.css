@@ -712,8 +712,7 @@ body {
 /* Selected as paste target */
 .edit-dropzone.active {
   border-color: var(--accent);
-  border-style: solid;
-  color: var(--text);
+  color: var(--accent);
 }
 
 /* Dragging over */
@@ -1066,11 +1065,10 @@ body {
 /* Selected as paste target */
 .dropzone.active {
   border-color: var(--accent);
-  border-style: solid;
 }
 
 .dropzone.active .dropzone-text {
-  color: var(--text);
+  color: var(--accent);
 }
 
 /* Dragging over */
