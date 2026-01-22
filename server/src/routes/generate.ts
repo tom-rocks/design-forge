@@ -631,6 +631,19 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
           return [];
         }
         
+        // Check for NO_IMAGE finish reason (model refused to generate)
+        const finishReason = responseData?.candidates?.[0]?.finishReason;
+        if (finishReason === 'NO_IMAGE') {
+          addLog('info', { 
+            id, 
+            variation: variationIndex + 1, 
+            note: 'Model returned NO_IMAGE - prompt may be too vague',
+            finishReason
+          });
+          // Return special marker so we can give better error
+          return ['NO_IMAGE_REFUSED'];
+        }
+        
         // Log successful response structure for debugging
         const images = extractImagesFromResponse(responseData);
         if (images.length === 0) {
@@ -640,6 +653,7 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
             note: 'No images in response',
             hasCandidate: !!responseData?.candidates?.[0],
             partsCount: responseData?.candidates?.[0]?.content?.parts?.length || 0,
+            finishReason,
             responsePreview: JSON.stringify(responseData).slice(0, 500)
           });
         }
@@ -656,17 +670,26 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
     const elapsed = Math.round((Date.now() - startTime) / 1000);
     
     // Flatten results and filter out empty arrays
-    const images = variationResults.flat();
+    const allResults = variationResults.flat();
+    
+    // Check if model refused to generate (NO_IMAGE)
+    const refused = allResults.some(r => r === 'NO_IMAGE_REFUSED');
+    const images = allResults.filter(r => r !== 'NO_IMAGE_REFUSED');
     
     addLog('response', { 
       id, 
       elapsed: `${elapsed}s`,
       requestedVariations: variationCount,
       successfulImages: images.length,
+      refused,
     });
     
     if (images.length === 0) {
-      send('error', { error: 'No images generated from any variation', id });
+      if (refused) {
+        send('error', { error: 'Prompt too vague for image generation. Try a more descriptive prompt.', id });
+      } else {
+        send('error', { error: 'No images generated from any variation', id });
+      }
       res.end();
       return;
     }
