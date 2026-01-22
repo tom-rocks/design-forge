@@ -51,6 +51,7 @@ export default function App() {
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
+  const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
@@ -164,6 +165,17 @@ export default function App() {
     }
     img.src = imageUrl
   }, [])
+  
+  // Trigger glow effect when editImage is set, fade after 3 seconds
+  useEffect(() => {
+    if (editImage) {
+      setRefineGlow(true)
+      const timer = setTimeout(() => setRefineGlow(false), 3000)
+      return () => clearTimeout(timer)
+    } else {
+      setRefineGlow(false)
+    }
+  }, [editImage])
   
   // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
@@ -626,10 +638,12 @@ export default function App() {
                 ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
                 : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
               boxShadow: editImage
-                ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
+                ? refineGlow
+                  ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
+                  : 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 2px 4px rgba(0,0,0,0.1)'
                 : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
             }}
-            transition={{ duration: editImage ? 0.8 : 1.5, ease: 'easeOut' }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
           >
             {refineExpanded ? (
               // Expanded - show picker (and image preview if selected)
