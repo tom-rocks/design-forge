@@ -1626,6 +1626,7 @@ body {
   display: flex;
   gap: 1px;
   flex-shrink: 0;
+  margin-left: auto; /* Push refs and everything after to the right */
 }
 
 .lcd-ref-dot {
@@ -1665,7 +1666,6 @@ body {
   display: flex;
   gap: 12px;
   flex-shrink: 0;
-  margin-left: auto; /* Push to far right */
 }
 
 .lcd-label {
