@@ -1426,7 +1426,7 @@ export default function App() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="gallery-header">
-                  <h2>Your Works</h2>
+                  <h2><span className="btn-icon icon-works" /> Past Works</h2>
                   <button className="gallery-close" onClick={() => setGalleryOpen(false)}>
                     <X className="w-5 h-5" />
                   </button>
