@@ -80,6 +80,10 @@ export default function App() {
   // Auth
   const { loading: authLoading, authenticated, user, login } = useAuth()
   
+  // Admin users who can see the dashboard button
+  const ADMIN_IDS = ['113838337580596527498'] // Add your Google user ID here
+  const isAdmin = user?.id && ADMIN_IDS.includes(user.id)
+  
   // State
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
@@ -721,10 +725,12 @@ export default function App() {
             <span className="btn-icon icon-works" />
             PAST WORKS
           </button>
-          <button onClick={() => navigateTo('dashboard')} className="btn btn-ghost gallery-btn" title="Operations Dashboard">
-            <BarChart3 className="w-4 h-4" />
-            DASHBOARD
-          </button>
+          {isAdmin && (
+            <button onClick={() => navigateTo('dashboard')} className="btn btn-ghost gallery-btn" title="Operations Dashboard">
+              <BarChart3 className="w-4 h-4" />
+              DASHBOARD
+            </button>
+          )}
           <div className="auth-user">
             {user?.avatarUrl ? (
               <img src={user.avatarUrl} alt={user.name || ''} className="auth-avatar" />
