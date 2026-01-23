@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Loader2, Plus, FolderPlus, LogIn, X, Download } from 'lucide-react'
+import { Loader2, Plus, FolderPlus, LogIn, X, Download, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
@@ -133,6 +133,8 @@ export function Favorites({
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const [lightbox, setLightbox] = useState<Favorite | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
+  const [addingToFolder, setAddingToFolder] = useState(false)
+  const [selectedForFolder, setSelectedForFolder] = useState<Set<string>>(new Set())
   
   // Reset image loaded state when lightbox changes
   useEffect(() => {
@@ -283,6 +285,49 @@ export function Favorites({
     } catch (e) {
       console.error('[Favorites] Error moving to root:', e)
     }
+  }
+  
+  // Move multiple favorites to current folder
+  const handleAddToFolder = async () => {
+    if (!expandedFolder || selectedForFolder.size === 0) return
+    
+    try {
+      // Update each selected item
+      await Promise.all(
+        Array.from(selectedForFolder).map(favoriteId =>
+          fetch(`${API_URL}/api/favorites/${favoriteId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ folderId: expandedFolder }),
+          })
+        )
+      )
+      
+      // Update local state
+      setFavorites(prev => prev.map(f => 
+        selectedForFolder.has(f.id) ? { ...f, folder_id: expandedFolder } : f
+      ))
+      
+      // Reset selection mode
+      setAddingToFolder(false)
+      setSelectedForFolder(new Set())
+    } catch (e) {
+      console.error('[Favorites] Error adding to folder:', e)
+    }
+  }
+  
+  // Toggle item selection for adding to folder
+  const toggleFolderSelection = (favoriteId: string) => {
+    setSelectedForFolder(prev => {
+      const next = new Set(prev)
+      if (next.has(favoriteId)) {
+        next.delete(favoriteId)
+      } else {
+        next.add(favoriteId)
+      }
+      return next
+    })
   }
   
   // Delete favorite
@@ -607,6 +652,17 @@ export function Favorites({
               />
             ))}
             
+            {/* Add to folder button (folder view only) */}
+            {expandedFolder && rootItems.length > 0 && (
+              <button 
+                className="folder-add-item"
+                onClick={() => setAddingToFolder(true)}
+                title="Add items to this folder"
+              >
+                <Plus className="w-6 h-6" />
+              </button>
+            )}
+            
             {/* Create folder button (root view only) */}
             {!expandedFolder && (
               <div className="favorites-add-folder">
@@ -679,6 +735,65 @@ export function Favorites({
           <span style={{ fontSize: '12px', opacity: 0.7 }}>Star items or works to add them here</span>
         </div>
       )}
+      
+      {/* Add to folder picker overlay */}
+      <AnimatePresence>
+        {addingToFolder && (
+          <motion.div
+            className="folder-picker-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="folder-picker"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="folder-picker-header">
+                <span>Select items to add</span>
+                <div className="folder-picker-actions">
+                  {selectedForFolder.size > 0 && (
+                    <button 
+                      className="specs-btn"
+                      onClick={handleAddToFolder}
+                    >
+                      <Check className="w-3 h-3" />
+                      Add {selectedForFolder.size}
+                    </button>
+                  )}
+                  <button 
+                    className="specs-btn"
+                    onClick={() => {
+                      setAddingToFolder(false)
+                      setSelectedForFolder(new Set())
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div className="folder-picker-grid">
+                {rootItems.map(favorite => (
+                  <div
+                    key={favorite.id}
+                    className={`folder-picker-item ${selectedForFolder.has(favorite.id) ? 'selected' : ''}`}
+                    onClick={() => toggleFolderSelection(favorite.id)}
+                  >
+                    <img src={getFavoriteThumbnailUrl(favorite)} alt="" />
+                    {selectedForFolder.has(favorite.id) && (
+                      <div className="folder-picker-check">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Lightbox - same pattern as HistoryGrid */}
       <AnimatePresence>
