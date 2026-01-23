@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { X, Expand } from 'lucide-react'
+import { X, Expand, FolderOutput } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite } from './Favorites'
 
@@ -12,6 +12,7 @@ interface FavoriteItemProps {
   onClick: () => void
   onDelete: () => void
   onExpand: () => void
+  onMoveToRoot?: () => void  // Only passed when inside a folder
   onImageFailed?: (id: string) => void
 }
 
@@ -22,6 +23,7 @@ export function FavoriteItem({
   onClick,
   onDelete,
   onExpand,
+  onMoveToRoot,
   onImageFailed,
 }: FavoriteItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -50,6 +52,11 @@ export function FavoriteItem({
   const handleExpand = (e: React.MouseEvent) => {
     e.stopPropagation()
     onExpand()
+  }
+  
+  const handleMoveToRoot = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onMoveToRoot?.()
   }
   
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -114,6 +121,17 @@ export function FavoriteItem({
       >
         <Expand className="w-4 h-4" />
       </button>
+      
+      {/* Move to root button - only shown when inside a folder */}
+      {onMoveToRoot && (
+        <button
+          className="item-move-out"
+          onClick={handleMoveToRoot}
+          title="Move out of folder"
+        >
+          <FolderOutput className="w-3 h-3" />
+        </button>
+      )}
       
       {/* Selected checkmark - same as highrise-item-check */}
       {selected && (

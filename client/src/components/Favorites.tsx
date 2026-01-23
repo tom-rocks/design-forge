@@ -226,6 +226,24 @@ export function Favorites({
     }
   }
   
+  // Move favorite to root (remove from folder)
+  const handleMoveToRoot = async (favoriteId: string) => {
+    try {
+      await fetch(`${API_URL}/api/favorites/${favoriteId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ folderId: null }),
+      })
+      
+      setFavorites(prev => prev.map(f => 
+        f.id === favoriteId ? { ...f, folder_id: null } : f
+      ))
+    } catch (e) {
+      console.error('[Favorites] Error moving to root:', e)
+    }
+  }
+  
   // Delete favorite
   const handleDeleteFavorite = async (favoriteId: string) => {
     try {
@@ -545,6 +563,7 @@ export function Favorites({
                 onClick={() => handleItemClick(favorite)}
                 onDelete={() => handleDeleteFavorite(favorite.id)}
                 onExpand={() => setLightbox(favorite)}
+                onMoveToRoot={expandedFolder ? () => handleMoveToRoot(favorite.id) : undefined}
                 onImageFailed={handleImageFailed}
               />
             ))}
