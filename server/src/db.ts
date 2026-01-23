@@ -131,6 +131,7 @@ export interface Generation {
   settings: {
     styleImages?: { url: string; name?: string }[];
     negativePrompt?: string;
+    numImages?: number;
   };
   created_at: Date;
 }
