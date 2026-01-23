@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { Trash2, Edit2, Check, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite, Folder } from './Favorites'
+import { getFavoriteThumbnailUrl } from './Favorites'
 
 interface FavoriteFolderProps {
   folder: Folder
@@ -87,7 +88,7 @@ export function FavoriteFolder({
       <div className="folder-preview">
         {previewItems.map((item) => (
           <div key={item.id} className="folder-preview-item">
-            <img src={item.item_data.imageUrl} alt="" />
+            <img src={getFavoriteThumbnailUrl(item)} alt="" />
           </div>
         ))}
         

@@ -23,6 +23,46 @@ import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
 import { FavoriteFolder } from './FavoriteFolder'
 
+// Helper to get CDN URL for Highrise items
+function getItemCdnUrl(itemId: string): string {
+  if (itemId.startsWith('bg-')) {
+    return `https://cdn.highrisegame.com/background/${itemId}/full`
+  } else if (itemId.startsWith('cn-')) {
+    return `https://cdn.highrisegame.com/container/${itemId}/full`
+  } else {
+    return `https://cdn.highrisegame.com/avatar/${itemId}.png`
+  }
+}
+
+// Resolve display URL (thumbnail for grid) from favorite data
+// Uses IDs when available, falls back to stored URLs for backwards compatibility
+export function getFavoriteThumbnailUrl(favorite: Favorite): string {
+  if (favorite.type === 'work' && favorite.item_data.generationId) {
+    // Works: use thumbnail endpoint
+    return `${API_URL}/api/generations/${favorite.item_data.generationId}/thumbnail`
+  }
+  if (favorite.type === 'item' && favorite.item_data.itemId) {
+    // Items: construct CDN URL from itemId
+    return getItemCdnUrl(favorite.item_data.itemId)
+  }
+  // Fallback: use stored thumbnailUrl or imageUrl
+  return favorite.item_data.thumbnailUrl || favorite.item_data.imageUrl
+}
+
+// Resolve full image URL from favorite data
+export function getFavoriteFullUrl(favorite: Favorite): string {
+  if (favorite.type === 'work' && favorite.item_data.generationId) {
+    // Works: use full image endpoint
+    return `${API_URL}/api/generations/${favorite.item_data.generationId}/image/0`
+  }
+  if (favorite.type === 'item' && favorite.item_data.itemId) {
+    // Items: construct CDN URL from itemId
+    return getItemCdnUrl(favorite.item_data.itemId)
+  }
+  // Fallback: use stored imageUrl
+  return favorite.item_data.imageUrl
+}
+
 export interface Favorite {
   id: string
   type: 'item' | 'work' | 'image'
@@ -277,10 +317,8 @@ export function Favorites({
     if (existingRef) {
       onRemoveReference(refId)
     } else if (references.length < maxRefs) {
-      // Use the stored imageUrl directly - it's already a full URL or relative URL
-      // that will be handled correctly by App.tsx's Thumb component
-      // (same logic as HighriseSearch and HistoryGrid)
-      const imageUrl = favorite.item_data.imageUrl
+      // Resolve full URL from favorite data (uses IDs when available)
+      const imageUrl = getFavoriteFullUrl(favorite)
       
       onAddReference({
         id: refId,
@@ -607,7 +645,7 @@ export function Favorites({
         <DragOverlay>
           {activeFavorite && (
             <div className="highrise-item dragging">
-              <img src={activeFavorite.item_data.imageUrl} alt="" />
+              <img src={getFavoriteThumbnailUrl(activeFavorite)} alt="" />
             </div>
           )}
           {activeFolder && (
@@ -618,7 +656,7 @@ export function Favorites({
                   .slice(0, 4)
                   .map((item) => (
                     <div key={item.id} className="folder-preview-item">
-                      <img src={item.item_data.imageUrl} alt="" />
+                      <img src={getFavoriteThumbnailUrl(item)} alt="" />
                     </div>
                   ))}
                 {[...Array(Math.max(0, 4 - favorites.filter(f => f.folder_id === activeFolder.id).length))].map((_, i) => (
@@ -673,7 +711,7 @@ export function Favorites({
                   </div>
                 )}
                 <motion.img
-                  src={lightbox.item_data.imageUrl}
+                  src={getFavoriteFullUrl(lightbox)}
                   alt={lightbox.item_data.name || ''}
                   onLoad={() => setLightboxImageLoaded(true)}
                   initial={{ opacity: 0 }}
@@ -690,7 +728,7 @@ export function Favorites({
                     className="lightbox-btn"
                     onClick={async () => {
                       try {
-                        const res = await fetch(lightbox.item_data.imageUrl)
+                        const res = await fetch(getFavoriteFullUrl(lightbox))
                         const blob = await res.blob()
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement('a')

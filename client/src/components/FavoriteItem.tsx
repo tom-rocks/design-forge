@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { X, Expand, FolderOutput } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite } from './Favorites'
+import { getFavoriteThumbnailUrl } from './Favorites'
 
 interface FavoriteItemProps {
   favorite: Favorite
@@ -96,7 +97,7 @@ export function FavoriteItem({
       title={favorite.item_data.name || 'Favorite'}
     >
       <img 
-        src={favorite.item_data.thumbnailUrl || favorite.item_data.imageUrl} 
+        src={getFavoriteThumbnailUrl(favorite)} 
         alt={favorite.item_data.name || ''} 
         loading="lazy"
         className={imageLoaded ? 'loaded' : ''}
