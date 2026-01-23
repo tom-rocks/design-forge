@@ -316,12 +316,13 @@ export function Favorites({
       return
     }
     
-    // Reorder items
+    // Reorder items or folders
     if (activeId !== overId) {
-      const isFolder = activeId.startsWith('folder-')
+      const isDraggingFolder = activeId.startsWith('folder-')
+      const isOverFolder = overId.startsWith('folder-')
       
-      if (isFolder) {
-        // Reorder folders
+      if (isDraggingFolder && isOverFolder) {
+        // Reorder folders among themselves
         const oldIndex = folders.findIndex(f => `folder-${f.id}` === activeId)
         const newIndex = folders.findIndex(f => `folder-${f.id}` === overId)
         
@@ -338,11 +339,12 @@ export function Favorites({
             body: JSON.stringify({ folders: updates }),
           }).catch(console.error)
         }
-      } else {
-        // Reorder favorites (only items not in folders, or items within the expanded folder)
+      } else if (!isDraggingFolder && !isOverFolder) {
+        // Reorder items among themselves
+        // IMPORTANT: Use same filtering as display to get correct indices
         const itemsToReorder = expandedFolder
-          ? favorites.filter(f => f.folder_id === expandedFolder)
-          : favorites.filter(f => !f.folder_id)
+          ? favorites.filter(f => f.folder_id === expandedFolder && !failedImages.has(f.id))
+          : favorites.filter(f => !f.folder_id && !failedImages.has(f.id))
         
         const oldIndex = itemsToReorder.findIndex(f => f.id === activeId)
         const newIndex = itemsToReorder.findIndex(f => f.id === overId)
@@ -350,10 +352,15 @@ export function Favorites({
         if (oldIndex !== -1 && newIndex !== -1) {
           const newItems = arrayMove(itemsToReorder, oldIndex, newIndex)
           
-          // Update local state
-          const otherItems = favorites.filter(f => 
-            expandedFolder ? f.folder_id !== expandedFolder : f.folder_id
-          )
+          // Update local state - merge reordered items with others
+          const otherItems = favorites.filter(f => {
+            // Keep items that are NOT in the group we're reordering
+            if (expandedFolder) {
+              return f.folder_id !== expandedFolder || failedImages.has(f.id)
+            } else {
+              return f.folder_id !== null || failedImages.has(f.id)
+            }
+          })
           setFavorites([...otherItems, ...newItems])
           
           // Update sort order on server
@@ -370,6 +377,8 @@ export function Favorites({
           }).catch(console.error)
         }
       }
+      // If dragging item over folder (or vice versa), do nothing here
+      // The "drop into folder" is handled above
     }
   }
   
