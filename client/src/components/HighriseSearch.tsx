@@ -198,23 +198,9 @@ export default function HighriseSearch({
   const toggleStar = async (item: HighriseItem, e: React.MouseEvent) => {
     e.stopPropagation()
     
-    // For favorites, always use our server proxy URL (works outside AP context)
-    // Extract dispId from item.id (which is dispId for AP items) or from apImageUrl
-    const dispId = item.id
-    const category = item.category
-    
-    // Construct a universal URL that works everywhere
-    let universalImageUrl: string
-    if (category === 'emote') {
-      // Emotes use direct CDN URL
-      universalImageUrl = item.imageUrl
-    } else if (dispId.startsWith('cn-') || dispId.startsWith('bg-')) {
-      // Containers and backgrounds use CDN URLs (may not work without auth)
-      universalImageUrl = item.imageUrl
-    } else {
-      // Avatar items - use our proxy which always works
-      universalImageUrl = `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
-    }
+    // Use the SAME URL that's displaying in the grid - this is the one that works!
+    // This could be a proxied data URL, an AP URL, or a server proxy URL
+    const displayUrl = getDisplayUrl(item)
     
     const isCurrentlyStarred = starredUrls.has(item.id)
     
@@ -234,7 +220,7 @@ export default function HighriseSearch({
         // Note: Full implementation would DELETE the favorite by ID
         // For now, the optimistic update handles the UI
       } else {
-        // Add to favorites
+        // Add to favorites - use the display URL (the one that's working)
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -242,8 +228,8 @@ export default function HighriseSearch({
           body: JSON.stringify({
             type: 'item',
             itemData: {
-              imageUrl: universalImageUrl,
-              itemId: dispId,
+              imageUrl: displayUrl,
+              itemId: item.id,
               name: item.name,
               category: item.category,
               rarity: item.rarity,
