@@ -80,6 +80,8 @@ interface HistoryGridProps {
   onReplay?: (config: ReplayConfig) => void
   // Refine an image
   onRefine?: (imageUrl: string) => void
+  // Use alloy - bulk add references from a generation
+  onUseAlloy?: (refs: Reference[]) => void
 }
 
 export default function HistoryGrid({
@@ -95,6 +97,7 @@ export default function HistoryGrid({
   onSingleSelect,
   onReplay,
   onRefine,
+  onUseAlloy,
 }: HistoryGridProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -375,6 +378,24 @@ export default function HistoryGrid({
     onReplay(config)
     setLightbox(null) // Close lightbox after replay
   }
+  
+  // Use alloy - add all style references from a generation
+  const useAlloy = (gen: Generation) => {
+    if (!onUseAlloy || !gen.settings?.styleImages?.length) return
+    
+    // Convert styleImages to Reference format
+    const refs: Reference[] = gen.settings.styleImages.map((img, i) => ({
+      id: `alloy-${gen.id}-${i}-${Date.now()}`,
+      url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/') 
+        ? img.url 
+        : `${API_URL}${img.url}`,
+      name: img.name || `Ref ${i + 1}`,
+      type: 'generation' as const,
+    }))
+    
+    onUseAlloy(refs)
+    setLightbox(null) // Close lightbox after using alloy
+  }
 
   // Not authenticated
   if (!authenticated) {
@@ -563,6 +584,41 @@ export default function HistoryGrid({
                   {lightbox.generation.resolution || '1K'}
                 </span>
               </div>
+              
+              {/* Alloy section - show references used */}
+              {lightbox.generation.settings?.styleImages && lightbox.generation.settings.styleImages.length > 0 && (
+                <div className="lightbox-alloy">
+                  <div className="lightbox-alloy-header">
+                    <span className="panel-icon icon-alloy" />
+                    <span className="lightbox-alloy-title">Alloy</span>
+                    <span className="lightbox-alloy-count">{lightbox.generation.settings.styleImages.length}</span>
+                    {onUseAlloy && (
+                      <button
+                        className="lightbox-alloy-use"
+                        onClick={() => useAlloy(lightbox.generation)}
+                        title="Add these references to your alloy"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Use
+                      </button>
+                    )}
+                  </div>
+                  <div className="lightbox-alloy-grid">
+                    {lightbox.generation.settings.styleImages.map((img, i) => {
+                      // Resolve URL - handle relative paths
+                      const imgUrl = img.url.startsWith('http') || img.url.startsWith('data:') 
+                        ? img.url 
+                        : `${API_URL}${img.url}`
+                      return (
+                        <div key={i} className="lightbox-alloy-thumb" title={img.name || `Reference ${i + 1}`}>
+                          <img src={imgUrl} alt={img.name || `Reference ${i + 1}`} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              
               <div className="lightbox-footer">
                 <p className="lightbox-prompt">{lightbox.generation.prompt}</p>
                 <div className="lightbox-actions">

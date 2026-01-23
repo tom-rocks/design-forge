@@ -17,7 +17,8 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Loader2, Plus, FolderPlus, LogIn } from 'lucide-react'
+import { Loader2, Plus, FolderPlus, LogIn, X, Download } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
 import { FavoriteFolder } from './FavoriteFolder'
@@ -89,6 +90,15 @@ export function Favorites({
   const [newFolderName, setNewFolderName] = useState('')
   const [lastFetchTime, setLastFetchTime] = useState(0)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  const [lightbox, setLightbox] = useState<Favorite | null>(null)
+  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
+  
+  // Reset image loaded state when lightbox changes
+  useEffect(() => {
+    if (lightbox) {
+      setLightboxImageLoaded(false)
+    }
+  }, [lightbox?.id])
   
   // Track failed images - filter them out of display
   const handleImageFailed = useCallback((id: string) => {
@@ -534,6 +544,7 @@ export function Favorites({
                 disabled={disabled || (!isSelected(favorite) && references.length >= maxRefs)}
                 onClick={() => handleItemClick(favorite)}
                 onDelete={() => handleDeleteFavorite(favorite.id)}
+                onExpand={() => setLightbox(favorite)}
                 onImageFailed={handleImageFailed}
               />
             ))}
@@ -610,6 +621,80 @@ export function Favorites({
           <span style={{ fontSize: '12px', opacity: 0.7 }}>Star items or works to add them here</span>
         </div>
       )}
+      
+      {/* Lightbox - same pattern as HistoryGrid */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            className="lightbox-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightbox(null)}
+          >
+            <motion.div
+              className="lightbox-content"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                className="lightbox-close"
+                onClick={() => setLightbox(null)}
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="lightbox-image-container">
+                {!lightboxImageLoaded && (
+                  <div className="lightbox-image-loading">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                )}
+                <motion.img
+                  src={lightbox.item_data.imageUrl}
+                  alt={lightbox.item_data.name || ''}
+                  onLoad={() => setLightboxImageLoaded(true)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+              <div className="lightbox-footer">
+                {lightbox.item_data.name && (
+                  <p className="lightbox-prompt">{lightbox.item_data.name}</p>
+                )}
+                <div className="lightbox-actions">
+                  <button
+                    className="lightbox-btn"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(lightbox.item_data.imageUrl)
+                        const blob = await res.blob()
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        const safeName = lightbox.item_data.name?.slice(0, 30).replace(/[^a-z0-9]/gi, '-') || 'favorite'
+                        a.download = `${safeName}.png`
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
+                      } catch (e) {
+                        console.error('Download failed:', e)
+                      }
+                    }}
+                    title="Download"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

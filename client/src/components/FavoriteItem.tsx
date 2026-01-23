@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { X } from 'lucide-react'
+import { X, Expand } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite } from './Favorites'
 
@@ -11,6 +11,7 @@ interface FavoriteItemProps {
   disabled: boolean
   onClick: () => void
   onDelete: () => void
+  onExpand: () => void
   onImageFailed?: (id: string) => void
 }
 
@@ -20,6 +21,7 @@ export function FavoriteItem({
   disabled,
   onClick,
   onDelete,
+  onExpand,
   onImageFailed,
 }: FavoriteItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -43,6 +45,11 @@ export function FavoriteItem({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onDelete()
+  }
+  
+  const handleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onExpand()
   }
   
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -97,6 +104,15 @@ export function FavoriteItem({
         title="Remove from favorites"
       >
         <X className="w-3 h-3" />
+      </button>
+      
+      {/* Expand button - below delete, shows on hover */}
+      <button
+        className="item-expand"
+        onClick={handleExpand}
+        title="View full size"
+      >
+        <Expand className="w-4 h-4" />
       </button>
       
       {/* Selected checkmark - same as highrise-item-check */}
