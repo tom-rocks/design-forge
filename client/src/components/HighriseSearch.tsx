@@ -203,17 +203,17 @@ export default function HighriseSearch({
     // This could be a proxied data URL, an AP URL, or a server proxy URL
     const displayUrl = getDisplayUrl(item)
     
-    const isCurrentlyStarred = starredUrls.has(item.id)
+    const isCurrentlyStarred = starredUrls.has(item.dispId)
     
-    // Optimistic update - update UI immediately
+    // Optimistic update - update UI immediately (use dispId to match server)
     if (isCurrentlyStarred) {
       setStarredUrls(prev => {
         const next = new Set(prev)
-        next.delete(item.id)
+        next.delete(item.dispId)
         return next
       })
     } else {
-      setStarredUrls(prev => new Set(prev).add(item.id))
+      setStarredUrls(prev => new Set(prev).add(item.dispId))
     }
     
     try {
@@ -250,7 +250,7 @@ export default function HighriseSearch({
           // Revert optimistic update on error
           setStarredUrls(prev => {
             const next = new Set(prev)
-            next.delete(item.id)
+            next.delete(item.dispId)
             return next
           })
         }
@@ -261,7 +261,7 @@ export default function HighriseSearch({
       if (!isCurrentlyStarred) {
         setStarredUrls(prev => {
           const next = new Set(prev)
-          next.delete(item.id)
+          next.delete(item.dispId)
           return next
         })
       }
@@ -269,7 +269,7 @@ export default function HighriseSearch({
   }
   
   const isStarred = useCallback((item: HighriseItem) => 
-    starredUrls.has(item.id), [starredUrls])
+    starredUrls.has(item.dispId), [starredUrls])
 
   // Search items
   const searchItems = useCallback(async (append = false) => {
