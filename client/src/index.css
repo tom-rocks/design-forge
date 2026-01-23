@@ -3935,10 +3935,16 @@ body {
   transition: all 0.15s ease;
 }
 
-.folder-add-item:hover {
+.folder-add-item:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(255, 109, 58, 0.05);
+}
+
+.folder-add-item:disabled,
+.folder-add-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Folder picker overlay */

@@ -713,11 +713,12 @@ export function Favorites({
             ))}
             
             {/* Add to folder button (folder view only) - grey square with + */}
-            {expandedFolder && availableForFolder.length > 0 && (
+            {expandedFolder && (
               <button 
-                className="folder-add-item"
-                onClick={() => setAddingToFolder(true)}
-                title="Add items to this folder"
+                className={`folder-add-item ${availableForFolder.length === 0 ? 'disabled' : ''}`}
+                onClick={() => availableForFolder.length > 0 && setAddingToFolder(true)}
+                title={availableForFolder.length > 0 ? 'Add items to this folder' : 'All items already in folder'}
+                disabled={availableForFolder.length === 0}
               >
                 <Plus className="w-6 h-6" />
               </button>
