@@ -1894,12 +1894,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-}
-
-.highrise-item::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
+  aspect-ratio: 1;
 }
 
 .highrise-item img {
@@ -2341,12 +2336,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-}
-
-.history-item::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
+  aspect-ratio: 1;
 }
 
 .history-item img {
