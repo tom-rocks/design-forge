@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Loader2, Plus, FolderPlus, LogIn, X, Check } from 'lucide-react'
+import { Loader2, Plus, FolderPlus, LogIn, Check } from 'lucide-react'
 import { Lightbox } from './Lightbox'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
@@ -820,12 +820,17 @@ export function Favorites({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={() => {
+              setAddingToFolder(false)
+              setSelectedForFolder(new Set())
+            }}
           >
             <motion.div
               className="folder-picker"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="folder-picker-header">
                 <span>Add to folder ({availableForFolder.length} available)</span>
@@ -838,15 +843,6 @@ export function Favorites({
                       <Check className="w-3 h-3" /><span>Add {selectedForFolder.size}</span>
                     </button>
                   )}
-                  <button 
-                    className="specs-btn"
-                    onClick={() => {
-                      setAddingToFolder(false)
-                      setSelectedForFolder(new Set())
-                    }}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
                 </div>
               </div>
               <div className="folder-picker-grid">
