@@ -1861,6 +1861,7 @@ body {
   padding: 10px;
   background: var(--surface-inset);
   border-radius: var(--radius-md);
+  align-items: start;
   /* Custom scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
