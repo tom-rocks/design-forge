@@ -23,6 +23,13 @@ import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
 import { FavoriteFolder } from './FavoriteFolder'
 
+// Clothing categories that support crisp=1 for higher quality (same as HighriseSearch)
+const CLOTHING_CATEGORIES = [
+  'shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+  'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+  'gloves', 'watch', 'sock'
+]
+
 // Get display URL for Highrise items based on dispId
 // Uses the EXACT same logic as HighriseSearch Items gallery
 function getItemDisplayUrl(dispId: string): string {
@@ -32,6 +39,22 @@ function getItemDisplayUrl(dispId: string): string {
     return `https://cdn.highrisegame.com/container/${dispId}/full`
   } else {
     // Avatar items - use server proxy (same as Items gallery)
+    return `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
+  }
+}
+
+// Get crisp (high quality) URL for attaching as reference
+// Only clothing items support crisp - others return regular URL
+function getItemCrispUrl(dispId: string, category?: string): string {
+  if (dispId.startsWith('bg-')) {
+    return `https://cdn.highrisegame.com/background/${dispId}/full`
+  } else if (dispId.startsWith('cn-')) {
+    return `https://cdn.highrisegame.com/container/${dispId}/full`
+  } else if (category && CLOTHING_CATEGORIES.includes(category)) {
+    // Clothing items - use crisp version for higher quality
+    return `${API_URL}/api/highrise/proxy/${dispId}.png?crisp=1`
+  } else {
+    // Non-clothing avatar items - regular proxy
     return `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
   }
 }
@@ -51,7 +74,7 @@ export function getFavoriteThumbnailUrl(favorite: Favorite): string {
   return favorite.item_data.thumbnailUrl || favorite.item_data.imageUrl
 }
 
-// Resolve full image URL from favorite data
+// Resolve full image URL from favorite data (for lightbox, download)
 export function getFavoriteFullUrl(favorite: Favorite): string {
   if (favorite.type === 'work' && favorite.item_data.generationId) {
     // Works: use full image endpoint
@@ -60,6 +83,21 @@ export function getFavoriteFullUrl(favorite: Favorite): string {
   if (favorite.type === 'item' && favorite.item_data.itemId) {
     // Items: construct URL from itemId
     return getItemDisplayUrl(favorite.item_data.itemId)
+  }
+  // Fallback: use stored imageUrl
+  return favorite.item_data.imageUrl
+}
+
+// Resolve crisp (high quality) URL for attaching as reference
+// Uses crisp version for clothing items, regular for others
+export function getFavoriteReferenceUrl(favorite: Favorite): string {
+  if (favorite.type === 'work' && favorite.item_data.generationId) {
+    // Works: use full image endpoint
+    return `${API_URL}/api/generations/${favorite.item_data.generationId}/image/0`
+  }
+  if (favorite.type === 'item' && favorite.item_data.itemId) {
+    // Items: use crisp URL for clothing, regular for others
+    return getItemCrispUrl(favorite.item_data.itemId, favorite.item_data.category)
   }
   // Fallback: use stored imageUrl
   return favorite.item_data.imageUrl
@@ -408,8 +446,8 @@ export function Favorites({
     if (existingRef) {
       onRemoveReference(refId)
     } else if (references.length < maxRefs) {
-      // Resolve full URL from favorite data (uses IDs when available)
-      const imageUrl = getFavoriteFullUrl(favorite)
+      // Use crisp URL for clothing items when attaching as reference
+      const imageUrl = getFavoriteReferenceUrl(favorite)
       
       onAddReference({
         id: refId,
