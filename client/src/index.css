@@ -1866,14 +1866,6 @@ body {
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
-/* Force grid items to be square - aspect-ratio sets both dimensions */
-.highrise-grid > .highrise-item,
-.highrise-grid > .history-item,
-.highrise-grid > .favorite-folder,
-.highrise-grid > .folder-add-item {
-  aspect-ratio: 1;
-}
-
 .highrise-grid::-webkit-scrollbar {
   width: 8px;
 }
@@ -1902,6 +1894,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  aspect-ratio: 1 !important;
 }
 
 .highrise-item img {
@@ -2343,6 +2336,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  aspect-ratio: 1 !important;
 }
 
 .history-item img {
