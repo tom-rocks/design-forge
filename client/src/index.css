@@ -2445,15 +2445,18 @@ body {
   background: var(--surface);
   border-radius: var(--radius-lg);
   padding: 16px;
+  padding-top: 56px; /* Space for close button */
   box-shadow: var(--shadow-hard-lg);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .lightbox-image-container {
   position: relative;
-  min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .lightbox-image-loading {
@@ -2461,9 +2464,10 @@ body {
   color: var(--text-dim);
 }
 
-.lightbox-content img {
+.lightbox-image-container img,
+.lightbox-content > img {
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 55vh;
   object-fit: contain;
   border-radius: var(--radius-md);
 }
@@ -2541,19 +2545,23 @@ body {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.6);
+  background: #ddd9d5;
   border: none;
-  color: var(--cream);
+  color: var(--text-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
   z-index: 10;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .lightbox-close:hover {
-  background: rgba(0, 0, 0, 0.8);
+  background: #e8e4e0;
+  color: var(--text);
 }
 
 .lightbox-btn,
@@ -2647,16 +2655,13 @@ body {
 }
 
 .lightbox-alloy-use:hover {
-  background: var(--accent);
-  color: white;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 1px 0 rgba(0, 0, 0, 0.15);
+  background: #e8e4e0;
+  color: var(--text);
 }
 
 .lightbox-alloy-use:active {
-  background: var(--accent-active);
-  transform: translateY(1px);
+  background: #d0ccc8;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .lightbox-alloy-grid {

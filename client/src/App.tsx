@@ -859,6 +859,7 @@ export default function App() {
                           detectAndSetAspectRatio(url)
                         }}
                         isActive={refineExpanded}
+                        onUseAlloy={addAlloyReferences}
                       />
                     )}
                     {refineSource === 'favorites' && (

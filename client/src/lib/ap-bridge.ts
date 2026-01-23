@@ -183,6 +183,7 @@ export async function apRequest<T>(
 
 /**
  * Search Highrise items via AP
+ * Searches both by display name AND display id to support searching by either
  */
 export async function searchItemsViaAP(params: {
   query?: string;
@@ -190,22 +191,57 @@ export async function searchItemsViaAP(params: {
   limit?: number;
   offset?: number;
 }) {
-  const body = {
-    _type: 'GetItemsRequest',
-    limit: params.limit || 40,
-    offset: params.offset || 0,
-    filters: [] as [string, unknown][],
-    sorts: [['created_at', -1]],
+  const query = params.query?.trim();
+  
+  // Check if query looks like an item ID (contains typical ID patterns)
+  const looksLikeId = query && (
+    query.includes('-') || 
+    query.includes('_') ||
+    /^[a-z]+[-_]/.test(query) // starts with category prefix like "shirt-", "hair_"
+  );
+  
+  // Build base request
+  const makeRequest = (filterField: string, filterValue: string) => {
+    const body = {
+      _type: 'GetItemsRequest',
+      limit: params.limit || 40,
+      offset: params.offset || 0,
+      filters: [] as [string, unknown][],
+      sorts: [['created_at', -1]],
+    };
+    
+    if (filterValue) {
+      body.filters.push([filterField, filterValue]);
+    }
+    if (params.category && params.category !== 'all') {
+      body.filters.push(['category', params.category]);
+    }
+    
+    return apRequest<{ items: unknown[]; pages: number }>('/api', 'POST', body);
   };
   
-  if (params.query?.trim()) {
-    body.filters.push(['disp_name', params.query.trim()]);
-  }
-  if (params.category && params.category !== 'all') {
-    body.filters.push(['category', params.category]);
+  // If no query, just fetch latest
+  if (!query) {
+    return makeRequest('', '');
   }
   
-  return apRequest<{ items: unknown[]; pages: number }>('/api', 'POST', body);
+  // If query looks like an ID, search by disp_id first, then by name as fallback
+  if (looksLikeId) {
+    const idResult = await makeRequest('disp_id', query);
+    if (idResult.items && idResult.items.length > 0) {
+      return idResult;
+    }
+    // Fallback to name search
+    return makeRequest('disp_name', query);
+  }
+  
+  // Query looks like a name - search by name first, then by id as fallback
+  const nameResult = await makeRequest('disp_name', query);
+  if (nameResult.items && nameResult.items.length > 0) {
+    return nameResult;
+  }
+  // Fallback to ID search (in case someone types partial ID without prefix)
+  return makeRequest('disp_id', query);
 }
 
 /**
