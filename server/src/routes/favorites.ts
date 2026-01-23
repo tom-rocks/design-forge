@@ -10,6 +10,7 @@ import {
   deleteFavoriteFolder,
   reorderFavoriteFolders,
   getFavoritedUrls,
+  repairFavoriteItemIds,
 } from '../db.js';
 
 // Extend Express types for Passport user
@@ -226,6 +227,28 @@ router.post('/folders/reorder', requireAuth, async (req: Request, res: Response)
   } catch (error) {
     console.error('[Favorites] Error reordering folders:', error);
     res.status(500).json({ error: 'Failed to reorder folders' });
+  }
+});
+
+// POST /api/favorites/repair - Fix favorites with bad itemIds (MongoDB ObjectId -> dispId)
+router.post('/repair', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    console.log(`[Favorites] Repairing favorites for user ${userId}`);
+    
+    const result = await repairFavoriteItemIds(userId);
+    
+    console.log(`[Favorites] Repair complete: ${result.fixed} fixed, ${result.failed} failed, ${result.total} total items`);
+    res.json({ 
+      success: true,
+      fixed: result.fixed,
+      failed: result.failed,
+      total: result.total,
+      message: `Fixed ${result.fixed} favorites. ${result.failed} could not be repaired automatically.`
+    });
+  } catch (error) {
+    console.error('[Favorites] Error repairing:', error);
+    res.status(500).json({ error: 'Failed to repair favorites' });
   }
 });
 

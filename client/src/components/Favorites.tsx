@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { 
   DndContext, 
   closestCenter,
@@ -139,6 +139,7 @@ export function Favorites({
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [addingToFolder, setAddingToFolder] = useState(false)
   const [selectedForFolder, setSelectedForFolder] = useState<Set<string>>(new Set())
+  const hasRepairedRef = useRef(false)
   
   // Reset image loaded state when lightbox changes
   useEffect(() => {
@@ -204,10 +205,41 @@ export function Favorites({
     }
   }, [authenticated])
   
+  // Auto-repair favorites with bad itemIds (runs once per session)
+  const repairFavorites = useCallback(async () => {
+    if (hasRepairedRef.current || !authenticated) return
+    hasRepairedRef.current = true
+    
+    try {
+      const res = await fetch(`${API_URL}/api/favorites/repair`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        if (data.fixed > 0) {
+          console.log(`[Favorites] Auto-repaired ${data.fixed} favorites`)
+          // Refetch to get updated data
+          fetchFavorites(false)
+        }
+      }
+    } catch (e) {
+      console.error('[Favorites] Error during auto-repair:', e)
+    }
+  }, [authenticated, fetchFavorites])
+  
   // Initial fetch
   useEffect(() => {
     fetchFavorites()
   }, [fetchFavorites])
+  
+  // Run repair after initial load
+  useEffect(() => {
+    if (!loading && authenticated && favorites.length > 0) {
+      repairFavorites()
+    }
+  }, [loading, authenticated, favorites.length, repairFavorites])
   
   // Refetch when tab becomes active (if stale > 5 seconds)
   useEffect(() => {

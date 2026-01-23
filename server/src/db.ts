@@ -476,4 +476,78 @@ export async function getFavoritedUrls(userId: string): Promise<{ urls: Set<stri
   };
 }
 
+// Helper to check if a string looks like a MongoDB ObjectId (24 hex chars)
+function isMongoId(str: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(str);
+}
+
+// Helper to extract dispId from a URL
+function extractDispIdFromUrl(url: string): string | null {
+  // Try various URL patterns:
+  // https://production-ap.highrise.game/avataritem/front/shirt-cool-jacket.png
+  // https://cdn.highrisegame.com/avatar/shirt-cool-jacket.png
+  // https://cdn.highrisegame.com/background/bg-something/full
+  // https://cdn.highrisegame.com/container/cn-something/full
+  
+  // AP URL pattern: /avataritem/front/{dispId}.png
+  const apMatch = url.match(/\/avataritem\/front\/([^/.]+)\.png/);
+  if (apMatch) return apMatch[1];
+  
+  // CDN avatar pattern: /avatar/{dispId}.png
+  const cdnAvatarMatch = url.match(/cdn\.highrisegame\.com\/avatar\/([^/.]+)\.png/);
+  if (cdnAvatarMatch) return cdnAvatarMatch[1];
+  
+  // CDN background pattern: /background/{dispId}/full
+  const cdnBgMatch = url.match(/cdn\.highrisegame\.com\/background\/([^/]+)\/full/);
+  if (cdnBgMatch) return cdnBgMatch[1];
+  
+  // CDN container pattern: /container/{dispId}/full
+  const cdnContainerMatch = url.match(/cdn\.highrisegame\.com\/container\/([^/]+)\/full/);
+  if (cdnContainerMatch) return cdnContainerMatch[1];
+  
+  return null;
+}
+
+// Repair favorites that have MongoDB ObjectId instead of dispId
+export async function repairFavoriteItemIds(userId: string): Promise<{ fixed: number; failed: number; total: number }> {
+  // Get all item favorites for this user
+  const result = await pool.query<Favorite>(
+    `SELECT * FROM favorites WHERE user_id = $1 AND type = 'item'`,
+    [userId]
+  );
+  
+  let fixed = 0;
+  let failed = 0;
+  
+  for (const fav of result.rows) {
+    const currentItemId = fav.item_data.itemId;
+    
+    // Skip if no itemId or if it doesn't look like a MongoDB ID
+    if (!currentItemId || !isMongoId(currentItemId)) {
+      continue;
+    }
+    
+    // Try to extract the correct dispId from the stored imageUrl
+    const imageUrl = fav.item_data.imageUrl;
+    const extractedDispId = extractDispIdFromUrl(imageUrl);
+    
+    if (extractedDispId && !isMongoId(extractedDispId)) {
+      // Found a valid dispId - update the favorite
+      const updatedItemData = { ...fav.item_data, itemId: extractedDispId };
+      await pool.query(
+        `UPDATE favorites SET item_data = $1 WHERE id = $2`,
+        [updatedItemData, fav.id]
+      );
+      fixed++;
+      console.log(`[Repair] Fixed favorite ${fav.id}: ${currentItemId} -> ${extractedDispId}`);
+    } else {
+      // Couldn't extract dispId - mark as failed but keep the favorite
+      failed++;
+      console.log(`[Repair] Could not fix favorite ${fav.id}: no dispId found in URL ${imageUrl}`);
+    }
+  }
+  
+  return { fixed, failed, total: result.rows.length };
+}
+
 export default pool;
