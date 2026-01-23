@@ -349,27 +349,36 @@ export function Favorites({
     }
   }
   
-  // Move multiple favorites to current folder
+  // Copy favorites to current folder (allows same item in multiple folders)
   const handleAddToFolder = async () => {
     if (!expandedFolder || selectedForFolder.size === 0) return
     
     try {
-      // Update each selected item
-      await Promise.all(
-        Array.from(selectedForFolder).map(favoriteId =>
-          fetch(`${API_URL}/api/favorites/${favoriteId}`, {
-            method: 'PUT',
+      // Get the selected favorites to copy
+      const toCopy = favorites.filter(f => selectedForFolder.has(f.id))
+      
+      // Create copies in the folder
+      const responses = await Promise.all(
+        toCopy.map(fav =>
+          fetch(`${API_URL}/api/favorites`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ folderId: expandedFolder }),
-          })
+            body: JSON.stringify({ 
+              type: fav.type,
+              itemData: fav.item_data,
+              folderId: expandedFolder,
+            }),
+          }).then(r => r.json())
         )
       )
       
-      // Update local state
-      setFavorites(prev => prev.map(f => 
-        selectedForFolder.has(f.id) ? { ...f, folder_id: expandedFolder } : f
-      ))
+      // Add new copies to local state
+      const newFavorites = responses
+        .filter(r => r.favorite)
+        .map(r => r.favorite as Favorite)
+      
+      setFavorites(prev => [...prev, ...newFavorites])
       
       // Reset selection mode
       setAddingToFolder(false)
@@ -604,13 +613,25 @@ export function Favorites({
       : [],
     [favorites, expandedFolder, failedImages]
   )
-  // Items available to add to current folder (everything NOT already in this folder)
-  const availableForFolder = useMemo(() => 
-    expandedFolder
-      ? favorites.filter(f => f.folder_id !== expandedFolder && !failedImages.has(f.id))
-      : [],
-    [favorites, expandedFolder, failedImages]
-  )
+  // Items available to add to current folder (non-folder items not already copied to this folder)
+  const availableForFolder = useMemo(() => {
+    if (!expandedFolder) return []
+    
+    // Get items already in this folder (by content identity)
+    const inFolderKeys = new Set(
+      favorites
+        .filter(f => f.folder_id === expandedFolder && f.type !== 'folder')
+        .map(f => f.item_data.itemId || f.item_data.generationId || f.item_data.imageUrl)
+    )
+    
+    // Return non-folder items whose content is not already in this folder
+    return favorites.filter(f => {
+      if (f.type === 'folder') return false
+      if (failedImages.has(f.id)) return false
+      const key = f.item_data.itemId || f.item_data.generationId || f.item_data.imageUrl
+      return !inFolderKeys.has(key)
+    })
+  }, [favorites, expandedFolder, failedImages])
   
   // Not authenticated - same as history-empty
   if (!authenticated) {
@@ -846,7 +867,7 @@ export function Favorites({
               <div className="folder-picker-grid">
                 {availableForFolder.length === 0 ? (
                   <div className="folder-picker-empty">
-                    All favorites are already in this folder
+                    All items already added to this folder
                   </div>
                 ) : (
                   availableForFolder.map(favorite => (
