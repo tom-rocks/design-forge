@@ -345,7 +345,7 @@ export default function HighriseSearch({
   }, [hasMore, loadingMore, loadMore])
 
   // Toggle item selection
-  const toggleItem = async (item: HighriseItem) => {
+  const toggleItem = (item: HighriseItem) => {
     // Single select mode - just call the callback
     if (singleSelect && onSingleSelect) {
       onSingleSelect(item)
@@ -360,35 +360,19 @@ export default function HighriseSearch({
     if (existingRef) {
       onRemoveReference(refId)
     } else if (references.length < maxRefs) {
-      // Cache for generation if it's a new pipeline item
-      await cacheForGeneration(item)
-      
-      // For clothing items with crisp URL available, fetch and use crisp version
-      let referenceUrl = getDisplayUrl(item)
-      if (item.apImageUrlCrisp && useAPBridge && checkAPContext()) {
-        try {
-          const crispDataUrl = await fetchImageViaAP(item.apImageUrlCrisp)
-          if (crispDataUrl) {
-            referenceUrl = crispDataUrl
-            // Also cache the crisp version on server
-            await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}-crisp`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ base64: crispDataUrl })
-            })
-            console.log(`[Highrise] Using crisp version for ${item.id}`)
-          }
-        } catch (e) {
-          console.warn(`[Highrise] Failed to get crisp version for ${item.id}, using standard`)
-        }
-      }
-      
+      // Add reference immediately with thumbnail URL for instant feedback
+      const referenceUrl = getDisplayUrl(item)
       onAddReference({
-        id: `hr-${item.id}`,
+        id: refId,
         url: referenceUrl,
         name: item.name,
         type: 'highrise'
       })
+      
+      // Cache for generation in background (non-blocking)
+      cacheForGeneration(item).catch(e => 
+        console.warn(`[Highrise] Background cache failed for ${item.id}:`, e)
+      )
     }
   }
 
