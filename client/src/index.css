@@ -1883,11 +1883,7 @@ body {
   contain: layout style paint;
 }
 
-.highrise-item::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
-}
+/* Removed ::before - using aspect-ratio: 1 instead */
 
 .highrise-item img {
   position: absolute;
@@ -2335,11 +2331,7 @@ body {
   contain: layout style paint;
 }
 
-.history-item::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
-}
+/* Removed ::before - using aspect-ratio: 1 instead */
 
 .history-item img {
   position: absolute;
