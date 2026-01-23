@@ -1855,7 +1855,6 @@ body {
 .highrise-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 1fr;
   gap: 12px;
   max-height: 480px;
   overflow: hidden auto; /* clip horizontal, scroll vertical */
@@ -1867,8 +1866,11 @@ body {
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
-/* Force grid items to be square */
-.highrise-grid > * {
+/* Force grid items to be square - aspect-ratio sets both dimensions */
+.highrise-grid > .highrise-item,
+.highrise-grid > .history-item,
+.highrise-grid > .favorite-folder,
+.highrise-grid > .folder-add-item {
   aspect-ratio: 1;
 }
 
