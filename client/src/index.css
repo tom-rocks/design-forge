@@ -3510,10 +3510,10 @@ body {
 
 .favorites-folder-name {
   font-weight: 600;
-  font-size: 13px;
-  color: var(--text);
+  font-size: 11px;
+  color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
 
 .favorites-grid {
