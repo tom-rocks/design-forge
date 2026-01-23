@@ -1,5 +1,6 @@
-import { ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import { ReactNode, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X } from 'lucide-react'
 
 interface ThumbProps {
   src: string
@@ -13,20 +14,44 @@ interface ThumbAddProps {
 }
 
 export function Thumb({ src, alt = '', onRemove }: ThumbProps) {
+  const [showRemove, setShowRemove] = useState(false)
+  
+  const handleClick = () => {
+    if (showRemove && onRemove) {
+      onRemove()
+    } else {
+      setShowRemove(true)
+    }
+  }
+  
+  const handleMouseLeave = () => {
+    setShowRemove(false)
+  }
+  
   return (
     <motion.div 
-      className="thumb"
+      className={`thumb ${showRemove ? 'removing' : ''}`}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.15 }}
+      onClick={onRemove ? handleClick : undefined}
+      onMouseLeave={handleMouseLeave}
     >
       <img src={src} alt={alt} />
-      {onRemove && (
-        <button className="thumb-remove" onClick={onRemove}>
-          ×
-        </button>
-      )}
+      <AnimatePresence>
+        {showRemove && onRemove && (
+          <motion.div 
+            className="thumb-remove-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <X className="w-6 h-6" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
