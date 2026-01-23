@@ -1609,15 +1609,19 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Gallery grid */}
-            {!galleryExpanded && (
-              <motion.div 
-                className="gallery-container"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-              >
+            {/* Gallery grid - stays mounted to preserve scroll position */}
+            <motion.div 
+              className="gallery-container"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ 
+                scale: 1, 
+                opacity: galleryExpanded ? 0 : 1,
+                pointerEvents: galleryExpanded ? 'none' : 'auto'
+              }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ visibility: galleryExpanded ? 'hidden' : 'visible' }}
+            >
                 <div className="gallery-header">
                   <div className="gallery-header-top">
                     <h2><span className="btn-icon icon-works" /> Past Works</h2>
@@ -1667,7 +1671,6 @@ export default function App() {
                   )}
                 </div>
               </motion.div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
