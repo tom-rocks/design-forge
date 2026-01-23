@@ -1507,7 +1507,10 @@ export default function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  onClick={() => setGalleryExpanded(null)}
+                  onClick={(e) => {
+                    e.stopPropagation() // Don't close the gallery, just the lightbox
+                    setGalleryExpanded(null)
+                  }}
                 >
                   <motion.div 
                     className="lightbox-content"
