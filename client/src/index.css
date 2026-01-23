@@ -1523,22 +1523,13 @@ body {
   min-height: 120px;
 }
 
-/* Tab content - smooth height transitions using CSS grid technique */
+/* Tab content - hidden when not active */
 .ref-tab-content {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows 0.25s ease, opacity 0.2s ease;
-  overflow: hidden;
-}
-
-.ref-tab-content > * {
-  overflow: hidden;
+  display: none;
 }
 
 .ref-tab-content.active {
-  grid-template-rows: 1fr;
-  opacity: 1;
+  display: block;
 }
 
 .ref-content-area {
