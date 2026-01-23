@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Zap, Gem, Hammer, Plus, Download, X, Flame, Search, BarChart3 } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Gem, Hammer, Plus, Download, X, Flame, Search, BarChart3 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -104,17 +104,8 @@ export default function App() {
   const [alloyExpanded, setAlloyExpanded] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [resolution, setResolution] = useState<string>('2K')
-  const [genModel, setGenModel] = useState<string>('pro')
   const [outputCount, setOutputCount] = useState<1 | 2 | 4>(1)
   
-  // Handle model change - auto-correct resolution if needed
-  const handleModelChange = useCallback((model: string) => {
-    setGenModel(model)
-    // Flash only supports 1K, so reset if switching to flash with higher res
-    if (model === 'flash' && resolution !== '1K') {
-      setResolution('1K')
-    }
-  }, [resolution])
   
   // Track image loading states
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
@@ -364,22 +355,13 @@ export default function App() {
     }
     
     setTimeout(() => {
-      // Set model
-      if (config.model) {
-        setGenModel(config.model)
-      }
+      // Set aspect ratio
+      if (config.aspectRatio) setAspectRatio(config.aspectRatio)
     }, 200)
     
     setTimeout(() => {
-      // Set aspect ratio
-      if (config.aspectRatio) setAspectRatio(config.aspectRatio)
-    }, 300)
-    
-    setTimeout(() => {
-      // Set resolution (with flash correction)
-      if (config.model === 'flash' && config.resolution && config.resolution !== '1K') {
-        setResolution('1K')
-      } else if (config.resolution) {
+      // Set resolution
+      if (config.resolution) {
         setResolution(config.resolution)
       }
     }, 400)
@@ -457,7 +439,7 @@ export default function App() {
       console.log('[Generate] Sending request:', { 
         mode, 
         numImages: outputCount, 
-        model: genModel, 
+        model: 'pro', 
         aspectRatio,
         hasEditImage: !!editImage?.url 
       })
@@ -467,7 +449,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          model: genModel,
+          model: 'pro',
           resolution,
           aspectRatio,
           styleImages: references.map(r => ({ url: r.url, strength: 1 })),
@@ -519,7 +501,7 @@ export default function App() {
       setIsGenerating(false)
       abortControllerRef.current = null
     }
-  }, [prompt, references, editImage, canGenerate, isGenerating, genModel, resolution, aspectRatio, outputCount, scrollToAlloy])
+  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount, scrollToAlloy])
 
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
@@ -1234,20 +1216,9 @@ export default function App() {
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
             <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" />
-            <button 
-              className={`lcd-spec-item lcd-flash ${genModel === 'flash' ? 'lit' : ''}`}
-              onClick={() => !isGenerating && handleModelChange('flash')}
-              disabled={isGenerating}
-            >
-              <Zap className="lcd-icon" /> FLASH
-            </button>
-            <button 
-              className={`lcd-spec-item lcd-pro ${genModel === 'pro' ? 'lit' : ''}`}
-              onClick={() => !isGenerating && handleModelChange('pro')}
-              disabled={isGenerating}
-            >
+            <span className="lcd-spec-item lcd-pro lit">
               <Gem className="lcd-icon" /> PRO
-            </button>
+            </span>
             <span className="lcd-spec-sep">│</span>
             {[
               { ratio: '1:1', w: 10, h: 10 },
@@ -1276,9 +1247,9 @@ export default function App() {
             ].map(({ res, cls }) => (
               <button 
                 key={res} 
-                className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''} ${genModel === 'flash' && res !== '1K' ? 'unavailable' : ''}`}
-                onClick={() => !isGenerating && !(genModel === 'flash' && res !== '1K') && setResolution(res)}
-                disabled={isGenerating || (genModel === 'flash' && res !== '1K')}
+                className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''}`}
+                onClick={() => !isGenerating && setResolution(res)}
+                disabled={isGenerating}
               >
                 {res}
               </button>
@@ -1410,9 +1381,9 @@ export default function App() {
                         {galleryExpanded.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
                       </span>
                       <span className="lightbox-spec-sep">·</span>
-                      <span className="lightbox-spec" title={galleryExpanded.model === 'flash' ? 'Flash' : 'Pro'}>
-                        {galleryExpanded.model === 'flash' ? <Zap className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
-                        {galleryExpanded.model === 'flash' ? 'Flash' : 'Pro'}
+                      <span className="lightbox-spec" title="Pro">
+                        <Gem className="w-4 h-4" />
+                        Pro
                       </span>
                       <span className="lightbox-spec-sep">·</span>
                       {galleryExpanded.aspectRatio && (

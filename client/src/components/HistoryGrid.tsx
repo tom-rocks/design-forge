@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Zap, Gem, Flame, Hammer, Search } from 'lucide-react'
+import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Gem, Flame, Hammer, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -460,9 +460,9 @@ export default function HistoryGrid({
                 </span>
                 <span className="lightbox-spec-sep">·</span>
                 {/* Model */}
-                <span className="lightbox-spec" title={lightbox.generation.model === 'flash' ? 'Flash' : 'Pro'}>
-                  {lightbox.generation.model === 'flash' ? <Zap className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
-                  {lightbox.generation.model === 'flash' ? 'Flash' : 'Pro'}
+                <span className="lightbox-spec" title="Pro">
+                  <Gem className="w-4 h-4" />
+                  Pro
                 </span>
                 <span className="lightbox-spec-sep">·</span>
                 {/* Aspect Ratio */}

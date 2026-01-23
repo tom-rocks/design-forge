@@ -461,11 +461,6 @@ body {
 }
 
 /* TE-style colors for LCD elements */
-.lcd-flash.lit {
-  color: #ff5722;
-  text-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
-}
-
 .lcd-pro.lit {
   color: #00d4ff;
   text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);

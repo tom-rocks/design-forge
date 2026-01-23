@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, Users, Flame, Zap, Gem, Calendar, Clock, BarChart3, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, Users, Flame, Gem, Calendar, Clock, BarChart3, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { Panel, PanelHeader, PanelBody } from './components'
@@ -237,7 +237,7 @@ export function Dashboard({ onBack }: DashboardProps) {
         {/* Breakdown Stats */}
         <Panel className="dashboard-panel">
           <PanelHeader>
-            <Zap className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4" />
             Usage Breakdown
           </PanelHeader>
           <PanelBody>
@@ -247,8 +247,8 @@ export function Dashboard({ onBack }: DashboardProps) {
                 {stats?.byModel.map(item => (
                   <div key={item.model} className="breakdown-item">
                     <span className="breakdown-label">
-                      {item.model === 'flash' ? <Zap className="w-3 h-3" /> : <Gem className="w-3 h-3" />}
-                      {item.model || 'Unknown'}
+                      <Gem className="w-3 h-3" />
+                      {item.model || 'Pro'}
                     </span>
                     <span className="breakdown-value">{item.count.toLocaleString()}</span>
                   </div>
@@ -382,7 +382,7 @@ export function Dashboard({ onBack }: DashboardProps) {
                         {gen.user ? (gen.user.name || gen.user.email.split('@')[0]) : 'Anonymous'}
                       </span>
                       <span className="recent-sep">·</span>
-                      <span>{gen.model === 'flash' ? 'Flash' : 'Pro'}</span>
+                      <span>Pro</span>
                       <span className="recent-sep">·</span>
                       <span>{formatDate(gen.createdAt)} {formatTime(gen.createdAt)}</span>
                     </div>

@@ -11,7 +11,6 @@ const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1b
 
 // Available Gemini image generation models
 const MODELS = {
-  flash: 'gemini-2.5-flash-image',      // Fast, up to 3 refs, 1K only
   pro: 'gemini-3-pro-image-preview',    // Professional, up to 14 refs, 1K/2K/4K, Thinking
 } as const;
 
@@ -405,10 +404,9 @@ router.post('/generate', async (req: Request, res: Response) => {
   }
   
   // Validate model and get limits
-  const modelType = model in MODELS ? model : 'pro';
-  const modelId = MODELS[modelType as ModelType];
-  const maxRefs = modelType === 'pro' ? 14 : 3;
-  const supportsHighRes = modelType === 'pro';
+  const modelType = 'pro' as ModelType;
+  const modelId = MODELS.pro;
+  const maxRefs = 14;
   
   // Map client resolution values to API values
   const resolutionMap: Record<string, string> = {
@@ -416,13 +414,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     '2048': '2K', '2K': '2K', 
     '4096': '4K', '4K': '4K',
   };
-  const mappedResolution = resolutionMap[resolution] || '1K';
-  
-  // Validate resolution for model
-  const finalResolution = supportsHighRes ? mappedResolution : '1K';
-  if (mappedResolution !== '1K' && !supportsHighRes) {
-    console.log(`[Gen ${id}] Downgrading resolution from ${mappedResolution} to 1K (Flash model)`);
-  }
+  const finalResolution = resolutionMap[resolution] || '2K';
   
   send('progress', { status: 'starting', message: 'INITIALIZING GEMINI...', progress: 5, id });
   
@@ -547,15 +539,12 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
     parts.push(...imageParts);
     
     // Build the request payload
-    // Flash in create mode needs IMAGE only to force generation (otherwise returns text)
-    // Flash in edit mode and Pro always use both TEXT and IMAGE
-    const useImageOnly = modelType === 'flash' && mode !== 'edit';
     const payload: any = {
       contents: [{
         parts: parts,
       }],
       generationConfig: {
-        responseModalities: useImageOnly ? ['IMAGE'] : ['TEXT', 'IMAGE'],
+        responseModalities: ['TEXT', 'IMAGE'],
       },
     };
     
@@ -565,7 +554,7 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
       if (aspectRatio) {
         payload.generationConfig.imageConfig.aspectRatio = aspectRatio;
       }
-      if (supportsHighRes && finalResolution !== '1K') {
+      if (finalResolution !== '1K') {
         payload.generationConfig.imageConfig.imageSize = finalResolution;
       }
     }
@@ -772,21 +761,12 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
 router.get('/capabilities', (_req: Request, res: Response) => {
   res.json({
     models: {
-      flash: {
-        id: MODELS.flash,
-        name: 'Gemini Flash',
-        description: 'Fast image generation, optimized for speed',
-        maxRefs: 3,
-        resolutions: ['1K'],
-        speed: 'fast',
-      },
       pro: {
         id: MODELS.pro,
         name: 'Gemini Pro 3',
         description: 'Professional quality with Thinking mode, up to 4K',
         maxRefs: 14,
         resolutions: ['1K', '2K', '4K'],
-        speed: 'slower',
         features: ['thinking', 'google_search', 'high_fidelity'],
       },
     },
