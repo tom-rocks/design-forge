@@ -1894,12 +1894,17 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  aspect-ratio: 1;
-  display: grid;
+}
+
+.highrise-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;
 }
 
 .highrise-item img {
-  grid-area: 1 / 1;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -2336,12 +2341,17 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  aspect-ratio: 1;
-  display: grid;
+}
+
+.history-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;
 }
 
 .history-item img {
-  grid-area: 1 / 1;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

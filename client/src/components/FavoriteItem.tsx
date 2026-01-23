@@ -91,9 +91,9 @@ export function FavoriteItem({
       // Use highrise-item class for items, history-item class for works - reuse existing styles!
       className={`${favorite.type === 'item' ? 'highrise-item' : 'history-item'} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`}
       onClick={onClick}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       title={favorite.item_data.name || 'Favorite'}
     >
       <img 
