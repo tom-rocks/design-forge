@@ -1894,10 +1894,13 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  aspect-ratio: 1;
 }
 
-/* Removed ::before - using aspect-ratio: 1 instead */
+.highrise-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;
+}
 
 .highrise-item img {
   position: absolute;
@@ -2338,10 +2341,13 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  aspect-ratio: 1;
 }
 
-/* Removed ::before - using aspect-ratio: 1 instead */
+.history-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;
+}
 
 .history-item img {
   position: absolute;
