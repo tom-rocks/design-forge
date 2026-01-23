@@ -745,22 +745,30 @@ export default function App() {
             }}
             transition={{ duration: 1.2, ease: 'easeOut' }}
           >
-            {refineExpanded ? (
-              // Expanded - show picker (and image preview if selected)
-              <Panel>
-                <PanelHeader className="collapsible" onClick={() => setRefineExpanded(false)}>
-                  <span className="panel-icon icon-refinement" />
-                  Refine <span className="header-subtitle">{editImage ? 'image selected' : 'select image to edit'}</span>
-                  <div className="header-right">
-                    <motion.div 
-                      animate={{ rotate: 180 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </motion.div>
-                    <span className={`led ${editImage ? 'on' : ''}`} />
-                  </div>
-                </PanelHeader>
+            <Panel>
+              <PanelHeader className="collapsible" onClick={() => setRefineExpanded(!refineExpanded)}>
+                <span className="panel-icon icon-refinement" />
+                Refine <span className="header-subtitle">{editImage ? 'image selected' : 'edit an image'}</span>
+                <div className="header-right">
+                  <motion.div 
+                    animate={{ rotate: refineExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                  <span className={`led ${editImage ? 'on' : ''}`} />
+                </div>
+              </PanelHeader>
+              <AnimatePresence initial={false}>
+                {refineExpanded && (
+                  <motion.div
+                    key="refine-content"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ overflow: 'hidden' }}
+                  >
                 <PanelBody>
                   {/* Show selected image preview at top if exists */}
                   {editImage && (
@@ -837,25 +845,10 @@ export default function App() {
                     )}
                   </div>
                 </PanelBody>
-              </Panel>
-            ) : (
-              // Collapsed - show panel header like Alloy (with LED when image selected)
-              <Panel>
-                <PanelHeader className="collapsible" onClick={() => setRefineExpanded(true)}>
-                  <span className="panel-icon icon-refinement" />
-                  Refine <span className="header-subtitle">{editImage ? 'image selected' : 'edit an image'}</span>
-                  <div className="header-right">
-                    <motion.div 
-                      animate={{ rotate: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </motion.div>
-                    <span className={`led ${editImage ? 'on' : ''}`} />
-                  </div>
-                </PanelHeader>
-              </Panel>
-            )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Panel>
           </motion.div>
 
           {/* CRUCIBLE - References panel with hot border when forging */}
@@ -906,16 +899,17 @@ export default function App() {
                   <span className={`led ${references.length > 0 ? 'on' : ''}`} />
                 </div>
               </PanelHeader>
-              <motion.div
-                className="alloy-content"
-                initial={false}
-                animate={{ 
-                  height: alloyExpanded ? 'auto' : 0,
-                  opacity: alloyExpanded ? 1 : 0
-                }}
-                style={{ overflow: 'hidden' }}
-                transition={{ duration: 0.2 }}
-              >
+              <AnimatePresence initial={false}>
+                {alloyExpanded && (
+                  <motion.div
+                    key="alloy-content"
+                    className="alloy-content"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ overflow: 'hidden' }}
+                  >
               <PanelBody>
                 {/* Reference source tabs */}
                 <div className="btn-group ref-tabs">
@@ -964,56 +958,67 @@ export default function App() {
                 </div>
 
                 {/* Reference content - all tabs stay mounted, collapsible */}
-                {!refSourceCollapsed && (
-                  <>
-                    <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
-                      <div 
-                        className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
-                        onClick={() => setActiveDropTarget('refs')}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                      >
-                        <span className="dropzone-text">
-                          DROP OR PASTE IMAGES
-                        </span>
+                <AnimatePresence initial={false}>
+                  {!refSourceCollapsed && (
+                    <motion.div
+                      key="ref-content"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
+                        <div 
+                          className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
+                          onClick={() => setActiveDropTarget('refs')}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          <span className="dropzone-text">
+                            DROP OR PASTE IMAGES
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className={`ref-tab-content ${refSource === 'items' ? 'active' : ''}`}>
-                      <HighriseSearch
-                        references={references}
-                        onAddReference={addReference}
-                        onRemoveReference={removeReference}
-                        maxRefs={14}
-                        disabled={isGenerating}
-                        bridgeConnected={bridgeConnected}
-                        useAPBridge={inAPContext}
-                      />
-                    </div>
-                    <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>
-                      <HistoryGrid
-                        authenticated={authenticated}
-                        onLogin={login}
-                        references={references}
-                        onAddReference={addReference}
-                        onRemoveReference={removeReference}
-                        maxRefs={14}
-                        disabled={isGenerating}
-                        isActive={refSource === 'history'}
-                        onReplay={handleReplay}
-                        onRefine={(url) => {
-                          setEditImage({ url })
-                          detectAndSetAspectRatio(url)
-                          setRefineExpanded(false) // Collapse picker since we have image
-                          setTimeout(scrollToRefine, 100)
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
+                      <div className={`ref-tab-content ${refSource === 'items' ? 'active' : ''}`}>
+                        <HighriseSearch
+                          references={references}
+                          onAddReference={addReference}
+                          onRemoveReference={removeReference}
+                          maxRefs={14}
+                          disabled={isGenerating}
+                          bridgeConnected={bridgeConnected}
+                          useAPBridge={inAPContext}
+                        />
+                      </div>
+                      <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>
+                        <HistoryGrid
+                          authenticated={authenticated}
+                          onLogin={login}
+                          references={references}
+                          onAddReference={addReference}
+                          onRemoveReference={removeReference}
+                          maxRefs={14}
+                          disabled={isGenerating}
+                          isActive={refSource === 'history'}
+                          onReplay={handleReplay}
+                          onRefine={(url) => {
+                            setEditImage({ url })
+                            detectAndSetAspectRatio(url)
+                            setRefineExpanded(false) // Collapse picker since we have image
+                            setTimeout(scrollToRefine, 100)
+                          }}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
               </PanelBody>
-              </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {/* Always visible: Selected references - outside collapsible area */}
               {references.length > 0 && (
                 <div className="active-refs">
