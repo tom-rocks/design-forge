@@ -23,15 +23,30 @@ import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
 import { FavoriteFolder } from './FavoriteFolder'
 
+// Get display URL for Highrise items based on itemId
+function getItemDisplayUrl(itemId: string): string {
+  if (itemId.startsWith('bg-')) {
+    return `https://cdn.highrisegame.com/background/${itemId}/full`
+  } else if (itemId.startsWith('cn-')) {
+    return `https://cdn.highrisegame.com/container/${itemId}/full`
+  } else {
+    // Avatar items - AP context is authenticated
+    return `https://production-ap.highrise.game/avataritem/front/${itemId}.png`
+  }
+}
+
 // Resolve display URL (thumbnail for grid) from favorite data
-// For works with generationId, use server thumbnail endpoint
-// For everything else, use stored URLs (they were saved when working)
+// Uses IDs when available for reliable URLs, falls back to stored URLs
 export function getFavoriteThumbnailUrl(favorite: Favorite): string {
   if (favorite.type === 'work' && favorite.item_data.generationId) {
     // Works: use thumbnail endpoint for faster loading
     return `${API_URL}/api/generations/${favorite.item_data.generationId}/thumbnail`
   }
-  // Items and other types: use stored thumbnailUrl or imageUrl
+  if (favorite.type === 'item' && favorite.item_data.itemId) {
+    // Items: construct URL from itemId (more reliable than stored URLs)
+    return getItemDisplayUrl(favorite.item_data.itemId)
+  }
+  // Fallback: use stored thumbnailUrl or imageUrl
   return favorite.item_data.thumbnailUrl || favorite.item_data.imageUrl
 }
 
@@ -41,7 +56,11 @@ export function getFavoriteFullUrl(favorite: Favorite): string {
     // Works: use full image endpoint
     return `${API_URL}/api/generations/${favorite.item_data.generationId}/image/0`
   }
-  // Items and other types: use stored imageUrl
+  if (favorite.type === 'item' && favorite.item_data.itemId) {
+    // Items: construct URL from itemId
+    return getItemDisplayUrl(favorite.item_data.itemId)
+  }
+  // Fallback: use stored imageUrl
   return favorite.item_data.imageUrl
 }
 
