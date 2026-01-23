@@ -63,6 +63,9 @@ router.get('/urls', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// Helper to check if string looks like MongoDB ObjectId
+const isMongoId = (str: string) => /^[a-f0-9]{24}$/i.test(str);
+
 // POST /api/favorites - Add a favorite
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -75,6 +78,16 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     
     if (!['item', 'work', 'image'].includes(type)) {
       return res.status(400).json({ error: 'type must be item, work, or image' });
+    }
+    
+    // Validate itemId for item favorites - MUST be dispId, NOT MongoDB ObjectId
+    if (type === 'item' && itemData.itemId) {
+      if (isMongoId(itemData.itemId)) {
+        console.error(`[Favorites] Rejected MongoDB ObjectId as itemId: ${itemData.itemId}`);
+        return res.status(400).json({ 
+          error: 'Invalid itemId - must be dispId (e.g., "shirt-cool-jacket"), not MongoDB ObjectId' 
+        });
+      }
     }
     
     const favorite = await addFavorite({

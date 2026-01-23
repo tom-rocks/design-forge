@@ -222,7 +222,14 @@ export default function HighriseSearch({
         // For now, the optimistic update handles the UI
       } else {
         // Add to favorites - use the display URL (the one that's working)
-        // itemId should be dispId (e.g., "shirt-cool-jacket") for URL construction
+        // itemId MUST be dispId (e.g., "shirt-cool-jacket") for URL construction
+        // Safety check: dispId should contain a dash and NOT be a 24-char hex (MongoDB ID)
+        const itemId = item.dispId
+        if (!itemId || /^[a-f0-9]{24}$/i.test(itemId)) {
+          console.error(`[Favorites] Invalid itemId - refusing to save MongoDB ID: ${itemId}`)
+          return
+        }
+        
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -231,7 +238,7 @@ export default function HighriseSearch({
             type: 'item',
             itemData: {
               imageUrl: displayUrl,
-              itemId: item.dispId,  // Use dispId for reliable URL construction
+              itemId,  // Use dispId for reliable URL construction
               name: item.name,
               category: item.category,
               rarity: item.rarity,
