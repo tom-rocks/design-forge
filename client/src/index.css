@@ -699,7 +699,7 @@ body {
     0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.edit-image-preview .edit-image-remove {
+.edit-image-preview-inner .edit-image-remove {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -719,15 +719,15 @@ body {
   line-height: 1;
 }
 
-.edit-image-preview:hover .edit-image-remove {
+.edit-image-preview-inner:hover .edit-image-remove {
   opacity: 1;
 }
 
-.edit-image-preview .edit-image-remove:hover {
+.edit-image-preview-inner .edit-image-remove:hover {
   background: rgba(0, 0, 0, 0.8);
 }
 
-.edit-image-preview .edit-image-change {
+.edit-image-preview-inner .edit-image-change {
   position: absolute;
   bottom: 8px;
   right: 8px;
@@ -743,11 +743,11 @@ body {
   transition: opacity 0.2s, background 0.2s;
 }
 
-.edit-image-preview:hover .edit-image-change {
+.edit-image-preview-inner:hover .edit-image-change {
   opacity: 1;
 }
 
-.edit-image-preview .edit-image-change:hover {
+.edit-image-preview-inner .edit-image-change:hover {
   background: rgba(0, 0, 0, 0.8);
 }
 

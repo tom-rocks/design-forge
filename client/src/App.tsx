@@ -802,14 +802,16 @@ export default function App() {
                   {/* Show selected image preview at top if exists */}
                   {editImage && (
                     <div className="edit-image-preview" style={{ marginBottom: 12 }}>
-                      <img src={editImage.url} alt="Image to refine" />
-                      <button 
-                        onClick={() => setEditImage(null)} 
-                        className="edit-image-remove"
-                        title="Remove image"
-                      >
-                        ×
-                      </button>
+                      <div className="edit-image-preview-inner">
+                        <img src={editImage.url} alt="Image to refine" />
+                        <button 
+                          onClick={() => setEditImage(null)} 
+                          className="edit-image-remove"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                   )}
                   <div className="btn-group refine-tabs">
