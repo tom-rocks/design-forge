@@ -22,19 +22,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
 import { FavoriteFolder } from './FavoriteFolder'
-import { checkAPContext, getItemByMongoIdViaAP } from '../lib/ap-bridge'
-
 // Clothing categories that support crisp=1 for higher quality (same as HighriseSearch)
 const CLOTHING_CATEGORIES = [
   'shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
   'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
   'gloves', 'watch', 'sock'
 ]
-
-// Check if a string looks like a MongoDB ObjectId (24 hex chars)
-function isMongoId(str: string): boolean {
-  return /^[a-f0-9]{24}$/i.test(str)
-}
 
 // Get display URL for Highrise items based on dispId
 // Uses the EXACT same logic as HighriseSearch Items gallery
@@ -184,7 +177,6 @@ export function Favorites({
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [addingToFolder, setAddingToFolder] = useState(false)
   const [selectedForFolder, setSelectedForFolder] = useState<Set<string>>(new Set())
-  const hasRepairedRef = useRef(false)
   
   // Reset image loaded state when lightbox changes
   useEffect(() => {
@@ -250,97 +242,12 @@ export function Favorites({
     }
   }, [authenticated])
   
-  // Auto-repair favorites with bad itemIds (runs once per session)
-  // Uses AP context to look up MongoDB _id and get correct disp_id
-  const repairFavorites = useCallback(async () => {
-    if (hasRepairedRef.current || !authenticated) return
-    hasRepairedRef.current = true
-    
-    // Find item favorites with MongoDB IDs that need repair
-    const itemsToRepair = favorites.filter(f => 
-      f.type === 'item' && f.item_data.itemId && isMongoId(f.item_data.itemId)
-    )
-    
-    if (itemsToRepair.length === 0) {
-      console.log('[Favorites] No items need repair')
-      return
-    }
-    
-    console.log(`[Favorites] Found ${itemsToRepair.length} items with MongoDB IDs to repair`)
-    
-    // Only repair if in AP context (can look up by _id)
-    if (!checkAPContext()) {
-      console.log('[Favorites] Not in AP context, cannot repair via _id lookup')
-      // Try server-side repair as fallback (URL extraction)
-      try {
-        const res = await fetch(`${API_URL}/api/favorites/repair`, {
-          method: 'POST',
-          credentials: 'include',
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.fixed > 0) {
-            console.log(`[Favorites] Server repaired ${data.fixed} favorites`)
-            fetchFavorites(false)
-          }
-        }
-      } catch (e) {
-        console.error('[Favorites] Server repair failed:', e)
-      }
-      return
-    }
-    
-    console.log('[Favorites] In AP context, attempting repair via _id lookup')
-    let fixed = 0
-    
-    for (const fav of itemsToRepair) {
-      const mongoId = fav.item_data.itemId!
-      try {
-        const result = await getItemByMongoIdViaAP(mongoId)
-        if (result.item?.disp_id) {
-          const dispId = result.item.disp_id
-          console.log(`[Favorites] Found disp_id for ${mongoId}: ${dispId}`)
-          
-          // Update the favorite on the server
-          const updatedItemData = {
-            ...fav.item_data,
-            itemId: dispId,
-            category: result.item.category || fav.item_data.category,
-          }
-          
-          await fetch(`${API_URL}/api/favorites/${fav.id}/repair`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ itemData: updatedItemData }),
-          })
-          
-          fixed++
-        } else {
-          console.log(`[Favorites] No disp_id found for ${mongoId}`)
-        }
-      } catch (e) {
-        console.error(`[Favorites] Failed to repair ${mongoId}:`, e)
-      }
-    }
-    
-    if (fixed > 0) {
-      console.log(`[Favorites] Repaired ${fixed} favorites via AP lookup`)
-      fetchFavorites(false)
-    }
-  }, [authenticated, favorites, fetchFavorites])
   
   // Initial fetch
   useEffect(() => {
     fetchFavorites()
   }, [fetchFavorites])
   
-  // Run repair after initial load
-  useEffect(() => {
-    if (!loading && authenticated && favorites.length > 0) {
-      repairFavorites()
-    }
-  }, [loading, authenticated, favorites.length, repairFavorites])
   
   // Refetch when tab becomes active (if stale > 5 seconds)
   useEffect(() => {
