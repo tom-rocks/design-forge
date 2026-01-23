@@ -1876,6 +1876,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  aspect-ratio: 1;
   /* Performance optimizations */
   content-visibility: auto;
   contain-intrinsic-size: 80px 80px;
@@ -2327,6 +2328,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  aspect-ratio: 1;
   /* Performance optimizations */
   content-visibility: auto;
   contain-intrinsic-size: 80px 80px;
