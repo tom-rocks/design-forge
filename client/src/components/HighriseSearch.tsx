@@ -222,6 +222,7 @@ export default function HighriseSearch({
         // For now, the optimistic update handles the UI
       } else {
         // Add to favorites - use the display URL (the one that's working)
+        // itemId should be dispId (e.g., "shirt-cool-jacket") for URL construction
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -230,7 +231,7 @@ export default function HighriseSearch({
             type: 'item',
             itemData: {
               imageUrl: displayUrl,
-              itemId: item.id,
+              itemId: item.dispId,  // Use dispId for reliable URL construction
               name: item.name,
               category: item.category,
               rarity: item.rarity,
@@ -315,6 +316,7 @@ export default function HighriseSearch({
               if (emoteImageUrl) {
                 return {
                   id: item._id || dispId,
+                  dispId,  // Keep dispId for URL construction
                   name: item.disp_name || item.name,
                   category,
                   rarity: item.rarity || 'common',
@@ -351,6 +353,7 @@ export default function HighriseSearch({
             
             return {
               id: item._id || dispId,
+              dispId,  // Keep dispId for URL construction
               name: item.disp_name || item.name,
               category,
               rarity: item.rarity || 'common',
