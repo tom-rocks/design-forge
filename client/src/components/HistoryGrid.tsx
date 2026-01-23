@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Gem, Flame, Hammer, Search } from 'lucide-react'
+import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Gem, Flame, Hammer, Search, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -437,6 +437,13 @@ export default function HistoryGrid({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
+              <button 
+                className="lightbox-close"
+                onClick={() => setLightbox(null)}
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
               <div className="lightbox-image-container">
                 {!lightboxImageLoaded && (
                   <div className="lightbox-image-loading">

@@ -427,16 +427,27 @@ export default function HighriseSearch({
   // Download image
   const downloadImage = async (item: HighriseItem) => {
     try {
-      const res = await fetch(item.imageUrl)
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${item.name.replace(/[^a-z0-9]/gi, '-')}.png`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const imageUrl = getDisplayUrl(item)
+      // If it's a data URL, we can use it directly
+      if (imageUrl.startsWith('data:')) {
+        const a = document.createElement('a')
+        a.href = imageUrl
+        a.download = `${item.name.replace(/[^a-z0-9]/gi, '-')}.png`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      } else {
+        const res = await fetch(imageUrl)
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${item.name.replace(/[^a-z0-9]/gi, '-')}.png`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
     } catch (e) {
       console.error('Failed to download:', e)
     }
@@ -700,7 +711,7 @@ export default function HighriseSearch({
                   </div>
                 )}
                 <motion.img
-                  src={lightbox.imageUrl}
+                  src={getDisplayUrl(lightbox)}
                   alt={lightbox.name}
                   onLoad={() => setLightboxImageLoaded(true)}
                   initial={{ opacity: 0 }}
