@@ -511,7 +511,7 @@ export function Favorites({
       {expandedFolder && (
         <div className="favorites-folder-header">
           <button 
-            className="btn btn-ghost btn-sm"
+            className="btn btn-dark btn-sm"
             onClick={() => setExpandedFolder(null)}
           >
             ← Back
