@@ -1904,12 +1904,6 @@ body {
   touch-action: manipulation;
 }
 
-.highrise-item::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
-}
-
 .highrise-item img {
   position: absolute;
   inset: 0;
@@ -2349,12 +2343,6 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-}
-
-.history-item::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
 }
 
 .history-item img {
