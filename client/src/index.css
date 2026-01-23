@@ -3794,9 +3794,15 @@ body {
 }
 
 .folder-preview-item {
-  aspect-ratio: 1;
+  position: relative;
   background: var(--surface-inset);
   overflow: hidden;
+}
+
+.folder-preview-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;
 }
 
 .folder-preview-item.empty {
@@ -3804,6 +3810,8 @@ body {
 }
 
 .folder-preview-item img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

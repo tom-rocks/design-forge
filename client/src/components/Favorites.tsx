@@ -29,6 +29,9 @@ const CLOTHING_CATEGORIES = [
   'gloves', 'watch', 'sock'
 ]
 
+// Check if string looks like MongoDB ObjectId (24 hex characters)
+const isMongoId = (str: string) => /^[a-f0-9]{24}$/i.test(str)
+
 // Get display URL for Highrise items based on dispId
 // Uses the EXACT same logic as HighriseSearch Items gallery
 function getItemDisplayUrl(dispId: string): string {
@@ -60,45 +63,51 @@ function getItemCrispUrl(dispId: string, category?: string): string {
 
 // Resolve display URL (thumbnail for grid) from favorite data
 // Uses IDs when available for reliable URLs, falls back to stored URLs
+// IMPORTANT: Skip itemId if it looks like MongoDB ObjectId (legacy broken data)
 export function getFavoriteThumbnailUrl(favorite: Favorite): string {
   if (favorite.type === 'work' && favorite.item_data.generationId) {
     // Works: use thumbnail endpoint for faster loading
     return `${API_URL}/api/generations/${favorite.item_data.generationId}/thumbnail`
   }
-  if (favorite.type === 'item' && favorite.item_data.itemId) {
-    // Items: construct URL from itemId (more reliable than stored URLs)
-    return getItemDisplayUrl(favorite.item_data.itemId)
+  const itemId = favorite.item_data.itemId
+  if (favorite.type === 'item' && itemId && !isMongoId(itemId)) {
+    // Items: construct URL from dispId (more reliable than stored URLs)
+    return getItemDisplayUrl(itemId)
   }
-  // Fallback: use stored thumbnailUrl or imageUrl
+  // Fallback: use stored thumbnailUrl or imageUrl (for legacy/broken favorites)
   return favorite.item_data.thumbnailUrl || favorite.item_data.imageUrl
 }
 
 // Resolve full image URL from favorite data (for lightbox, download)
+// IMPORTANT: Skip itemId if it looks like MongoDB ObjectId (legacy broken data)
 export function getFavoriteFullUrl(favorite: Favorite): string {
   if (favorite.type === 'work' && favorite.item_data.generationId) {
     // Works: use full image endpoint
     return `${API_URL}/api/generations/${favorite.item_data.generationId}/image/0`
   }
-  if (favorite.type === 'item' && favorite.item_data.itemId) {
-    // Items: construct URL from itemId
-    return getItemDisplayUrl(favorite.item_data.itemId)
+  const itemId = favorite.item_data.itemId
+  if (favorite.type === 'item' && itemId && !isMongoId(itemId)) {
+    // Items: construct URL from dispId
+    return getItemDisplayUrl(itemId)
   }
-  // Fallback: use stored imageUrl
+  // Fallback: use stored imageUrl (for legacy/broken favorites)
   return favorite.item_data.imageUrl
 }
 
 // Resolve crisp (high quality) URL for attaching as reference
 // Uses crisp version for clothing items, regular for others
+// IMPORTANT: Skip itemId if it looks like MongoDB ObjectId (legacy broken data)
 export function getFavoriteReferenceUrl(favorite: Favorite): string {
   if (favorite.type === 'work' && favorite.item_data.generationId) {
     // Works: use full image endpoint
     return `${API_URL}/api/generations/${favorite.item_data.generationId}/image/0`
   }
-  if (favorite.type === 'item' && favorite.item_data.itemId) {
+  const itemId = favorite.item_data.itemId
+  if (favorite.type === 'item' && itemId && !isMongoId(itemId)) {
     // Items: use crisp URL for clothing, regular for others
-    return getItemCrispUrl(favorite.item_data.itemId, favorite.item_data.category)
+    return getItemCrispUrl(itemId, favorite.item_data.category)
   }
-  // Fallback: use stored imageUrl
+  // Fallback: use stored imageUrl (for legacy/broken favorites)
   return favorite.item_data.imageUrl
 }
 

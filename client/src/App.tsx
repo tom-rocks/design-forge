@@ -891,11 +891,14 @@ export default function App() {
                         onLogin={login}
                         singleSelect
                         onSingleSelect={(fav) => { 
-                          // For items with itemId, construct crisp URL for best quality
-                          // Otherwise use stored imageUrl
+                          // For items with valid dispId, construct crisp URL for best quality
+                          // Skip if itemId looks like MongoDB ObjectId (24 hex chars) - use fallback
                           let url = fav.item_data.imageUrl
-                          if (fav.type === 'item' && fav.item_data.itemId) {
-                            const dispId = fav.item_data.itemId
+                          const itemId = fav.item_data.itemId
+                          const isMongoId = itemId && /^[a-f0-9]{24}$/i.test(itemId)
+                          
+                          if (fav.type === 'item' && itemId && !isMongoId) {
+                            const dispId = itemId
                             // Clothing categories support crisp
                             const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
                               'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
