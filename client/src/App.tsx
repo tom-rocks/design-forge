@@ -1048,16 +1048,17 @@ export default function App() {
                       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                       style={{ overflow: 'hidden' }}
                     >
-                      {/* Tab content with fade transitions */}
-                      <AnimatePresence mode="wait" initial={false}>
-                        {refSource === 'drop' && (
-                          <motion.div
-                            key="drop"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                          >
+                      {/* Tab content with layout animation for smooth height changes */}
+                      <motion.div layout transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}>
+                        <AnimatePresence mode="wait" initial={false}>
+                          {refSource === 'drop' && (
+                            <motion.div
+                              key="drop"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.12 }}
+                            >
                             <div 
                               className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
                               onClick={() => setActiveDropTarget('refs')}
@@ -1071,14 +1072,14 @@ export default function App() {
                             </div>
                           </motion.div>
                         )}
-                        {refSource === 'items' && (
-                          <motion.div
-                            key="items"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                          >
+                          {refSource === 'items' && (
+                            <motion.div
+                              key="items"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.12 }}
+                            >
                             <HighriseSearch
                               references={references}
                               onAddReference={addReference}
@@ -1090,15 +1091,15 @@ export default function App() {
                             />
                           </motion.div>
                         )}
-                        {refSource === 'history' && (
-                          <motion.div
-                            key="history"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                          >
-                            <HistoryGrid
+                          {refSource === 'history' && (
+                            <motion.div
+                              key="history"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.12 }}
+                            >
+                              <HistoryGrid
                               authenticated={authenticated}
                               onLogin={login}
                               references={references}
@@ -1118,27 +1119,28 @@ export default function App() {
                             />
                           </motion.div>
                         )}
-                        {refSource === 'favorites' && (
-                          <motion.div
-                            key="favorites"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                          >
-                            <Favorites
-                              authenticated={authenticated}
-                              onLogin={login}
-                              references={references}
-                              onAddReference={addReference}
-                              onRemoveReference={removeReference}
-                              maxRefs={14}
-                              disabled={isGenerating}
-                              isActive={refSource === 'favorites'}
-                            />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          {refSource === 'favorites' && (
+                            <motion.div
+                              key="favorites"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.12 }}
+                            >
+                              <Favorites
+                                authenticated={authenticated}
+                                onLogin={login}
+                                references={references}
+                                onAddReference={addReference}
+                                onRemoveReference={removeReference}
+                                maxRefs={14}
+                                disabled={isGenerating}
+                                isActive={refSource === 'favorites'}
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
