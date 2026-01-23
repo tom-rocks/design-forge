@@ -1877,10 +1877,6 @@ body {
   -webkit-user-select: none;
   touch-action: manipulation;
   aspect-ratio: 1;
-  /* Performance optimizations */
-  content-visibility: auto;
-  contain-intrinsic-size: 80px 80px;
-  contain: layout style paint;
 }
 
 /* Removed ::before - using aspect-ratio: 1 instead */
@@ -2325,10 +2321,6 @@ body {
   -webkit-user-select: none;
   touch-action: manipulation;
   aspect-ratio: 1;
-  /* Performance optimizations */
-  content-visibility: auto;
-  contain-intrinsic-size: 80px 80px;
-  contain: layout style paint;
 }
 
 /* Removed ::before - using aspect-ratio: 1 instead */
