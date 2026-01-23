@@ -1111,7 +1111,7 @@ export default function App() {
                               onRefine={(url) => {
                                 setEditImage({ url })
                                 detectAndSetAspectRatio(url)
-                                setRefineExpanded(false) // Collapse picker since we have image
+                                setRefineExpanded(true) // Expand to show the image was added
                                 setTimeout(scrollToRefine, 100)
                               }}
                               onUseAlloy={addAlloyReferences}
@@ -1283,7 +1283,7 @@ export default function App() {
                               onClick={() => {
                                 setEditImage({ url })
                                 detectAndSetAspectRatio(url)
-                                setRefineExpanded(false)
+                                setRefineExpanded(true) // Expand to show the image was added
                                 setTimeout(scrollToRefine, 100)
                               }}
                               title="Refine this image"
@@ -1458,7 +1458,7 @@ export default function App() {
                     onClick={() => {
                       setEditImage({ url: outputLightbox })
                       detectAndSetAspectRatio(outputLightbox)
-                      setRefineExpanded(false)
+                      setRefineExpanded(true) // Expand to show the image was added
                       setOutputLightbox(null)
                       setTimeout(scrollToRefine, 100)
                     }}
@@ -1619,7 +1619,7 @@ export default function App() {
                             onClick={() => {
                               setEditImage({ url: galleryExpanded.url })
                               detectAndSetAspectRatio(galleryExpanded.url)
-                              setRefineExpanded(false)
+                              setRefineExpanded(true) // Expand to show the image was added
                               setGalleryOpen(false)
                               setGalleryExpanded(null)
                               setTimeout(scrollToRefine, 100)
