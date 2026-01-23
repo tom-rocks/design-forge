@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import {
+import pool, {
   getFavorites,
   addFavorite,
   updateFavorite,
@@ -249,6 +249,35 @@ router.post('/repair', requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Favorites] Error repairing:', error);
     res.status(500).json({ error: 'Failed to repair favorites' });
+  }
+});
+
+// PUT /api/favorites/:id/repair - Update a favorite's itemData (for client-side repair)
+router.put('/:id/repair', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { id } = req.params;
+    const { itemData } = req.body;
+    
+    if (!itemData) {
+      return res.status(400).json({ error: 'itemData is required' });
+    }
+    
+    // Update the item_data for this favorite
+    const result = await pool.query(
+      `UPDATE favorites SET item_data = $1 WHERE id = $2 AND user_id = $3 RETURNING *`,
+      [itemData, id, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Favorite not found' });
+    }
+    
+    console.log(`[Favorites] Updated item_data for favorite ${id}`);
+    res.json({ favorite: result.rows[0] });
+  } catch (error) {
+    console.error('[Favorites] Error updating item_data:', error);
+    res.status(500).json({ error: 'Failed to update favorite' });
   }
 });
 

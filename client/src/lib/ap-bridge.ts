@@ -245,7 +245,7 @@ export async function searchItemsViaAP(params: {
 }
 
 /**
- * Get single item via AP
+ * Get single item via AP by disp_id
  */
 export async function getItemViaAP(dispId: string) {
   const body = {
@@ -257,6 +257,20 @@ export async function getItemViaAP(dispId: string) {
   };
   
   return apRequest<{ items: unknown[] }>('/api', 'POST', body);
+}
+
+/**
+ * Get single item via AP by MongoDB _id
+ * Used to repair old favorites that stored _id instead of disp_id
+ */
+export async function getItemByMongoIdViaAP(mongoId: string) {
+  // Try GetItemRequest with _id
+  const body = {
+    _type: 'GetItemRequest',
+    _id: mongoId,
+  };
+  
+  return apRequest<{ item?: { disp_id?: string; disp_name?: string; category?: string } }>('/api', 'POST', body);
 }
 
 /**

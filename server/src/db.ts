@@ -484,26 +484,36 @@ function isMongoId(str: string): boolean {
 
 // Helper to extract dispId from a URL
 function extractDispIdFromUrl(url: string): string | null {
+  // Skip data URLs - can't extract dispId
+  if (url.startsWith('data:')) {
+    return null;
+  }
+  
   // Try various URL patterns:
   // https://production-ap.highrise.game/avataritem/front/shirt-cool-jacket.png
   // https://cdn.highrisegame.com/avatar/shirt-cool-jacket.png
   // https://cdn.highrisegame.com/background/bg-something/full
   // https://cdn.highrisegame.com/container/cn-something/full
+  // /api/highrise/proxy/shirt-cool-jacket.png
+  
+  // Server proxy pattern: /api/highrise/proxy/{dispId}.png
+  const proxyMatch = url.match(/\/api\/highrise\/proxy\/([^/.?]+)\.png/);
+  if (proxyMatch) return proxyMatch[1];
   
   // AP URL pattern: /avataritem/front/{dispId}.png
-  const apMatch = url.match(/\/avataritem\/front\/([^/.]+)\.png/);
+  const apMatch = url.match(/\/avataritem\/front\/([^/.?]+)\.png/);
   if (apMatch) return apMatch[1];
   
   // CDN avatar pattern: /avatar/{dispId}.png
-  const cdnAvatarMatch = url.match(/cdn\.highrisegame\.com\/avatar\/([^/.]+)\.png/);
+  const cdnAvatarMatch = url.match(/cdn\.highrisegame\.com\/avatar\/([^/.?]+)\.png/);
   if (cdnAvatarMatch) return cdnAvatarMatch[1];
   
   // CDN background pattern: /background/{dispId}/full
-  const cdnBgMatch = url.match(/cdn\.highrisegame\.com\/background\/([^/]+)\/full/);
+  const cdnBgMatch = url.match(/cdn\.highrisegame\.com\/background\/([^/?]+)\/full/);
   if (cdnBgMatch) return cdnBgMatch[1];
   
   // CDN container pattern: /container/{dispId}/full
-  const cdnContainerMatch = url.match(/cdn\.highrisegame\.com\/container\/([^/]+)\/full/);
+  const cdnContainerMatch = url.match(/cdn\.highrisegame\.com\/container\/([^/?]+)\/full/);
   if (cdnContainerMatch) return cdnContainerMatch[1];
   
   return null;
