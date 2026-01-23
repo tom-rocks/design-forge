@@ -446,7 +446,7 @@ export default function HistoryGrid({
           className="input"
         />
       </div>
-      <div className="history-grid" ref={gridRef}>
+      <div className="highrise-grid" ref={gridRef}>
         {displayImages.map(img => {
           const gen = img.generation
           const selected = isImageSelected(img)
