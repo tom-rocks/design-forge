@@ -233,7 +233,13 @@ export function Favorites({
       }
       
       const data = await res.json()
-      setFavorites(data.favorites || [])
+      // Normalize favorites to ensure folder_ids is always an array
+      // (handles migration from old folder_id to new folder_ids)
+      const normalizedFavorites = (data.favorites || []).map((f: Favorite) => ({
+        ...f,
+        folder_ids: f.folder_ids || (f as any).folder_id ? [(f as any).folder_id] : []
+      }))
+      setFavorites(normalizedFavorites)
       setFolders(data.folders || [])
       setError(null)
       setLastFetchTime(Date.now())
@@ -295,7 +301,7 @@ export function Favorites({
       setFolders(prev => prev.filter(f => f.id !== folderId))
       // Items in the folder will have the folder removed from their folder_ids
       setFavorites(prev => prev.map(f => 
-        f.folder_ids.includes(folderId) 
+        f.folder_ids?.includes(folderId) 
           ? { ...f, folder_ids: f.folder_ids.filter(id => id !== folderId) } 
           : f
       ))
@@ -472,7 +478,7 @@ export function Favorites({
       const folderId = overId.replace('folder-', '')
       const favorite = favorites.find(f => f.id === activeId)
       
-      if (favorite && !favorite.folder_ids.includes(folderId)) {
+      if (favorite && !favorite.folder_ids?.includes(folderId)) {
         // Add to folder
         try {
           await fetch(`${API_URL}/api/favorites/${activeId}`, {
@@ -519,8 +525,8 @@ export function Favorites({
         // Reorder items among themselves
         // IMPORTANT: Use same filtering as display to get correct indices
         const itemsToReorder = expandedFolder
-          ? favorites.filter(f => f.folder_ids.includes(expandedFolder) && !failedImages.has(f.id))
-          : favorites.filter(f => f.folder_ids.length === 0 && !failedImages.has(f.id))
+          ? favorites.filter(f => f.folder_ids?.includes(expandedFolder) && !failedImages.has(f.id))
+          : favorites.filter(f => (f.folder_ids?.length ?? 0) === 0 && !failedImages.has(f.id))
         
         const oldIndex = itemsToReorder.findIndex(f => f.id === activeId)
         const newIndex = itemsToReorder.findIndex(f => f.id === overId)
@@ -532,9 +538,9 @@ export function Favorites({
           const otherItems = favorites.filter(f => {
             // Keep items that are NOT in the group we're reordering
             if (expandedFolder) {
-              return !f.folder_ids.includes(expandedFolder) || failedImages.has(f.id)
+              return !f.folder_ids?.includes(expandedFolder) || failedImages.has(f.id)
             } else {
-              return f.folder_ids.length > 0 || failedImages.has(f.id)
+              return (f.folder_ids?.length ?? 0) > 0 || failedImages.has(f.id)
             }
           })
           setFavorites([...otherItems, ...newItems])
@@ -598,13 +604,13 @@ export function Favorites({
   // Get items to display - filter out failed images
   // Root items are those NOT in any folder
   const rootItems = useMemo(() => 
-    favorites.filter(f => f.folder_ids.length === 0 && !failedImages.has(f.id)),
+    favorites.filter(f => (f.folder_ids?.length ?? 0) === 0 && !failedImages.has(f.id)),
     [favorites, failedImages]
   )
   // Folder items are those that include the expanded folder ID
   const folderItems = useMemo(() => 
     expandedFolder 
-      ? favorites.filter(f => f.folder_ids.includes(expandedFolder) && !failedImages.has(f.id))
+      ? favorites.filter(f => f.folder_ids?.includes(expandedFolder) && !failedImages.has(f.id))
       : [],
     [favorites, expandedFolder, failedImages]
   )
@@ -615,7 +621,7 @@ export function Favorites({
     // Return items not already in this folder
     return favorites.filter(f => {
       if (failedImages.has(f.id)) return false
-      return !f.folder_ids.includes(expandedFolder)
+      return !f.folder_ids?.includes(expandedFolder)
     })
   }, [favorites, expandedFolder, failedImages])
   
@@ -706,7 +712,7 @@ export function Favorites({
               <FavoriteFolder
                 key={folder.id}
                 folder={folder}
-                items={favorites.filter(f => f.folder_ids.includes(folder.id) && !failedImages.has(f.id))}
+                items={favorites.filter(f => f.folder_ids?.includes(folder.id) && !failedImages.has(f.id))}
                 onOpen={() => setExpandedFolder(folder.id)}
                 onDelete={() => handleDeleteFolder(folder.id)}
                 onRename={(name) => handleRenameFolder(folder.id, name)}
@@ -784,14 +790,14 @@ export function Favorites({
             <div className="favorite-folder dragging">
               <div className="folder-preview">
                 {favorites
-                  .filter(f => f.folder_ids.includes(activeFolder.id))
+                  .filter(f => f.folder_ids?.includes(activeFolder.id))
                   .slice(0, 4)
                   .map((item) => (
                     <div key={item.id} className="folder-preview-item">
                       <img src={getFavoriteThumbnailUrl(item)} alt="" />
                     </div>
                   ))}
-                {[...Array(Math.max(0, 4 - favorites.filter(f => f.folder_ids.includes(activeFolder.id)).length))].map((_, i) => (
+                {[...Array(Math.max(0, 4 - favorites.filter(f => f.folder_ids?.includes(activeFolder.id)).length))].map((_, i) => (
                   <div key={`empty-${i}`} className="folder-preview-item empty" />
                 ))}
               </div>
