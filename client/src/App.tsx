@@ -99,6 +99,7 @@ export default function App() {
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
   const [refSource, setRefSource] = useState<RefSource>('drop')
   const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
+  const [favoritesResetKey, setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
   // Forge specs state
@@ -984,12 +985,8 @@ export default function App() {
                   <button 
                     className={`btn ${refSource === 'drop' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => {
-                      if (refSource === 'drop' && !refSourceCollapsed) {
-                        setRefSourceCollapsed(true)
-                      } else {
-                        setRefSource('drop')
-                        setRefSourceCollapsed(false)
-                      }
+                      setRefSource('drop')
+                      setRefSourceCollapsed(false)
                     }}
                   >
                     <span className="btn-icon icon-drop" />
@@ -998,12 +995,8 @@ export default function App() {
                   <button 
                     className={`btn ${refSource === 'items' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => {
-                      if (refSource === 'items' && !refSourceCollapsed) {
-                        setRefSourceCollapsed(true)
-                      } else {
-                        setRefSource('items')
-                        setRefSourceCollapsed(false)
-                      }
+                      setRefSource('items')
+                      setRefSourceCollapsed(false)
                     }}
                   >
                     <span className="btn-icon icon-items" />
@@ -1012,12 +1005,8 @@ export default function App() {
                   <button 
                     className={`btn ${refSource === 'history' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => {
-                      if (refSource === 'history' && !refSourceCollapsed) {
-                        setRefSourceCollapsed(true)
-                      } else {
-                        setRefSource('history')
-                        setRefSourceCollapsed(false)
-                      }
+                      setRefSource('history')
+                      setRefSourceCollapsed(false)
                     }}
                   >
                     <span className="btn-icon icon-works" />
@@ -1027,7 +1016,8 @@ export default function App() {
                     className={`btn ${refSource === 'favorites' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
                     onClick={() => {
                       if (refSource === 'favorites' && !refSourceCollapsed) {
-                        setRefSourceCollapsed(true)
+                        // Already on Favorites - trigger reset (back to root)
+                        setFavoritesResetKey(k => k + 1)
                       } else {
                         setRefSource('favorites')
                         setRefSourceCollapsed(false)
@@ -1138,6 +1128,7 @@ export default function App() {
                                 maxRefs={14}
                                 disabled={isGenerating}
                                 isActive={refSource === 'favorites'}
+                                resetKey={favoritesResetKey}
                               />
                             </motion.div>
                           )}

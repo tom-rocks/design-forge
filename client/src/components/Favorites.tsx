@@ -107,6 +107,8 @@ interface FavoritesProps {
   onSingleSelect?: (favorite: Favorite) => void
   // Whether this tab is currently active (triggers refresh)
   isActive?: boolean
+  // Reset key - when changed, resets to root view
+  resetKey?: number
 }
 
 export function Favorites({
@@ -120,6 +122,7 @@ export function Favorites({
   singleSelect,
   onSingleSelect,
   isActive = true,
+  resetKey,
 }: FavoritesProps) {
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [folders, setFolders] = useState<Folder[]>([])
@@ -142,6 +145,15 @@ export function Favorites({
       setLightboxImageLoaded(false)
     }
   }, [lightbox?.id])
+  
+  // Reset to root view when resetKey changes (tab clicked while already active)
+  useEffect(() => {
+    if (resetKey !== undefined) {
+      setExpandedFolder(null)
+      setAddingToFolder(false)
+      setSelectedForFolder(new Set())
+    }
+  }, [resetKey])
   
   // Track failed images - filter them out of display
   const handleImageFailed = useCallback((id: string) => {
