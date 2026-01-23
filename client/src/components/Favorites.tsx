@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   DndContext, 
   closestCenter,
@@ -88,12 +88,6 @@ export function Favorites({
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [lastFetchTime, setLastFetchTime] = useState(0)
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  
-  // Track failed images - same pattern as HighriseSearch
-  const handleImageFailed = useCallback((id: string) => {
-    setFailedImages(prev => new Set(prev).add(id))
-  }, [])
   
   // Drag sensors
   const sensors = useSensors(
@@ -410,17 +404,11 @@ export function Favorites({
     }
   }
   
-  // Get items to display - filter out failed images (same as HighriseSearch)
-  const rootItems = useMemo(() => 
-    favorites.filter(f => !f.folder_id && !failedImages.has(f.id)),
-    [favorites, failedImages]
-  )
-  const folderItems = useMemo(() => 
-    expandedFolder 
-      ? favorites.filter(f => f.folder_id === expandedFolder && !failedImages.has(f.id))
-      : [],
-    [favorites, expandedFolder, failedImages]
-  )
+  // Get items to display
+  const rootItems = favorites.filter(f => !f.folder_id)
+  const folderItems = expandedFolder 
+    ? favorites.filter(f => f.folder_id === expandedFolder)
+    : []
   
   // Not authenticated - same as history-empty
   if (!authenticated) {
@@ -506,7 +494,7 @@ export function Favorites({
               <FavoriteFolder
                 key={folder.id}
                 folder={folder}
-                items={favorites.filter(f => f.folder_id === folder.id && !failedImages.has(f.id))}
+                items={favorites.filter(f => f.folder_id === folder.id)}
                 onOpen={() => setExpandedFolder(folder.id)}
                 onDelete={() => handleDeleteFolder(folder.id)}
                 onRename={(name) => handleRenameFolder(folder.id, name)}
@@ -522,7 +510,6 @@ export function Favorites({
                 disabled={disabled || (!isSelected(favorite) && references.length >= maxRefs)}
                 onClick={() => handleItemClick(favorite)}
                 onDelete={() => handleDeleteFavorite(favorite.id)}
-                onImageFailed={handleImageFailed}
               />
             ))}
             

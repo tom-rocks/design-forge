@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { X, Loader2 } from 'lucide-react'
+import { X, ImageOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite } from './Favorites'
 
@@ -11,7 +11,6 @@ interface FavoriteItemProps {
   disabled: boolean
   onClick: () => void
   onDelete: () => void
-  onImageFailed?: (id: string) => void
 }
 
 export function FavoriteItem({
@@ -20,7 +19,6 @@ export function FavoriteItem({
   disabled,
   onClick,
   onDelete,
-  onImageFailed,
 }: FavoriteItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageFailed, setImageFailed] = useState(false)
@@ -51,7 +49,6 @@ export function FavoriteItem({
     const is1x1 = img.naturalWidth <= 1 && img.naturalHeight <= 1
     if (is1x1) {
       setImageFailed(true)
-      onImageFailed?.(favorite.id)
     } else {
       setImageLoaded(true)
     }
@@ -59,13 +56,10 @@ export function FavoriteItem({
   
   const handleImageError = () => {
     setImageFailed(true)
-    onImageFailed?.(favorite.id)
   }
   
-  // Don't render failed images
-  if (imageFailed) {
-    return null
-  }
+  // Don't hide failed images in favorites - user explicitly saved these
+  // Show a placeholder instead
   
   return (
     <motion.div
@@ -81,20 +75,21 @@ export function FavoriteItem({
       exit={{ opacity: 0, scale: 0.9 }}
       title={favorite.item_data.name || 'Favorite'}
     >
-      <img 
-        src={favorite.item_data.imageUrl} 
-        alt={favorite.item_data.name || ''} 
-        loading="lazy"
-        className={imageLoaded ? 'loaded' : ''}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-      />
-      
-      {/* Loading state - same as highrise-item */}
-      {!imageLoaded && !imageFailed && (
-        <div className="highrise-item-loading">
-          <Loader2 className="w-4 h-4 animate-spin" />
+      {/* Show image or placeholder */}
+      {imageFailed ? (
+        <div className="favorite-image-placeholder">
+          <ImageOff className="w-6 h-6" />
+          <span>{favorite.item_data.name?.slice(0, 15) || 'Image'}</span>
         </div>
+      ) : (
+        <img 
+          src={favorite.item_data.imageUrl} 
+          alt={favorite.item_data.name || ''} 
+          loading="lazy"
+          className={imageLoaded ? 'loaded' : ''}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
       )}
       
       {/* Delete button - positioned like item-pin */}
