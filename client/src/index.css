@@ -2623,6 +2623,15 @@ body {
   background: #d0ccc8;
 }
 
+.lightbox-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.lightbox-btn.active:hover {
+  background: var(--accent-hover);
+}
+
 /* Lightbox Alloy Section */
 .lightbox-alloy {
   background: var(--surface-inset);

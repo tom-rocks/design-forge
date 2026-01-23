@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2 } from 'lucide-react'
+import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star } from 'lucide-react'
 
 // Helper to get aspect ratio icon dimensions
 const getAspectDimensions = (ratio: string | undefined) => {
@@ -34,9 +34,11 @@ interface LightboxProps {
   onRefine?: (url: string) => void
   onReplay?: () => void
   onUseAlloy?: () => void
+  onFavorite?: (url: string) => void
+  isFavorited?: boolean
 }
 
-export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseAlloy }: LightboxProps) {
+export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseAlloy, onFavorite, isFavorited }: LightboxProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
 
   // Reset loaded state when data changes
@@ -177,6 +179,15 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                     title="Refine this image"
                   >
                     <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
+                  </button>
+                )}
+                {onFavorite && (
+                  <button 
+                    className={`lightbox-btn ${isFavorited ? 'active' : ''}`}
+                    onClick={() => onFavorite(data.imageUrl)}
+                    title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <Star className="w-5 h-5" />
                   </button>
                 )}
                 {onDownload && (

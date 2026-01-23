@@ -524,6 +524,10 @@ export default function HistoryGrid({
         onUseAlloy={onUseAlloy && lightbox?.generation.settings?.styleImages ? () => {
           useAlloy(lightbox.generation)
         } : undefined}
+        onFavorite={lightbox ? () => {
+          toggleImageStar(lightbox, { stopPropagation: () => {} } as React.MouseEvent)
+        } : undefined}
+        isFavorited={lightbox ? starredUrls.has(`${API_URL}${lightbox.imageUrl}`) : false}
       />
     </>
   )

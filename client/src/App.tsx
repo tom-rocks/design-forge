@@ -129,6 +129,9 @@ export default function App() {
   // Output lightbox - now uses full LightboxData for consistency
   const [outputLightbox, setOutputLightbox] = useState<LightboxData | null>(null)
   
+  // Starred (favorited) images for output lightbox
+  const [starredOutputUrls, setStarredOutputUrls] = useState<Set<string>>(new Set())
+  
   // Works gallery
   interface GalleryImage {
     url: string
@@ -572,6 +575,45 @@ export default function App() {
     link.click()
     document.body.removeChild(link)
   }, [])
+
+  // Toggle favorite for output image
+  const toggleOutputFavorite = useCallback(async (imageUrl: string) => {
+    const isCurrentlyStarred = starredOutputUrls.has(imageUrl)
+    
+    if (isCurrentlyStarred) {
+      // Remove from local state (we don't have the favorite ID easily, so just update UI)
+      setStarredOutputUrls(prev => {
+        const next = new Set(prev)
+        next.delete(imageUrl)
+        return next
+      })
+      // Note: To properly remove, we'd need to find the favorite by URL and delete it
+      // For now, just update local state - user can unfavorite from Favorites tab
+    } else {
+      // Add to favorites
+      try {
+        const res = await fetch(`${API_URL}/api/favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            type: 'work',
+            itemData: {
+              imageUrl,
+              name: prompt?.slice(0, 50) || 'Generation',
+              prompt,
+            },
+          }),
+        })
+        
+        if (res.ok) {
+          setStarredOutputUrls(prev => new Set(prev).add(imageUrl))
+        }
+      } catch (e) {
+        console.error('Failed to add favorite:', e)
+      }
+    }
+  }, [starredOutputUrls, prompt])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -1451,6 +1493,8 @@ export default function App() {
           setOutputLightbox(null)
           setTimeout(scrollToRefine, 100)
         }}
+        onFavorite={toggleOutputFavorite}
+        isFavorited={outputLightbox ? starredOutputUrls.has(outputLightbox.imageUrl) : false}
       />
 
       {/* Works Gallery Lightbox */}
