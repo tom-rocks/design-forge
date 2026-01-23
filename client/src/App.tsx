@@ -858,8 +858,10 @@ export default function App() {
                       <HighriseSearch 
                         singleSelect
                         onSingleSelect={(item) => { 
-                          setEditImage({ url: item.imageUrl })
-                          detectAndSetAspectRatio(item.imageUrl)
+                          // Use crisp URL for higher quality if available, otherwise regular imageUrl
+                          const url = item.apImageUrlCrisp || item.imageUrl
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
                         }} 
                         bridgeConnected={bridgeConnected}
                         useAPBridge={inAPContext}
@@ -886,8 +888,23 @@ export default function App() {
                         onLogin={login}
                         singleSelect
                         onSingleSelect={(fav) => { 
-                          setEditImage({ url: fav.item_data.imageUrl })
-                          detectAndSetAspectRatio(fav.item_data.imageUrl)
+                          // For items with itemId, construct crisp URL for best quality
+                          // Otherwise use stored imageUrl
+                          let url = fav.item_data.imageUrl
+                          if (fav.type === 'item' && fav.item_data.itemId) {
+                            const dispId = fav.item_data.itemId
+                            // Clothing categories support crisp
+                            const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+                              'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+                              'gloves', 'watch', 'sock'].includes(fav.item_data.category || '')
+                            if (isClothing) {
+                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
+                            } else if (!dispId.startsWith('cn-') && !dispId.startsWith('bg-')) {
+                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+                            }
+                          }
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
                         }}
                         isActive={refineSource === 'favorites'}
                       />
