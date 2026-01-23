@@ -726,6 +726,7 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
           settings: {
             styleImages: styleImages?.map(s => ({ url: s.url, name: s.name })),
             negativePrompt,
+            numImages: numImages || 1,
           },
         });
         

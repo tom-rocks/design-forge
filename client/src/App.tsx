@@ -14,7 +14,9 @@ import {
   HighriseSearch,
   HistoryGrid,
   Favorites,
-  type ReplayConfig
+  Lightbox,
+  type ReplayConfig,
+  type LightboxData
 } from './components'
 import { Dashboard } from './Dashboard'
 
@@ -124,8 +126,8 @@ export default function App() {
   // AP iframe context (when running inside Admin Panel microapp)
   const [inAPContext, setInAPContext] = useState(false)
   
-  // Output lightbox
-  const [outputLightbox, setOutputLightbox] = useState<string | null>(null)
+  // Output lightbox - now uses full LightboxData for consistency
+  const [outputLightbox, setOutputLightbox] = useState<LightboxData | null>(null)
   
   // Works gallery
   interface GalleryImage {
@@ -1265,7 +1267,14 @@ export default function App() {
                           initial={{ opacity: 0, scale: 0.98 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: i * 0.15, duration: 0.4 }}
-                          onClick={() => setOutputLightbox(url)}
+                          onClick={() => setOutputLightbox({
+                            imageUrl: url,
+                            prompt,
+                            mode: editImage ? 'edit' : 'create',
+                            resolution,
+                            aspectRatio,
+                            references: references.map(r => ({ url: r.url, name: r.name })),
+                          })}
                         >
                           <img 
                             src={url}
@@ -1431,52 +1440,18 @@ export default function App() {
       </div>
 
       {/* Output Lightbox */}
-      <AnimatePresence>
-        {outputLightbox && (
-          <motion.div 
-            className="lightbox-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setOutputLightbox(null)}
-          >
-            <motion.div 
-              className="lightbox-content"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src={outputLightbox} alt="Output full size" />
-              <div className="lightbox-footer">
-                <div className="lightbox-prompt">{prompt}</div>
-                <div className="lightbox-actions">
-                  <button 
-                    className="lightbox-btn"
-                    onClick={() => {
-                      setEditImage({ url: outputLightbox })
-                      detectAndSetAspectRatio(outputLightbox)
-                      setRefineExpanded(true) // Expand to show the image was added
-                      setOutputLightbox(null)
-                      setTimeout(scrollToRefine, 100)
-                    }}
-                    title="Refine this image"
-                  >
-                    <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
-                  </button>
-                  <button 
-                    className="lightbox-btn"
-                    onClick={() => downloadOutputImage(outputLightbox)}
-                    title="Download"
-                  >
-                    <Download className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Lightbox
+        data={outputLightbox}
+        onClose={() => setOutputLightbox(null)}
+        onDownload={downloadOutputImage}
+        onRefine={(url) => {
+          setEditImage({ url })
+          detectAndSetAspectRatio(url)
+          setRefineExpanded(true)
+          setOutputLightbox(null)
+          setTimeout(scrollToRefine, 100)
+        }}
+      />
 
       {/* Works Gallery Lightbox */}
       <AnimatePresence>

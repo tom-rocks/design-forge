@@ -1,19 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Gem, Flame, Hammer, Search, Star, Plus } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Loader2, LogIn, Expand, Pin, Search, Star } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { API_URL } from '../config'
-
-// Helper to get aspect ratio icon dimensions
-const getAspectDimensions = (ratio: string | undefined) => {
-  switch (ratio) {
-    case '1:1': return { w: 10, h: 10 }
-    case '3:4': return { w: 9, h: 12 }
-    case '4:3': return { w: 12, h: 9 }
-    case '9:16': return { w: 7, h: 12 }
-    case '16:9': return { w: 12, h: 7 }
-    default: return { w: 10, h: 10 }
-  }
-}
+import { Lightbox } from './Lightbox'
 
 const PINNED_IMAGES_KEY = 'pinned-history-images'
 
@@ -43,6 +32,7 @@ export interface ReplayConfig {
   model?: string
   resolution?: string
   aspectRatio?: string
+  numImages?: number  // Number of outputs
   references?: { url: string; name?: string }[]
   editImageUrl?: string  // For edit mode - the image being refined
   // Spread any additional settings for future compatibility
@@ -105,18 +95,11 @@ export default function HistoryGrid({
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
   const [lightbox, setLightbox] = useState<DisplayImage | null>(null)
-  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
   
-  // Reset image loaded state when lightbox changes
-  useEffect(() => {
-    if (lightbox) {
-      setLightboxImageLoaded(false)
-    }
-  }, [lightbox?.id])
   
   // Pinned individual images (by image ID)
   const [pinnedImageIds, setPinnedImageIds] = useState<Set<string>>(() => {
@@ -371,6 +354,7 @@ export default function HistoryGrid({
       model: gen.model,
       resolution: gen.resolution,
       aspectRatio: gen.aspect_ratio,
+      numImages: gen.settings?.numImages,
       references: gen.settings?.styleImages,
       // For edit mode, include the parent image URL
       editImageUrl: gen.mode === 'edit' && gen.parent_id 
@@ -515,148 +499,32 @@ export default function HistoryGrid({
       </div>
 
       {/* Lightbox */}
-      <AnimatePresence>
-        {lightbox && (
-          <motion.div
-            className="lightbox-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setLightbox(null)}
-          >
-            <motion.div
-              className="lightbox-content"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="lightbox-scroll-area">
-                <div className="lightbox-image-container">
-                  {!lightboxImageLoaded && (
-                    <div className="lightbox-image-loading">
-                      <Loader2 className="w-8 h-8 animate-spin" />
-                    </div>
-                  )}
-                  <motion.img
-                    src={`${API_URL}${lightbox.imageUrl}`}
-                    alt={lightbox.generation.prompt}
-                    onLoad={() => setLightboxImageLoaded(true)}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-                  {/* Specs bar */}
-                <div className="lightbox-specs">
-                  {/* Mode */}
-                  <span className="lightbox-spec" title={lightbox.generation.mode === 'edit' ? 'Refined' : 'Created'}>
-                    {lightbox.generation.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
-                  </span>
-                  <span className="lightbox-spec-sep">·</span>
-                  {/* Model */}
-                  <span className="lightbox-spec" title="Pro">
-                    <Gem className="w-4 h-4" />
-                    Pro
-                  </span>
-                  <span className="lightbox-spec-sep">·</span>
-                  {/* Aspect Ratio */}
-                  {lightbox.generation.aspect_ratio && (
-                    <>
-                      <span className="lightbox-spec" title={`Ratio ${lightbox.generation.aspect_ratio}`}>
-                        <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
-                          <rect 
-                            x={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).w) / 2} 
-                            y={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).h) / 2} 
-                            width={getAspectDimensions(lightbox.generation.aspect_ratio).w} 
-                            height={getAspectDimensions(lightbox.generation.aspect_ratio).h} 
-                            fill="currentColor" 
-                            rx="1" 
-                          />
-                        </svg>
-                        {lightbox.generation.aspect_ratio}
-                      </span>
-                      <span className="lightbox-spec-sep">·</span>
-                    </>
-                  )}
-                  {/* Resolution */}
-                  <span className="lightbox-spec" title={`Resolution ${lightbox.generation.resolution || '1K'}`}>
-                    {lightbox.generation.resolution || '1K'}
-                  </span>
-                </div>
-                
-                {/* Alloy section - show references used */}
-                {lightbox.generation.settings?.styleImages && lightbox.generation.settings.styleImages.length > 0 && (
-                  <div className="lightbox-alloy">
-                    <div className="lightbox-alloy-header">
-                      <span className="panel-icon icon-alloy" />
-                      <span className="lightbox-alloy-title">Alloy</span>
-                      <span className="lightbox-alloy-count">{lightbox.generation.settings.styleImages.length}</span>
-                      {onUseAlloy && (
-                        <button
-                          className="lightbox-alloy-use"
-                          onClick={() => useAlloy(lightbox.generation)}
-                          title="Add these references to your alloy"
-                        >
-                          <Plus className="w-3 h-3" />
-                          Use
-                        </button>
-                      )}
-                    </div>
-                    <div className="lightbox-alloy-grid">
-                      {lightbox.generation.settings.styleImages.map((img, i) => {
-                        // Resolve URL - handle relative paths
-                        const imgUrl = img.url.startsWith('http') || img.url.startsWith('data:') 
-                          ? img.url 
-                          : `${API_URL}${img.url}`
-                        return (
-                          <div key={i} className="lightbox-alloy-thumb" title={img.name || `Reference ${i + 1}`}>
-                            <img src={imgUrl} alt={img.name || `Reference ${i + 1}`} />
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              
-                <div className="lightbox-footer">
-                  <p className="lightbox-prompt">{lightbox.generation.prompt}</p>
-                  <div className="lightbox-actions">
-                    {onReplay && (
-                      <button
-                        className="lightbox-btn"
-                        onClick={() => replayGeneration(lightbox.generation)}
-                        title="Replay settings"
-                      >
-                        <RotateCcw className="w-5 h-5" />
-                      </button>
-                    )}
-                    {onRefine && (
-                      <button
-                        className="lightbox-btn"
-                        onClick={() => {
-                          onRefine(`${API_URL}${lightbox.imageUrl}`)
-                          setLightbox(null)
-                        }}
-                        title="Refine this image"
-                      >
-                        <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
-                      </button>
-                    )}
-                    <button
-                      className="lightbox-btn"
-                      onClick={() => downloadImageFromUrl(`${API_URL}${lightbox.imageUrl}`, lightbox.generation.prompt)}
-                      title="Download"
-                    >
-                      <Download className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>{/* End lightbox-scroll-area */}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Lightbox
+        data={lightbox ? {
+          imageUrl: `${API_URL}${lightbox.imageUrl}`,
+          prompt: lightbox.generation.prompt,
+          mode: lightbox.generation.mode,
+          model: lightbox.generation.model,
+          resolution: lightbox.generation.resolution,
+          aspectRatio: lightbox.generation.aspect_ratio,
+          references: lightbox.generation.settings?.styleImages?.map(img => ({
+            url: img.url.startsWith('http') || img.url.startsWith('data:') ? img.url : `${API_URL}${img.url}`,
+            name: img.name,
+          })),
+        } : null}
+        onClose={() => setLightbox(null)}
+        onDownload={(url) => downloadImageFromUrl(url, lightbox?.generation.prompt || '')}
+        onRefine={onRefine ? (url) => {
+          onRefine(url)
+          setLightbox(null)
+        } : undefined}
+        onReplay={onReplay && lightbox ? () => {
+          replayGeneration(lightbox.generation)
+        } : undefined}
+        onUseAlloy={onUseAlloy && lightbox?.generation.settings?.styleImages ? () => {
+          useAlloy(lightbox.generation)
+        } : undefined}
+      />
     </>
   )
 }
