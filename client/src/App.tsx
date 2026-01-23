@@ -1037,7 +1037,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Reference content - smooth height transitions between tabs */}
+                {/* Reference content - all tabs stay mounted for smooth transitions */}
                 <AnimatePresence initial={false}>
                   {!refSourceCollapsed && (
                     <motion.div
@@ -1048,106 +1048,63 @@ export default function App() {
                       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                       style={{ overflow: 'hidden' }}
                     >
-                      <motion.div 
-                        layout
-                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                        style={{ overflow: 'hidden' }}
-                      >
-                        <AnimatePresence mode="wait" initial={false}>
-                          {refSource === 'drop' && (
-                            <motion.div
-                              key="drop"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.15 }}
-                              className="ref-tab-content active"
-                            >
-                              <div 
-                                className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
-                                onClick={() => setActiveDropTarget('refs')}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                              >
-                                <span className="dropzone-text">
-                                  DROP OR PASTE IMAGES
-                                </span>
-                              </div>
-                            </motion.div>
-                          )}
-                          {refSource === 'items' && (
-                            <motion.div
-                              key="items"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.15 }}
-                              className="ref-tab-content active"
-                            >
-                              <HighriseSearch
-                                references={references}
-                                onAddReference={addReference}
-                                onRemoveReference={removeReference}
-                                maxRefs={14}
-                                disabled={isGenerating}
-                                bridgeConnected={bridgeConnected}
-                                useAPBridge={inAPContext}
-                              />
-                            </motion.div>
-                          )}
-                          {refSource === 'history' && (
-                            <motion.div
-                              key="history"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.15 }}
-                              className="ref-tab-content active"
-                            >
-                              <HistoryGrid
-                                authenticated={authenticated}
-                                onLogin={login}
-                                references={references}
-                                onAddReference={addReference}
-                                onRemoveReference={removeReference}
-                                maxRefs={14}
-                                disabled={isGenerating}
-                                isActive={refSource === 'history'}
-                                onReplay={handleReplay}
-                                onRefine={(url) => {
-                                  setEditImage({ url })
-                                  detectAndSetAspectRatio(url)
-                                  setRefineExpanded(false) // Collapse picker since we have image
-                                  setTimeout(scrollToRefine, 100)
-                                }}
-                                onUseAlloy={addAlloyReferences}
-                              />
-                            </motion.div>
-                          )}
-                          {refSource === 'favorites' && (
-                            <motion.div
-                              key="favorites"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.15 }}
-                              className="ref-tab-content active"
-                            >
-                              <Favorites
-                                authenticated={authenticated}
-                                onLogin={login}
-                                references={references}
-                                onAddReference={addReference}
-                                onRemoveReference={removeReference}
-                                maxRefs={14}
-                                disabled={isGenerating}
-                                isActive={refSource === 'favorites'}
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
+                      {/* All tabs rendered, CSS handles visibility with smooth transitions */}
+                      <div className={`ref-tab-content ${refSource === 'drop' ? 'active' : ''}`}>
+                        <div 
+                          className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
+                          onClick={() => setActiveDropTarget('refs')}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          <span className="dropzone-text">
+                            DROP OR PASTE IMAGES
+                          </span>
+                        </div>
+                      </div>
+                      <div className={`ref-tab-content ${refSource === 'items' ? 'active' : ''}`}>
+                        <HighriseSearch
+                          references={references}
+                          onAddReference={addReference}
+                          onRemoveReference={removeReference}
+                          maxRefs={14}
+                          disabled={isGenerating}
+                          bridgeConnected={bridgeConnected}
+                          useAPBridge={inAPContext}
+                        />
+                      </div>
+                      <div className={`ref-tab-content ${refSource === 'history' ? 'active' : ''}`}>
+                        <HistoryGrid
+                          authenticated={authenticated}
+                          onLogin={login}
+                          references={references}
+                          onAddReference={addReference}
+                          onRemoveReference={removeReference}
+                          maxRefs={14}
+                          disabled={isGenerating}
+                          isActive={refSource === 'history'}
+                          onReplay={handleReplay}
+                          onRefine={(url) => {
+                            setEditImage({ url })
+                            detectAndSetAspectRatio(url)
+                            setRefineExpanded(false) // Collapse picker since we have image
+                            setTimeout(scrollToRefine, 100)
+                          }}
+                          onUseAlloy={addAlloyReferences}
+                        />
+                      </div>
+                      <div className={`ref-tab-content ${refSource === 'favorites' ? 'active' : ''}`}>
+                        <Favorites
+                          authenticated={authenticated}
+                          onLogin={login}
+                          references={references}
+                          onAddReference={addReference}
+                          onRemoveReference={removeReference}
+                          maxRefs={14}
+                          disabled={isGenerating}
+                          isActive={refSource === 'favorites'}
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
