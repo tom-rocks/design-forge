@@ -3968,15 +3968,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   font-weight: 600;
   font-size: 14px;
 }
 
+.folder-picker-header > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .folder-picker-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.folder-picker-actions .specs-btn {
+  white-space: nowrap;
 }
 
 .folder-picker-grid {
