@@ -2071,6 +2071,36 @@ body {
   background: #ffca28;
 }
 
+/* Delete button on favorites - top right, same style as pin/star */
+.item-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: #ddd9d5;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 10;
+}
+
+.highrise-item:hover .item-delete,
+.history-item:hover .item-delete {
+  opacity: 1;
+}
+
+.item-delete:hover {
+  background: #e8e4e0;
+  color: var(--text);
+}
+
 /* Expand button on items - below pin and star */
 .highrise-item-expand {
   position: absolute;

@@ -90,12 +90,11 @@ export function FavoriteItem({
         onError={handleImageError}
       />
       
-      {/* Delete button - positioned like item-pin */}
+      {/* Delete button - top right, shows on hover like pin/star */}
       <button
-        className="item-pin active"
+        className="item-delete"
         onClick={handleDelete}
         title="Remove from favorites"
-        style={{ background: 'rgba(239, 68, 68, 0.9)' }}
       >
         <X className="w-3 h-3" />
       </button>
