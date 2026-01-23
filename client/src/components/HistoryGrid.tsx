@@ -10,7 +10,8 @@ const PINNED_IMAGES_KEY = 'pinned-history-images'
 interface Generation {
   id: string
   prompt: string
-  thumbnailUrl: string | null
+  thumbnailUrl: string | null  // First thumbnail (backwards compat)
+  thumbnailUrls?: (string | null)[]  // Per-image thumbnails
   imageUrls: string[]
   created_at: string
   mode: 'create' | 'edit'
@@ -50,6 +51,7 @@ interface Reference {
 interface DisplayImage {
   id: string // unique: gen.id + imageIndex
   imageUrl: string
+  thumbnailUrl: string | null // For faster grid loading (only first image has server thumbnail)
   generation: Generation
   imageIndex: number
 }
@@ -203,6 +205,8 @@ export default function HistoryGrid({
         allImages.push({
           id: `${gen.id}-${i}`,
           imageUrl: gen.imageUrls[i],
+          // Use per-image thumbnail if available, fallback to first thumbnail for old data
+          thumbnailUrl: gen.thumbnailUrls?.[i] ?? (i === 0 ? gen.thumbnailUrl : null),
           generation: gen,
           imageIndex: i,
         })
@@ -447,7 +451,7 @@ export default function HistoryGrid({
               title={gen.prompt}
             >
               <img
-                src={`${API_URL}${img.imageUrl}`}
+                src={`${API_URL}${img.thumbnailUrl || img.imageUrl}`}
                 alt={gen.prompt}
                 loading="lazy"
                 className={loadedImages.has(img.id) ? 'loaded' : ''}

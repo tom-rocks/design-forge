@@ -23,11 +23,19 @@ function log(level: 'info' | 'warn' | 'error', message: string, data?: any) {
 
 // Helper to add URLs to generations
 function addUrls(generations: any[]) {
-  return generations.map(gen => ({
-    ...gen,
-    thumbnailUrl: gen.thumbnail_path ? `/api/generations/${gen.id}/thumbnail` : null,
-    imageUrls: gen.image_paths.map((_: any, i: number) => `/api/generations/${gen.id}/image/${i}`),
-  }));
+  return generations.map(gen => {
+    const thumbs = gen.thumbnail_paths || [];
+    return {
+      ...gen,
+      // For backwards compat, thumbnailUrl points to first thumb
+      thumbnailUrl: thumbs[0] ? `/api/generations/${gen.id}/thumbnail/0` : null,
+      // Per-image thumbnail URLs
+      thumbnailUrls: gen.image_paths.map((_: any, i: number) => 
+        thumbs[i] ? `/api/generations/${gen.id}/thumbnail/${i}` : null
+      ),
+      imageUrls: gen.image_paths.map((_: any, i: number) => `/api/generations/${gen.id}/image/${i}`),
+    };
+  });
 }
 
 // List all generations (paginated) - admin/global view
@@ -86,9 +94,11 @@ router.get('/:id', async (req: Request, res: Response) => {
       return;
     }
     
+    const thumbs = gen.thumbnail_paths || [];
     res.json({
       ...gen,
-      thumbnailUrl: gen.thumbnail_path ? `/api/generations/${gen.id}/thumbnail` : null,
+      thumbnailUrl: thumbs[0] ? `/api/generations/${gen.id}/thumbnail/0` : null,
+      thumbnailUrls: gen.image_paths.map((_, i) => thumbs[i] ? `/api/generations/${gen.id}/thumbnail/${i}` : null),
       imageUrls: gen.image_paths.map((_, i) => `/api/generations/${gen.id}/image/${i}`),
     });
   } catch (err) {
@@ -102,11 +112,15 @@ router.get('/:id/chain', async (req: Request, res: Response) => {
   try {
     const chain = await getEditChain(req.params.id);
     
-    const chainWithUrls = chain.map(gen => ({
-      ...gen,
-      thumbnailUrl: gen.thumbnail_path ? `/api/generations/${gen.id}/thumbnail` : null,
-      imageUrls: gen.image_paths.map((_, i) => `/api/generations/${gen.id}/image/${i}`),
-    }));
+    const chainWithUrls = chain.map(gen => {
+      const thumbs = gen.thumbnail_paths || [];
+      return {
+        ...gen,
+        thumbnailUrl: thumbs[0] ? `/api/generations/${gen.id}/thumbnail/0` : null,
+        thumbnailUrls: gen.image_paths.map((_, i) => thumbs[i] ? `/api/generations/${gen.id}/thumbnail/${i}` : null),
+        imageUrls: gen.image_paths.map((_, i) => `/api/generations/${gen.id}/image/${i}`),
+      };
+    });
     
     res.json({ chain: chainWithUrls });
   } catch (err) {
@@ -157,16 +171,43 @@ router.get('/:id/image/:index', async (req: Request, res: Response) => {
   }
 });
 
-// Serve a generation thumbnail
-router.get('/:id/thumbnail', async (req: Request, res: Response) => {
+// Serve a generation thumbnail by index
+router.get('/:id/thumbnail/:index', async (req: Request, res: Response) => {
   try {
     const gen = await getGeneration(req.params.id);
-    if (!gen || !gen.thumbnail_path) {
+    const index = parseInt(req.params.index);
+    const thumbs = gen?.thumbnail_paths || [];
+    
+    if (!gen || !thumbs[index]) {
       res.status(404).json({ error: 'Thumbnail not found' });
       return;
     }
     
-    const thumbPath = getThumbnailPath(gen.thumbnail_path);
+    const thumbPath = getThumbnailPath(thumbs[index]);
+    if (!(await fileExists(thumbPath))) {
+      res.status(404).json({ error: 'Thumbnail file not found' });
+      return;
+    }
+    
+    res.sendFile(thumbPath);
+  } catch (err) {
+    console.error('[Generations] Thumbnail error:', err);
+    res.status(500).json({ error: 'Failed to serve thumbnail' });
+  }
+});
+
+// Backwards compat: Serve first thumbnail (old route without index)
+router.get('/:id/thumbnail', async (req: Request, res: Response) => {
+  try {
+    const gen = await getGeneration(req.params.id);
+    const thumbs = gen?.thumbnail_paths || [];
+    
+    if (!gen || !thumbs[0]) {
+      res.status(404).json({ error: 'Thumbnail not found' });
+      return;
+    }
+    
+    const thumbPath = getThumbnailPath(thumbs[0]);
     if (!(await fileExists(thumbPath))) {
       res.status(404).json({ error: 'Thumbnail file not found' });
       return;
@@ -212,7 +253,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
     
     // Delete files
-    await deleteImages(gen.image_paths, gen.thumbnail_path);
+    await deleteImages(gen.image_paths, gen.thumbnail_paths);
     
     // Delete from database
     await deleteGeneration(req.params.id);
@@ -354,7 +395,7 @@ router.get('/debug/diagnostics', async (_req: Request, res: Response) => {
         diagnostics.test_generation = {
           id: gen.id,
           image_paths: gen.image_paths,
-          thumbnail_path: gen.thumbnail_path,
+          thumbnail_paths: gen.thumbnail_paths,
           files_exist: [] as { path: string; exists: boolean; resolved: string }[],
         };
         

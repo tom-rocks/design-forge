@@ -152,7 +152,7 @@ router.get('/users/:userId/generations', async (req: Request, res: Response) => 
     const generations = await pool.query(`
       SELECT 
         id, prompt, model, resolution, aspect_ratio, mode, created_at,
-        image_paths, thumbnail_path
+        image_paths, thumbnail_paths
       FROM generations 
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -165,11 +165,15 @@ router.get('/users/:userId/generations', async (req: Request, res: Response) => 
     );
     
     res.json({
-      generations: generations.rows.map(g => ({
-        ...g,
-        thumbnailUrl: g.thumbnail_path ? `/api/generations/${g.id}/thumbnail` : null,
-        imageUrls: g.image_paths.map((_: any, i: number) => `/api/generations/${g.id}/image/${i}`),
-      })),
+      generations: generations.rows.map(g => {
+        const thumbs = g.thumbnail_paths || [];
+        return {
+          ...g,
+          thumbnailUrl: thumbs[0] ? `/api/generations/${g.id}/thumbnail/0` : null,
+          thumbnailUrls: g.image_paths.map((_: any, i: number) => thumbs[i] ? `/api/generations/${g.id}/thumbnail/${i}` : null),
+          imageUrls: g.image_paths.map((_: any, i: number) => `/api/generations/${g.id}/image/${i}`),
+        };
+      }),
       total: parseInt(total.rows[0].count, 10),
       limit,
       offset,
@@ -188,7 +192,7 @@ router.get('/recent', async (req: Request, res: Response) => {
     const generations = await pool.query(`
       SELECT 
         g.id, g.prompt, g.model, g.resolution, g.aspect_ratio, g.mode, g.created_at,
-        g.image_paths, g.thumbnail_path,
+        g.image_paths, g.thumbnail_paths,
         u.email as user_email, u.name as user_name, u.avatar_url as user_avatar
       FROM generations g
       LEFT JOIN users u ON g.user_id = u.id
@@ -197,22 +201,26 @@ router.get('/recent', async (req: Request, res: Response) => {
     `, [limit]);
     
     res.json({
-      generations: generations.rows.map(g => ({
-        id: g.id,
-        prompt: g.prompt,
-        model: g.model,
-        resolution: g.resolution,
-        aspectRatio: g.aspect_ratio,
-        mode: g.mode,
-        createdAt: g.created_at,
-        thumbnailUrl: g.thumbnail_path ? `/api/generations/${g.id}/thumbnail` : null,
-        imageUrls: g.image_paths.map((_: any, i: number) => `/api/generations/${g.id}/image/${i}`),
-        user: g.user_email ? {
-          email: g.user_email,
-          name: g.user_name,
-          avatarUrl: g.user_avatar,
-        } : null,
-      })),
+      generations: generations.rows.map(g => {
+        const thumbs = g.thumbnail_paths || [];
+        return {
+          id: g.id,
+          prompt: g.prompt,
+          model: g.model,
+          resolution: g.resolution,
+          aspectRatio: g.aspect_ratio,
+          mode: g.mode,
+          createdAt: g.created_at,
+          thumbnailUrl: thumbs[0] ? `/api/generations/${g.id}/thumbnail/0` : null,
+          thumbnailUrls: g.image_paths.map((_: any, i: number) => thumbs[i] ? `/api/generations/${g.id}/thumbnail/${i}` : null),
+          imageUrls: g.image_paths.map((_: any, i: number) => `/api/generations/${g.id}/image/${i}`),
+          user: g.user_email ? {
+            email: g.user_email,
+            name: g.user_name,
+            avatarUrl: g.user_avatar,
+          } : null,
+        };
+      }),
     });
   } catch (err) {
     console.error('[Dashboard] Recent error:', err);

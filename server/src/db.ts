@@ -40,7 +40,7 @@ export async function initDatabase() {
         mode VARCHAR(10) DEFAULT 'create',
         parent_id UUID,
         image_paths TEXT[] NOT NULL DEFAULT '{}',
-        thumbnail_path TEXT,
+        thumbnail_paths TEXT[] DEFAULT '{}',
         settings JSONB DEFAULT '{}',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
@@ -55,6 +55,32 @@ export async function initDatabase() {
           WHERE table_name = 'generations' AND column_name = 'user_id'
         ) THEN
           ALTER TABLE generations ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+    
+    // Migration: Convert thumbnail_path to thumbnail_paths array
+    await client.query(`
+      DO $$
+      BEGIN
+        -- Add thumbnail_paths if it doesn't exist
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'generations' AND column_name = 'thumbnail_paths'
+        ) THEN
+          ALTER TABLE generations ADD COLUMN thumbnail_paths TEXT[] DEFAULT '{}';
+        END IF;
+        
+        -- Migrate data from old column if it exists
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'generations' AND column_name = 'thumbnail_path'
+        ) THEN
+          UPDATE generations 
+          SET thumbnail_paths = ARRAY[thumbnail_path] 
+          WHERE thumbnail_path IS NOT NULL AND (thumbnail_paths IS NULL OR thumbnail_paths = '{}');
+          
+          ALTER TABLE generations DROP COLUMN IF EXISTS thumbnail_path;
         END IF;
       END $$;
     `);
@@ -146,7 +172,7 @@ export interface Generation {
   mode: 'create' | 'edit';
   parent_id: string | null;
   image_paths: string[];
-  thumbnail_path: string | null;
+  thumbnail_paths: string[];
   settings: {
     styleImages?: { url: string; name?: string }[];
     negativePrompt?: string;
@@ -164,7 +190,7 @@ export interface SaveGenerationParams {
   mode: 'create' | 'edit';
   parentId?: string;
   imagePaths: string[];
-  thumbnailPath?: string;
+  thumbnailPaths?: string[];
   settings?: Generation['settings'];
 }
 
@@ -215,13 +241,13 @@ export async function getUserById(id: string): Promise<User | null> {
 
 // Save a new generation
 export async function saveGeneration(params: SaveGenerationParams): Promise<Generation> {
-  const { userId, prompt, model, resolution, aspectRatio, mode, parentId, imagePaths, thumbnailPath, settings } = params;
+  const { userId, prompt, model, resolution, aspectRatio, mode, parentId, imagePaths, thumbnailPaths, settings } = params;
   
   const result = await pool.query<Generation>(
-    `INSERT INTO generations (user_id, prompt, model, resolution, aspect_ratio, mode, parent_id, image_paths, thumbnail_path, settings)
+    `INSERT INTO generations (user_id, prompt, model, resolution, aspect_ratio, mode, parent_id, image_paths, thumbnail_paths, settings)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [userId || null, prompt, model, resolution, aspectRatio, mode, parentId || null, imagePaths, thumbnailPath || null, settings || {}]
+    [userId || null, prompt, model, resolution, aspectRatio, mode, parentId || null, imagePaths, thumbnailPaths || [], settings || {}]
   );
   
   console.log(`[DB] Saved generation ${result.rows[0].id} for user ${userId || 'anonymous'}`);

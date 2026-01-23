@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
 import { saveGeneration, getGeneration } from '../db.js';
-import { saveImage, createThumbnail, getImagePath } from '../storage.js';
+import { saveImage, createThumbnails, getImagePath } from '../storage.js';
 import fs from 'fs/promises';
 
 const router = Router();
@@ -705,11 +705,8 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
           imagePaths.push(imagePath);
         }
         
-        // Create thumbnail from first image
-        let thumbnailPath: string | undefined;
-        if (imagePaths.length > 0) {
-          thumbnailPath = await createThumbnail(imagePaths[0], genId);
-        }
+        // Create thumbnails for all images (faster grid loading)
+        const thumbnailPaths = await createThumbnails(imagePaths, genId);
         
         // Save to database (include user ID if authenticated)
         const userId = req.user?.id;
@@ -722,7 +719,7 @@ CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading
           mode,
           parentId,
           imagePaths,
-          thumbnailPath,
+          thumbnailPaths,
           settings: {
             styleImages: styleImages?.map(s => ({ url: s.url, name: s.name })),
             negativePrompt,

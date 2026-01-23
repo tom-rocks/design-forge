@@ -43,8 +43,8 @@ export async function saveImage(base64DataUrl: string, generationId: string, ind
 }
 
 // Create a thumbnail for an image
-export async function createThumbnail(imagePath: string, generationId: string): Promise<string> {
-  const thumbFilename = `${generationId}-thumb.jpg`;
+export async function createThumbnail(imagePath: string, generationId: string, index: number = 0): Promise<string> {
+  const thumbFilename = `${generationId}-${index}-thumb.jpg`;
   const thumbPath = path.join(THUMBS_DIR, thumbFilename);
   const sourcePath = path.join(IMAGES_DIR, imagePath);
   
@@ -55,6 +55,21 @@ export async function createThumbnail(imagePath: string, generationId: string): 
   
   console.log(`[Storage] Created thumbnail: ${thumbFilename}`);
   return thumbFilename;
+}
+
+// Create thumbnails for all images in a generation
+export async function createThumbnails(imagePaths: string[], generationId: string): Promise<string[]> {
+  const thumbnails: string[] = [];
+  for (let i = 0; i < imagePaths.length; i++) {
+    try {
+      const thumb = await createThumbnail(imagePaths[i], generationId, i);
+      thumbnails.push(thumb);
+    } catch (err) {
+      console.warn(`[Storage] Failed to create thumbnail for ${imagePaths[i]}:`, err);
+      thumbnails.push(''); // Empty string for failed thumbnails
+    }
+  }
+  return thumbnails;
 }
 
 // Get image file path
@@ -78,7 +93,7 @@ export async function fileExists(filepath: string): Promise<boolean> {
 }
 
 // Delete image files for a generation
-export async function deleteImages(imagePaths: string[], thumbnailPath?: string | null): Promise<void> {
+export async function deleteImages(imagePaths: string[], thumbnailPaths?: string[] | null): Promise<void> {
   for (const imagePath of imagePaths) {
     try {
       await fs.unlink(path.join(IMAGES_DIR, imagePath));
@@ -87,11 +102,15 @@ export async function deleteImages(imagePaths: string[], thumbnailPath?: string 
     }
   }
   
-  if (thumbnailPath) {
-    try {
-      await fs.unlink(path.join(THUMBS_DIR, thumbnailPath));
-    } catch (err) {
-      console.warn(`[Storage] Failed to delete thumbnail ${thumbnailPath}:`, err);
+  if (thumbnailPaths) {
+    for (const thumbPath of thumbnailPaths) {
+      if (thumbPath) {
+        try {
+          await fs.unlink(path.join(THUMBS_DIR, thumbPath));
+        } catch (err) {
+          console.warn(`[Storage] Failed to delete thumbnail ${thumbPath}:`, err);
+        }
+      }
     }
   }
 }
