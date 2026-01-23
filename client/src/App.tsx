@@ -524,6 +524,16 @@ export default function App() {
   const removeReference = (id: string) => {
     setReferences(references.filter(r => r.id !== id))
   }
+  
+  // Bulk add references from alloy (used by lightbox "Use Alloy" button)
+  const addAlloyReferences = (refs: Reference[]) => {
+    setReferences(prev => {
+      // Filter out duplicates and limit to 14 total
+      const newRefs = refs.filter(ref => !prev.find(r => r.url === ref.url))
+      const combined = [...prev, ...newRefs]
+      return combined.slice(0, 14)
+    })
+  }
 
   const cycleOutputCount = () => {
     setOutputCount(prev => prev === 1 ? 2 : prev === 2 ? 4 : 1)
@@ -1043,6 +1053,7 @@ export default function App() {
                             setRefineExpanded(false) // Collapse picker since we have image
                             setTimeout(scrollToRefine, 100)
                           }}
+                          onUseAlloy={addAlloyReferences}
                         />
                       </div>
                       <div className={`ref-tab-content ${refSource === 'favorites' ? 'active' : ''}`}>

@@ -609,17 +609,19 @@ export default function HighriseSearch({
                         <span>✓</span>
                       </div>
                     )}
-                    {/* Pin button */}
+                    {/* Pin button - moves down if starred but not pinned */}
                     <button
                       className={`item-pin ${pinned ? 'active' : ''}`}
+                      style={isStarred(item) && !pinned ? { top: '32px' } : undefined}
                       onClick={(e) => togglePin(item, e)}
                       title={pinned ? 'Unpin' : 'Pin to top'}
                     >
                       <Pin className="w-3 h-3" />
                     </button>
-                    {/* Star button */}
+                    {/* Star button - moves to top if starred and not pinned */}
                     <button
                       className={`item-star ${isStarred(item) ? 'active' : ''}`}
+                      style={isStarred(item) && !pinned ? { top: '6px' } : undefined}
                       onClick={(e) => toggleStar(item, e)}
                       title={isStarred(item) ? 'Remove from favorites' : 'Add to favorites'}
                     >

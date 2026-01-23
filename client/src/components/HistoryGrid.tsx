@@ -470,17 +470,19 @@ export default function HistoryGrid({
                   <span>✓</span>
                 </div>
               )}
-              {/* Pin button */}
+              {/* Pin button - moves down if starred but not pinned */}
               <button
                 className={`item-pin ${pinned ? 'active' : ''}`}
+                style={starredUrls.has(`${API_URL}${img.imageUrl}`) && !pinned ? { top: '32px' } : undefined}
                 onClick={(e) => toggleImagePin(img.id, e)}
                 title={pinned ? 'Unpin' : 'Pin to top'}
               >
                 <Pin className="w-3 h-3" />
               </button>
-              {/* Star button */}
+              {/* Star button - moves to top if starred and not pinned */}
               <button
                 className={`item-star ${starredUrls.has(`${API_URL}${img.imageUrl}`) ? 'active' : ''}`}
+                style={starredUrls.has(`${API_URL}${img.imageUrl}`) && !pinned ? { top: '6px' } : undefined}
                 onClick={(e) => toggleImageStar(img, e)}
                 title={starredUrls.has(`${API_URL}${img.imageUrl}`) ? 'Remove from favorites' : 'Add to favorites'}
               >
