@@ -23,15 +23,16 @@ import { API_URL } from '../config'
 import { FavoriteItem } from './FavoriteItem'
 import { FavoriteFolder } from './FavoriteFolder'
 
-// Get display URL for Highrise items based on itemId
-function getItemDisplayUrl(itemId: string): string {
-  if (itemId.startsWith('bg-')) {
-    return `https://cdn.highrisegame.com/background/${itemId}/full`
-  } else if (itemId.startsWith('cn-')) {
-    return `https://cdn.highrisegame.com/container/${itemId}/full`
+// Get display URL for Highrise items based on dispId
+// Uses the EXACT same logic as HighriseSearch Items gallery
+function getItemDisplayUrl(dispId: string): string {
+  if (dispId.startsWith('bg-')) {
+    return `https://cdn.highrisegame.com/background/${dispId}/full`
+  } else if (dispId.startsWith('cn-')) {
+    return `https://cdn.highrisegame.com/container/${dispId}/full`
   } else {
-    // Avatar items - AP context is authenticated
-    return `https://production-ap.highrise.game/avataritem/front/${itemId}.png`
+    // Avatar items - use server proxy (same as Items gallery)
+    return `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
   }
 }
 
