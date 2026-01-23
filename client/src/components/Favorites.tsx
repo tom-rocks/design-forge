@@ -724,10 +724,9 @@ export function Favorites({
             {/* Add to folder button (folder view only) - grey square with + */}
             {expandedFolder && (
               <button 
-                className={`folder-add-item ${availableForFolder.length === 0 ? 'disabled' : ''}`}
-                onClick={() => availableForFolder.length > 0 && setAddingToFolder(true)}
-                title={availableForFolder.length > 0 ? 'Add items to this folder' : 'All items already in folder'}
-                disabled={availableForFolder.length === 0}
+                className="folder-add-item"
+                onClick={() => setAddingToFolder(true)}
+                title="Add items to this folder"
               >
                 <Plus className="w-6 h-6" />
               </button>
@@ -845,20 +844,26 @@ export function Favorites({
                 </div>
               </div>
               <div className="folder-picker-grid">
-                {availableForFolder.map(favorite => (
-                  <div
-                    key={favorite.id}
-                    className={`folder-picker-item ${selectedForFolder.has(favorite.id) ? 'selected' : ''}`}
-                    onClick={() => toggleFolderSelection(favorite.id)}
-                  >
-                    <img src={getFavoriteThumbnailUrl(favorite)} alt="" />
-                    {selectedForFolder.has(favorite.id) && (
-                      <div className="folder-picker-check">
-                        <Check className="w-4 h-4" />
-                      </div>
-                    )}
+                {availableForFolder.length === 0 ? (
+                  <div className="folder-picker-empty">
+                    All favorites are already in this folder
                   </div>
-                ))}
+                ) : (
+                  availableForFolder.map(favorite => (
+                    <div
+                      key={favorite.id}
+                      className={`folder-picker-item ${selectedForFolder.has(favorite.id) ? 'selected' : ''}`}
+                      onClick={() => toggleFolderSelection(favorite.id)}
+                    >
+                      <img src={getFavoriteThumbnailUrl(favorite)} alt="" />
+                      {selectedForFolder.has(favorite.id) && (
+                        <div className="folder-picker-check">
+                          <Check className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           </motion.div>
