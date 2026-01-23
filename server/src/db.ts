@@ -290,6 +290,7 @@ export interface Favorite {
     rarity?: string;
     prompt?: string;
     generationId?: string;
+    itemId?: string;  // dispId for items (e.g., "shirt-cool-jacket")
   };
   folder_id: string | null;
   sort_order: number;
