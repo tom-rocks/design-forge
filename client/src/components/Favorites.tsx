@@ -28,6 +28,7 @@ export interface Favorite {
   type: 'item' | 'work' | 'image'
   item_data: {
     imageUrl: string
+    thumbnailUrl?: string  // For works - smaller image for grid display
     name?: string
     category?: string
     rarity?: string

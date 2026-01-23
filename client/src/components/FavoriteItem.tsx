@@ -96,7 +96,7 @@ export function FavoriteItem({
       title={favorite.item_data.name || 'Favorite'}
     >
       <img 
-        src={favorite.item_data.imageUrl} 
+        src={favorite.item_data.thumbnailUrl || favorite.item_data.imageUrl} 
         alt={favorite.item_data.name || ''} 
         loading="lazy"
         className={imageLoaded ? 'loaded' : ''}

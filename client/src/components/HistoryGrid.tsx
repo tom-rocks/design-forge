@@ -181,7 +181,10 @@ export default function HistoryGrid({
           return next
         })
       } else {
-        // Add to favorites
+        // Add to favorites - include thumbnail URL for faster grid loading
+        const thumbnailUrl = img.generation.thumbnailUrl 
+          ? `${API_URL}${img.generation.thumbnailUrl}` 
+          : undefined
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -190,6 +193,7 @@ export default function HistoryGrid({
             type: 'work',
             itemData: {
               imageUrl,
+              thumbnailUrl,
               name: img.generation.prompt?.slice(0, 50) || 'Generation',
               prompt: img.generation.prompt,
               generationId: img.generation.id,
