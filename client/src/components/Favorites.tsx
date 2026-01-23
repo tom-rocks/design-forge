@@ -613,20 +613,19 @@ export function Favorites({
       : [],
     [favorites, expandedFolder, failedImages]
   )
-  // Items available to add to current folder (non-folder items not already copied to this folder)
+  // Items available to add to current folder (items not already copied to this folder)
   const availableForFolder = useMemo(() => {
     if (!expandedFolder) return []
     
     // Get items already in this folder (by content identity)
     const inFolderKeys = new Set(
       favorites
-        .filter(f => f.folder_id === expandedFolder && f.type !== 'folder')
+        .filter(f => f.folder_id === expandedFolder)
         .map(f => f.item_data.itemId || f.item_data.generationId || f.item_data.imageUrl)
     )
     
-    // Return non-folder items whose content is not already in this folder
+    // Return items whose content is not already in this folder
     return favorites.filter(f => {
-      if (f.type === 'folder') return false
       if (failedImages.has(f.id)) return false
       const key = f.item_data.itemId || f.item_data.generationId || f.item_data.imageUrl
       return !inFolderKeys.has(key)
