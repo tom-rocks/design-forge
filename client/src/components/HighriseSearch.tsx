@@ -8,6 +8,7 @@ const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 
 interface HighriseItem {
   id: string
+  dispId: string  // The display ID used for URL construction (e.g., "shirt-cool-jacket")
   name: string
   category: string
   rarity: string

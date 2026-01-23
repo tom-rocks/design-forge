@@ -182,82 +182,227 @@ Panels are the primary container for UI sections.
 
 All buttons have **subtle edge lighting** to feel physical and tactile.
 
-#### Base Button Style
+#### Button Variants
+
+| Class | Use Case | Appearance |
+|-------|----------|------------|
+| `.btn-dark` | Default/inactive buttons | Grey, subtle |
+| `.btn-accent` | Active/selected, primary actions | Orange, prominent |
+| `.btn-ghost` | Secondary actions, minimal UI | Transparent |
+| `.specs-btn` | Small option buttons (Forge Specs) | Compact grey |
+
+#### `.btn-dark` (Default Button)
+
+Grey button for unselected/inactive state:
 
 ```css
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  
-  /* Edge lighting - the key to tactile feel */
-  box-shadow: 
-    inset 0 1px 0 var(--edge-highlight),  /* Top edge light */
-    inset 0 -1px 0 var(--edge-shadow);     /* Bottom edge shadow */
+.btn-dark {
+  background: linear-gradient(180deg, #a8a4a0 0%, #989490 100%);
+  color: #5a5550;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 2px 0 #807c78,
+    0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.btn-dark:hover {
+  background: linear-gradient(180deg, #b8b4b0 0%, #a8a4a0 100%);
+}
+
+.btn-dark:active {
+  transform: translateY(2px);
 }
 ```
 
-#### Button States
+#### `.btn-accent` (Active/Primary Button)
+
+Orange button for selected/active state:
 
 ```css
-/* Inactive/Default */
-.btn {
-  background: var(--bg-panel);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-light);
-}
-
-/* Hover (inactive) */
-.btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-
-/* Active/Selected */
-.btn.active {
-  background: var(--accent-orange);
+.btn-accent {
+  background: linear-gradient(180deg, #ff6d00 0%, #ff5722 100%);
   color: white;
-  border-color: transparent;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 2px 0 #bf360c,
+    0 2px 6px rgba(255, 87, 34, 0.25);
 }
 
-/* Active + Hover - MUST stay orange, slightly brighter */
-.btn.active:hover {
-  background: #ff8533;  /* Lighter orange */
+.btn-accent:hover {
+  background: linear-gradient(180deg, #ff8a30 0%, #ff6d00 100%);
+}
+
+/* When disabled, btn-accent becomes grey */
+.btn-accent:disabled {
+  background: linear-gradient(180deg, #b8b4b0 0%, #a8a4a0 100%);
+  color: #6a6560;
+  text-shadow: none;
+}
+```
+
+#### `.btn-ghost` (Minimal Button)
+
+For secondary actions where a full button would be too heavy:
+
+```css
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+```
+
+#### `.specs-btn` (Small Option Button)
+
+Compact buttons for options in Forge Specs section:
+
+```css
+.specs-btn {
+  background: #ddd9d5;
+  border: none;
+  color: var(--gray-600);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.specs-btn.active {
+  background: var(--accent);
   color: white;
-}
-
-/* Disabled */
-.btn:disabled {
-  background: var(--bg-input);
-  color: var(--text-disabled);
-  cursor: not-allowed;
-  opacity: 0.6;
 }
 ```
 
 #### Button Groups
 
-When buttons are grouped (like tabs), use unified styling:
+Tab-style button groups for switching between views:
 
 ```css
 .btn-group {
   display: flex;
   gap: 4px;
   padding: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .btn-group .btn {
   flex: 1;
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 ```
 
-**Critical Rule**: Never create new button styles. Use and extend `.btn` and `.btn-group`.
+**Usage Example:**
+```jsx
+<div className="btn-group">
+  <button className={`btn ${active === 'a' ? 'btn-accent' : 'btn-dark'}`}>Option A</button>
+  <button className={`btn ${active === 'b' ? 'btn-accent' : 'btn-dark'}`}>Option B</button>
+</div>
+```
+
+**Critical Rule**: Never create new button styles. Use `.btn-dark`, `.btn-accent`, `.btn-ghost`, or `.specs-btn`.
+
+---
+
+### Item Action Buttons
+
+Small overlay buttons that appear on hover over items (in grids). All share the same base style.
+
+#### Base Style
+
+```css
+/* Shared properties for all item action buttons */
+.item-pin, .item-star, .item-delete, .item-expand, .item-move-out {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: #ddd9d5;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;  /* Hidden by default */
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Show on parent hover */
+.highrise-item:hover .item-pin,
+.history-item:hover .item-pin { opacity: 1; }
+
+/* Hover state */
+.item-pin:hover {
+  background: #e8e4e0;
+  color: var(--text);
+}
+
+/* Active state (orange) */
+.item-pin.active {
+  opacity: 1;  /* Always visible when active */
+  background: var(--accent);
+  color: white;
+}
+```
+
+#### Button Positions
+
+| Button | Position | Purpose |
+|--------|----------|---------|
+| `.item-pin` | top: 6px, left: 6px | Pin to top |
+| `.item-star` | top: 32px, left: 6px | Add to favorites |
+| `.item-delete` | top: 6px, right: 6px | Remove from favorites |
+| `.item-expand` | top: 32px, right: 6px | Open lightbox |
+| `.item-move-out` | top: 58px, right: 6px | Move out of folder |
+
+#### Special States
+
+```css
+/* Star button active (yellow) */
+.item-star.active {
+  background: #ffc107;
+  color: #5c4600;
+}
+
+/* Star moves to top when active (unless pinned) */
+/* This is handled via inline style in the component */
+```
+
+**Usage:**
+```jsx
+<div className="highrise-item">
+  <img src={...} />
+  <button className={`item-pin ${pinned ? 'active' : ''}`}>
+    <Pin className="w-3 h-3" />
+  </button>
+  <button className={`item-star ${starred ? 'active' : ''}`}>
+    <Star className="w-3 h-3" />
+  </button>
+</div>
+```
 
 ---
 
@@ -610,6 +755,297 @@ src/
 
 ---
 
+## Additional Components
+
+### Input Fields
+
+Text inputs with the industrial recessed style:
+
+```css
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: box-shadow 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    inset 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.input::placeholder {
+  color: var(--text-dim);
+}
+```
+
+**Usage:**
+```jsx
+<input type="text" className="input" placeholder="Search..." />
+```
+
+---
+
+### Item Cards
+
+Grid items for displaying images (items, works, favorites).
+
+#### `.highrise-item` (Square Items)
+
+For Highrise items with square aspect ratio:
+
+```css
+.highrise-item {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg);
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: border-color 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Aspect ratio enforcement */
+.highrise-item::before {
+  content: '';
+  display: block;
+  padding-bottom: 100%;  /* 1:1 aspect ratio */
+}
+
+.highrise-item img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;  /* Don't crop */
+}
+
+/* Selected state */
+.highrise-item.selected {
+  border-color: var(--accent);
+}
+
+/* Disabled state */
+.highrise-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
+#### `.history-item` (Works/Generations)
+
+For generated images, identical structure but with `object-fit: cover`:
+
+```css
+.history-item img {
+  object-fit: cover;  /* Fill and crop */
+}
+```
+
+#### Selection Checkmark
+
+```css
+.highrise-item-check {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+```
+
+---
+
+### Grids
+
+Responsive grids for displaying item cards.
+
+```css
+.highrise-grid, .history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+  padding: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+```
+
+---
+
+### Thumbs
+
+Small image thumbnails used in the active references section:
+
+```css
+.thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-inset);
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.15),
+    0 2px 0 rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Remove button */
+.thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.thumb:hover .thumb-remove {
+  opacity: 1;
+}
+```
+
+---
+
+### Panel Icons
+
+Custom inline SVG icons used in panel headers. Defined as background images:
+
+```css
+.panel-icon {
+  width: 14px;
+  height: 14px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+/* Icon variants */
+.icon-alloy { background-image: url("data:image/svg+xml,..."); }
+.icon-refinement { background-image: url("data:image/svg+xml,..."); }
+.icon-specs { background-image: url("data:image/svg+xml,..."); }
+.icon-drop { background-image: url("data:image/svg+xml,..."); }
+.icon-items { background-image: url("data:image/svg+xml,..."); }
+.icon-works { background-image: url("data:image/svg+xml,..."); }
+.icon-star { background-image: url("data:image/svg+xml,..."); }
+```
+
+**Usage:**
+```jsx
+<PanelHeader>
+  <span className="panel-icon icon-alloy" />
+  Alloy
+</PanelHeader>
+```
+
+---
+
+### Dropzones
+
+Areas for dropping/pasting images:
+
+```css
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  min-height: 120px;
+  text-align: center;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+  border: 2px dashed rgba(0, 0, 0, 0.12);
+  transition: all 0.15s ease;
+}
+
+.dropzone:hover, .dropzone.active {
+  border-color: var(--accent);
+  background: rgba(255, 109, 58, 0.05);
+}
+
+.dropzone.dragging {
+  border-color: var(--accent);
+  background: rgba(255, 109, 58, 0.1);
+  border-style: solid;
+}
+
+.dropzone-text {
+  font-family: 'SF Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+```
+
+---
+
+### Active References Section
+
+The "Active" section showing selected references:
+
+```css
+.active-refs {
+  padding: 12px 16px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+}
+
+.active-refs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: 'SF Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.active-refs-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+```
+
+---
+
 ## Quick Reference
 
 ### The Golden Rules
@@ -633,6 +1069,23 @@ src/
 | White blinking LED off-state | Use `--led-off` (dark grey) |
 | Centered panel header text | Align to `flex-start` |
 | Text labels in lightbox | Icons only |
+
+---
+
+### Component Quick Reference
+
+| Component | Class | Use For |
+|-----------|-------|---------|
+| Grey button | `.btn-dark` | Inactive/unselected state |
+| Orange button | `.btn-accent` | Active/selected state |
+| Ghost button | `.btn-ghost` | Secondary actions |
+| Small option | `.specs-btn` | Forge Specs options |
+| Item overlay button | `.item-pin`, `.item-star`, etc. | Actions on grid items |
+| Input field | `.input` | Text inputs |
+| Item card | `.highrise-item`, `.history-item` | Grid items |
+| Thumbnail | `.thumb` | Small preview images |
+| Dropzone | `.dropzone` | Image drop areas |
+| Panel icon | `.panel-icon .icon-*` | Header icons |
 
 ---
 
