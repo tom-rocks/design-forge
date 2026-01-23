@@ -2458,7 +2458,7 @@ body {
 
 .lightbox-content {
   position: relative;
-  max-width: min(90vw, 800px);
+  max-width: 90vw;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -2497,7 +2497,7 @@ body {
 .lightbox-image-container img,
 .lightbox-content > img {
   max-width: 100%;
-  max-height: 50vh;
+  max-height: 70vh;
   object-fit: contain;
   border-radius: var(--radius-md);
 }
