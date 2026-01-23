@@ -105,27 +105,40 @@ export default function HighriseSearch({
   }, [useAPBridge, proxyingImages, proxiedImages])
   
   // Cache image on server (only called when selecting for generation)
+  // Fetches CRISP version via AP proxy if available for best quality
   const cacheForGeneration = useCallback(async (item: HighriseItem): Promise<string> => {
-    // If we have a proxied data URL, cache it on the server for generation
-    if (proxiedImages.has(item.id)) {
-      try {
-        const base64 = proxiedImages.get(item.id)!
+    try {
+      // If we have crisp URL and we're in AP context, fetch crisp version via AP proxy
+      if (item.apImageUrlCrisp && useAPBridge && checkAPContext()) {
+        console.log(`[Highrise] Fetching crisp image for ${item.id} via AP proxy`)
+        const crispDataUrl = await fetchImageViaAP(item.apImageUrlCrisp)
         
-        // Cache on server
+        // Cache crisp version on server for Gemini
+        await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64: crispDataUrl })
+        })
+        console.log(`[Highrise] Cached crisp ${item.id} for generation`)
+        return crispDataUrl
+      }
+      
+      // Otherwise, if we have a proxied data URL, cache it
+      if (proxiedImages.has(item.id)) {
+        const base64 = proxiedImages.get(item.id)!
         await fetch(`${API_URL}/api/highrise/proxy/cache/${item.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ base64 })
         })
-        
         console.log(`[Highrise] Cached ${item.id} for generation`)
-      } catch (e) {
-        console.error(`[Highrise] Failed to cache ${item.id}:`, e)
       }
+    } catch (e) {
+      console.error(`[Highrise] Failed to cache ${item.id}:`, e)
     }
-    // Return the display URL (data URL if proxied, otherwise original)
+    // Return the display URL (data URL if proxied, otherwise server proxy)
     return getDisplayUrl(item)
-  }, [proxiedImages, getDisplayUrl])
+  }, [proxiedImages, getDisplayUrl, useAPBridge])
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Reset image loaded state when lightbox changes
@@ -459,9 +472,11 @@ export default function HighriseSearch({
     if (existingRef) {
       onRemoveReference(refId)
     } else if (references.length < maxRefs) {
-      // Use CRISP URL for clothing items (higher quality for generation)
-      // Otherwise use display URL (proxied data URL or regular imageUrl)
-      const referenceUrl = item.apImageUrlCrisp || getDisplayUrl(item)
+      // Use display URL for UI (proxied data URL or server proxy - both work cross-origin)
+      // NOTE: apImageUrlCrisp points to production-ap.highrise.game which requires AP cookies
+      // Our iframe is on Railway domain, so <img> tags can't load AP URLs directly.
+      // The crisp image gets cached on server via cacheForGeneration for Gemini.
+      const referenceUrl = getDisplayUrl(item)
       onAddReference({
         id: refId,
         url: referenceUrl,
@@ -469,7 +484,8 @@ export default function HighriseSearch({
         type: 'highrise'
       })
       
-      // Cache for generation in background (non-blocking)
+      // Cache crisp version on server for generation (non-blocking)
+      // This fetches via AP proxy if needed and caches for Gemini
       cacheForGeneration(item).catch(e => 
         console.warn(`[Highrise] Background cache failed for ${item.id}:`, e)
       )
