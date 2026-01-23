@@ -1855,6 +1855,7 @@ body {
 .highrise-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
   gap: 12px;
   max-height: 480px;
   overflow: hidden auto; /* clip horizontal, scroll vertical */
@@ -1864,6 +1865,11 @@ body {
   /* Custom scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* Force grid items to be square */
+.highrise-grid > * {
+  aspect-ratio: 1;
 }
 
 .highrise-grid::-webkit-scrollbar {
