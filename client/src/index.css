@@ -2538,6 +2538,7 @@ body {
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
+  padding-bottom: 4px; /* Room for button shadows */
 }
 
 .lightbox-actions {
