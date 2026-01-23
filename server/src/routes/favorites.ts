@@ -127,6 +127,37 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/favorites/broken - Delete all favorites with MongoDB IDs (broken ones)
+// MUST be before /:id route to avoid "broken" being parsed as an ID
+router.delete('/broken', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    
+    // Delete item favorites where itemId looks like a MongoDB ObjectId (24 hex chars)
+    // These are the broken ones that can't be fixed
+    const result = await pool.query(
+      `DELETE FROM favorites 
+       WHERE user_id = $1 
+       AND type = 'item' 
+       AND item_data->>'itemId' ~ '^[a-f0-9]{24}$'
+       RETURNING id`,
+      [userId]
+    );
+    
+    const deleted = result.rows.length;
+    console.log(`[Favorites] Deleted ${deleted} broken favorites for user ${userId}`);
+    
+    res.json({ 
+      success: true, 
+      deleted,
+      message: `Deleted ${deleted} broken favorites`
+    });
+  } catch (error) {
+    console.error('[Favorites] Error deleting broken favorites:', error);
+    res.status(500).json({ error: 'Failed to delete broken favorites' });
+  }
+});
+
 // DELETE /api/favorites/:id - Remove a favorite
 router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -291,36 +322,6 @@ router.put('/:id/repair', requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Favorites] Error updating item_data:', error);
     res.status(500).json({ error: 'Failed to update favorite' });
-  }
-});
-
-// DELETE /api/favorites/broken - Delete all favorites with MongoDB IDs (broken ones)
-router.delete('/broken', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const userId = getUserId(req);
-    
-    // Delete item favorites where itemId looks like a MongoDB ObjectId (24 hex chars)
-    // These are the broken ones that can't be fixed
-    const result = await pool.query(
-      `DELETE FROM favorites 
-       WHERE user_id = $1 
-       AND type = 'item' 
-       AND item_data->>'itemId' ~ '^[a-f0-9]{24}$'
-       RETURNING id`,
-      [userId]
-    );
-    
-    const deleted = result.rows.length;
-    console.log(`[Favorites] Deleted ${deleted} broken favorites for user ${userId}`);
-    
-    res.json({ 
-      success: true, 
-      deleted,
-      message: `Deleted ${deleted} broken favorites`
-    });
-  } catch (error) {
-    console.error('[Favorites] Error deleting broken favorites:', error);
-    res.status(500).json({ error: 'Failed to delete broken favorites' });
   }
 });
 
