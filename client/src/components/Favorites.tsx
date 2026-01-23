@@ -125,7 +125,7 @@ export interface Favorite {
     generationId?: string
     itemId?: string  // For items - the dispId
   }
-  folder_id: string | null
+  folder_ids: string[]  // Array of folder IDs (can be in multiple folders)
   sort_order: number
 }
 
@@ -293,9 +293,11 @@ export function Favorites({
       if (!res.ok) throw new Error('Failed to delete folder')
       
       setFolders(prev => prev.filter(f => f.id !== folderId))
-      // Items in the folder will have folder_id set to null on server
+      // Items in the folder will have the folder removed from their folder_ids
       setFavorites(prev => prev.map(f => 
-        f.folder_id === folderId ? { ...f, folder_id: null } : f
+        f.folder_ids.includes(folderId) 
+          ? { ...f, folder_ids: f.folder_ids.filter(id => id !== folderId) } 
+          : f
       ))
       if (expandedFolder === folderId) {
         setExpandedFolder(null)
@@ -325,54 +327,51 @@ export function Favorites({
     }
   }
   
-  // Move favorite to root (remove from folder)
-  const handleMoveToRoot = async (favoriteId: string) => {
+  // Remove favorite from current folder
+  const handleRemoveFromFolder = async (favoriteId: string) => {
+    if (!expandedFolder) return
+    
     try {
       await fetch(`${API_URL}/api/favorites/${favoriteId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ folderId: null }),
+        body: JSON.stringify({ removeFromFolder: expandedFolder }),
       })
       
       setFavorites(prev => prev.map(f => 
-        f.id === favoriteId ? { ...f, folder_id: null } : f
+        f.id === favoriteId 
+          ? { ...f, folder_ids: f.folder_ids.filter(id => id !== expandedFolder) } 
+          : f
       ))
     } catch (e) {
-      console.error('[Favorites] Error moving to root:', e)
+      console.error('[Favorites] Error removing from folder:', e)
     }
   }
   
-  // Copy favorites to current folder (allows same item in multiple folders)
+  // Add favorites to current folder (same favorite can be in multiple folders)
   const handleAddToFolder = async () => {
     if (!expandedFolder || selectedForFolder.size === 0) return
     
     try {
-      // Get the selected favorites to copy
-      const toCopy = favorites.filter(f => selectedForFolder.has(f.id))
-      
-      // Create copies in the folder
-      const responses = await Promise.all(
-        toCopy.map(fav =>
-          fetch(`${API_URL}/api/favorites`, {
-            method: 'POST',
+      // Add folder to each selected favorite
+      await Promise.all(
+        Array.from(selectedForFolder).map(favoriteId =>
+          fetch(`${API_URL}/api/favorites/${favoriteId}`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ 
-              type: fav.type,
-              itemData: fav.item_data,
-              folderId: expandedFolder,
-            }),
-          }).then(r => r.json())
+            body: JSON.stringify({ addToFolder: expandedFolder }),
+          })
         )
       )
       
-      // Add new copies to local state
-      const newFavorites = responses
-        .filter(r => r.favorite)
-        .map(r => r.favorite as Favorite)
-      
-      setFavorites(prev => [...prev, ...newFavorites])
+      // Update local state - add folder to each selected favorite's folder_ids
+      setFavorites(prev => prev.map(f => 
+        selectedForFolder.has(f.id) 
+          ? { ...f, folder_ids: [...f.folder_ids, expandedFolder] }
+          : f
+      ))
       
       // Reset selection mode
       setAddingToFolder(false)
@@ -473,21 +472,21 @@ export function Favorites({
       const folderId = overId.replace('folder-', '')
       const favorite = favorites.find(f => f.id === activeId)
       
-      if (favorite && favorite.folder_id !== folderId) {
-        // Move to folder
+      if (favorite && !favorite.folder_ids.includes(folderId)) {
+        // Add to folder
         try {
           await fetch(`${API_URL}/api/favorites/${activeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ folderId }),
+            body: JSON.stringify({ addToFolder: folderId }),
           })
           
           setFavorites(prev => prev.map(f => 
-            f.id === activeId ? { ...f, folder_id: folderId } : f
+            f.id === activeId ? { ...f, folder_ids: [...f.folder_ids, folderId] } : f
           ))
         } catch (e) {
-          console.error('[Favorites] Error moving to folder:', e)
+          console.error('[Favorites] Error adding to folder:', e)
         }
       }
       return
@@ -520,8 +519,8 @@ export function Favorites({
         // Reorder items among themselves
         // IMPORTANT: Use same filtering as display to get correct indices
         const itemsToReorder = expandedFolder
-          ? favorites.filter(f => f.folder_id === expandedFolder && !failedImages.has(f.id))
-          : favorites.filter(f => !f.folder_id && !failedImages.has(f.id))
+          ? favorites.filter(f => f.folder_ids.includes(expandedFolder) && !failedImages.has(f.id))
+          : favorites.filter(f => f.folder_ids.length === 0 && !failedImages.has(f.id))
         
         const oldIndex = itemsToReorder.findIndex(f => f.id === activeId)
         const newIndex = itemsToReorder.findIndex(f => f.id === overId)
@@ -533,9 +532,9 @@ export function Favorites({
           const otherItems = favorites.filter(f => {
             // Keep items that are NOT in the group we're reordering
             if (expandedFolder) {
-              return f.folder_id !== expandedFolder || failedImages.has(f.id)
+              return !f.folder_ids.includes(expandedFolder) || failedImages.has(f.id)
             } else {
-              return f.folder_id !== null || failedImages.has(f.id)
+              return f.folder_ids.length > 0 || failedImages.has(f.id)
             }
           })
           setFavorites([...otherItems, ...newItems])
@@ -543,9 +542,9 @@ export function Favorites({
           // Update sort order on server
           const updates = newItems.map((f, i) => ({ 
             id: f.id, 
-            sortOrder: i, 
-            folderId: f.folder_id 
+            sortOrder: i
           }))
+          // Reorder (sort_order only, folder membership is separate)
           fetch(`${API_URL}/api/favorites/reorder`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -597,32 +596,26 @@ export function Favorites({
   }
   
   // Get items to display - filter out failed images
+  // Root items are those NOT in any folder
   const rootItems = useMemo(() => 
-    favorites.filter(f => !f.folder_id && !failedImages.has(f.id)),
+    favorites.filter(f => f.folder_ids.length === 0 && !failedImages.has(f.id)),
     [favorites, failedImages]
   )
+  // Folder items are those that include the expanded folder ID
   const folderItems = useMemo(() => 
     expandedFolder 
-      ? favorites.filter(f => f.folder_id === expandedFolder && !failedImages.has(f.id))
+      ? favorites.filter(f => f.folder_ids.includes(expandedFolder) && !failedImages.has(f.id))
       : [],
     [favorites, expandedFolder, failedImages]
   )
-  // Items available to add to current folder (items not already copied to this folder)
+  // Items available to add to current folder (items not already in this folder)
   const availableForFolder = useMemo(() => {
     if (!expandedFolder) return []
     
-    // Get items already in this folder (by content identity)
-    const inFolderKeys = new Set(
-      favorites
-        .filter(f => f.folder_id === expandedFolder)
-        .map(f => f.item_data.itemId || f.item_data.generationId || f.item_data.imageUrl)
-    )
-    
-    // Return items whose content is not already in this folder
+    // Return items not already in this folder
     return favorites.filter(f => {
       if (failedImages.has(f.id)) return false
-      const key = f.item_data.itemId || f.item_data.generationId || f.item_data.imageUrl
-      return !inFolderKeys.has(key)
+      return !f.folder_ids.includes(expandedFolder)
     })
   }, [favorites, expandedFolder, failedImages])
   
@@ -713,7 +706,7 @@ export function Favorites({
               <FavoriteFolder
                 key={folder.id}
                 folder={folder}
-                items={favorites.filter(f => f.folder_id === folder.id && !failedImages.has(f.id))}
+                items={favorites.filter(f => f.folder_ids.includes(folder.id) && !failedImages.has(f.id))}
                 onOpen={() => setExpandedFolder(folder.id)}
                 onDelete={() => handleDeleteFolder(folder.id)}
                 onRename={(name) => handleRenameFolder(folder.id, name)}
@@ -730,7 +723,7 @@ export function Favorites({
                 onClick={() => handleItemClick(favorite)}
                 onDelete={() => handleDeleteFavorite(favorite.id)}
                 onExpand={() => setLightbox(favorite)}
-                onMoveToRoot={expandedFolder ? () => handleMoveToRoot(favorite.id) : undefined}
+                onMoveToRoot={expandedFolder ? () => handleRemoveFromFolder(favorite.id) : undefined}
                 onImageFailed={handleImageFailed}
               />
             ))}
@@ -791,14 +784,14 @@ export function Favorites({
             <div className="favorite-folder dragging">
               <div className="folder-preview">
                 {favorites
-                  .filter(f => f.folder_id === activeFolder.id)
+                  .filter(f => f.folder_ids.includes(activeFolder.id))
                   .slice(0, 4)
                   .map((item) => (
                     <div key={item.id} className="folder-preview-item">
                       <img src={getFavoriteThumbnailUrl(item)} alt="" />
                     </div>
                   ))}
-                {[...Array(Math.max(0, 4 - favorites.filter(f => f.folder_id === activeFolder.id).length))].map((_, i) => (
+                {[...Array(Math.max(0, 4 - favorites.filter(f => f.folder_ids.includes(activeFolder.id)).length))].map((_, i) => (
                   <div key={`empty-${i}`} className="folder-preview-item empty" />
                 ))}
               </div>
@@ -839,11 +832,10 @@ export function Favorites({
                 <div className="folder-picker-actions">
                   {selectedForFolder.size > 0 && (
                     <button 
-                      className="specs-btn"
+                      className="specs-btn folder-picker-add-btn"
                       onClick={handleAddToFolder}
                     >
-                      <Check className="w-3 h-3" />
-                      Add {selectedForFolder.size}
+                      <Check className="w-3 h-3" /><span>Add {selectedForFolder.size}</span>
                     </button>
                   )}
                   <button 

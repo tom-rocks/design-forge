@@ -4019,6 +4019,12 @@ body {
   white-space: nowrap;
 }
 
+.folder-picker-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .folder-picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));

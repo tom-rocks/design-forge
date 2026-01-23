@@ -88,15 +88,34 @@ export async function initDatabase() {
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         type TEXT NOT NULL,
         item_data JSONB NOT NULL,
-        folder_id UUID REFERENCES favorite_folders(id) ON DELETE SET NULL,
+        folder_ids UUID[] DEFAULT '{}',
         sort_order INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
       
       CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
-      CREATE INDEX IF NOT EXISTS idx_favorites_folder_id ON favorites(folder_id);
+      CREATE INDEX IF NOT EXISTS idx_favorites_folder_ids ON favorites USING GIN(folder_ids);
     `);
     console.log('[DB] Favorites table ready');
+    
+    // Migration: Convert old folder_id to folder_ids array
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'folder_id') THEN
+          -- Add folder_ids if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'folder_ids') THEN
+            ALTER TABLE favorites ADD COLUMN folder_ids UUID[] DEFAULT '{}';
+          END IF;
+          -- Migrate data
+          UPDATE favorites SET folder_ids = ARRAY[folder_id] WHERE folder_id IS NOT NULL AND (folder_ids IS NULL OR folder_ids = '{}');
+          -- Drop old column and index
+          DROP INDEX IF EXISTS idx_favorites_folder_id;
+          ALTER TABLE favorites DROP COLUMN IF EXISTS folder_id;
+        END IF;
+      END $$;
+    `);
+    console.log('[DB] Favorites migration complete');
     
     console.log('[DB] Database schema initialized');
   } catch (err) {
@@ -293,7 +312,7 @@ export interface Favorite {
     generationId?: string;
     itemId?: string;  // dispId for items (e.g., "shirt-cool-jacket")
   };
-  folder_id: string | null;
+  folder_ids: string[];  // Array of folder IDs (can be in multiple folders)
   sort_order: number;
   created_at: Date;
 }
@@ -332,28 +351,41 @@ export async function addFavorite(params: {
   );
   const sortOrder = maxResult.rows[0].next_order;
   
+  // folder_ids is an array - empty if no folder, or containing the folder ID
+  const folderIds = folderId ? [folderId] : [];
+  
   const result = await pool.query<Favorite>(
-    `INSERT INTO favorites (user_id, type, item_data, folder_id, sort_order)
+    `INSERT INTO favorites (user_id, type, item_data, folder_ids, sort_order)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [userId, type, itemData, folderId || null, sortOrder]
+    [userId, type, itemData, folderIds, sortOrder]
   );
   
   return result.rows[0];
 }
 
-// Update a favorite (move to folder, update sort_order)
+// Update a favorite (add/remove folder, update sort_order)
 export async function updateFavorite(id: string, userId: string, updates: {
-  folderId?: string | null;
+  addToFolder?: string;      // Add to a folder
+  removeFromFolder?: string; // Remove from a folder
+  setFolderIds?: string[];   // Directly set folder_ids (for migration/compat)
   sortOrder?: number;
 }): Promise<Favorite | null> {
   const setClauses: string[] = [];
   const values: any[] = [];
   let paramIndex = 1;
   
-  if (updates.folderId !== undefined) {
-    setClauses.push(`folder_id = $${paramIndex++}`);
-    values.push(updates.folderId);
+  if (updates.addToFolder) {
+    setClauses.push(`folder_ids = array_append(folder_ids, $${paramIndex++}::uuid)`);
+    values.push(updates.addToFolder);
+  }
+  if (updates.removeFromFolder) {
+    setClauses.push(`folder_ids = array_remove(folder_ids, $${paramIndex++}::uuid)`);
+    values.push(updates.removeFromFolder);
+  }
+  if (updates.setFolderIds !== undefined) {
+    setClauses.push(`folder_ids = $${paramIndex++}`);
+    values.push(updates.setFolderIds);
   }
   if (updates.sortOrder !== undefined) {
     setClauses.push(`sort_order = $${paramIndex++}`);
@@ -380,15 +412,15 @@ export async function deleteFavorite(id: string, userId: string): Promise<boolea
   return result.rowCount !== null && result.rowCount > 0;
 }
 
-// Batch reorder favorites
-export async function reorderFavorites(userId: string, items: { id: string; sortOrder: number; folderId?: string | null }[]): Promise<void> {
+// Batch reorder favorites (sort order only, folder membership is separate)
+export async function reorderFavorites(userId: string, items: { id: string; sortOrder: number }[]): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     for (const item of items) {
       await client.query(
-        'UPDATE favorites SET sort_order = $1, folder_id = $2 WHERE id = $3 AND user_id = $4',
-        [item.sortOrder, item.folderId ?? null, item.id, userId]
+        'UPDATE favorites SET sort_order = $1 WHERE id = $2 AND user_id = $3',
+        [item.sortOrder, item.id, userId]
       );
     }
     await client.query('COMMIT');

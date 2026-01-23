@@ -104,15 +104,16 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/favorites/:id - Update a favorite (move to folder, etc.)
+// PUT /api/favorites/:id - Update a favorite (add/remove from folder, etc.)
 router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
     const { id } = req.params;
-    const { folderId, sortOrder } = req.body;
+    const { addToFolder, removeFromFolder, sortOrder } = req.body;
     
     const favorite = await updateFavorite(id, userId, {
-      folderId,
+      addToFolder,
+      removeFromFolder,
       sortOrder,
     });
     
