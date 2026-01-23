@@ -595,6 +595,13 @@ export function Favorites({
       : [],
     [favorites, expandedFolder, failedImages]
   )
+  // Items available to add to current folder (everything NOT already in this folder)
+  const availableForFolder = useMemo(() => 
+    expandedFolder
+      ? favorites.filter(f => f.folder_id !== expandedFolder && !failedImages.has(f.id))
+      : [],
+    [favorites, expandedFolder, failedImages]
+  )
   
   // Not authenticated - same as history-empty
   if (!authenticated) {
@@ -705,8 +712,8 @@ export function Favorites({
               />
             ))}
             
-            {/* Add to folder button (folder view only) */}
-            {expandedFolder && rootItems.length > 0 && (
+            {/* Add to folder button (folder view only) - grey square with + */}
+            {expandedFolder && availableForFolder.length > 0 && (
               <button 
                 className="folder-add-item"
                 onClick={() => setAddingToFolder(true)}
@@ -805,7 +812,7 @@ export function Favorites({
               exit={{ scale: 0.95, opacity: 0 }}
             >
               <div className="folder-picker-header">
-                <span>Select items to add</span>
+                <span>Add to folder ({availableForFolder.length} available)</span>
                 <div className="folder-picker-actions">
                   {selectedForFolder.size > 0 && (
                     <button 
@@ -823,12 +830,12 @@ export function Favorites({
                       setSelectedForFolder(new Set())
                     }}
                   >
-                    Cancel
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               </div>
               <div className="folder-picker-grid">
-                {rootItems.map(favorite => (
+                {availableForFolder.map(favorite => (
                   <div
                     key={favorite.id}
                     className={`folder-picker-item ${selectedForFolder.has(favorite.id) ? 'selected' : ''}`}
