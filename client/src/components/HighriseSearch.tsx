@@ -355,9 +355,10 @@ export default function HighriseSearch({
     // Multi-select mode
     if (!onAddReference || !onRemoveReference) return
     
-    const existingRef = references.find(r => r.url === getDisplayUrl(item) || r.url === item.imageUrl)
+    const refId = `hr-${item.id}`
+    const existingRef = references.find(r => r.id === refId)
     if (existingRef) {
-      onRemoveReference(existingRef.id)
+      onRemoveReference(refId)
     } else if (references.length < maxRefs) {
       // Cache for generation if it's a new pipeline item
       await cacheForGeneration(item)
@@ -391,11 +392,11 @@ export default function HighriseSearch({
     }
   }
 
-  // Memoize selected URLs for O(1) lookups
-  const selectedUrls = useMemo(() => new Set(references.map(r => r.url)), [references])
+  // Memoize selected IDs for O(1) lookups (using reference IDs, not URLs, since crisp URLs differ)
+  const selectedIds = useMemo(() => new Set(references.map(r => r.id)), [references])
   const isSelected = useCallback((item: HighriseItem) => 
-    selectedUrls.has(getDisplayUrl(item)) || selectedUrls.has(item.imageUrl), 
-    [selectedUrls, getDisplayUrl]
+    selectedIds.has(`hr-${item.id}`), 
+    [selectedIds]
   )
   
   // Display items: show pinned first when no query, otherwise just search results
