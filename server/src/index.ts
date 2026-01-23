@@ -12,6 +12,7 @@ import highriseRouter from './routes/highrise.js';
 import generationsRouter from './routes/generations.js';
 import authRouter, { setupPassport } from './routes/auth.js';
 import dashboardRouter from './routes/dashboard.js';
+import favoritesRouter from './routes/favorites.js';
 import { initBridgeServer, isBridgeConnected } from './bridge.js';
 import { initDatabase } from './db.js';
 import { initStorage } from './storage.js';
@@ -93,6 +94,7 @@ app.use('/api/highrise', highriseRouter);
 app.use('/api/generations', generationsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/favorites', favoritesRouter);
 
 // Health check with bridge status
 app.get('/api/health', (_req, res) => {

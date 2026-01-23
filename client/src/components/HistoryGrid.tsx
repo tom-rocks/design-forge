@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Gem, Flame, Hammer, Search, X } from 'lucide-react'
+import { Loader2, LogIn, Expand, Download, Pin, RotateCcw, Gem, Flame, Hammer, Search, X, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -142,6 +142,65 @@ export default function HistoryGrid({
       }
       return next
     })
+  }
+  
+  // Starred (favorited) images - stored on server
+  const [starredUrls, setStarredUrls] = useState<Set<string>>(new Set())
+  
+  // Fetch starred URLs on mount
+  useEffect(() => {
+    const fetchStarred = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/favorites/urls`, { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          setStarredUrls(new Set(data.urls || []))
+        }
+      } catch (e) {
+        // Ignore errors - user might not be logged in
+      }
+    }
+    fetchStarred()
+  }, [])
+  
+  // Toggle star for individual image
+  const toggleImageStar = async (img: DisplayImage, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const imageUrl = `${API_URL}${img.imageUrl}`
+    const isCurrentlyStarred = starredUrls.has(imageUrl)
+    
+    try {
+      if (isCurrentlyStarred) {
+        // Remove from local state
+        setStarredUrls(prev => {
+          const next = new Set(prev)
+          next.delete(imageUrl)
+          return next
+        })
+      } else {
+        // Add to favorites
+        const res = await fetch(`${API_URL}/api/favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            type: 'work',
+            itemData: {
+              imageUrl,
+              name: img.generation.prompt?.slice(0, 50) || 'Generation',
+              prompt: img.generation.prompt,
+              generationId: img.generation.id,
+            },
+          }),
+        })
+        
+        if (res.ok) {
+          setStarredUrls(prev => new Set(prev).add(imageUrl))
+        }
+      }
+    } catch (err) {
+      console.error('[History] Error toggling star:', err)
+    }
   }
   
   // Flatten generations into individual images, pinned first
@@ -397,6 +456,14 @@ export default function HistoryGrid({
                 title={pinned ? 'Unpin' : 'Pin to top'}
               >
                 <Pin className="w-3 h-3" />
+              </button>
+              {/* Star button */}
+              <button
+                className={`item-star ${starredUrls.has(`${API_URL}${img.imageUrl}`) ? 'active' : ''}`}
+                onClick={(e) => toggleImageStar(img, e)}
+                title={starredUrls.has(`${API_URL}${img.imageUrl}`) ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Star className="w-3 h-3" />
               </button>
               {/* Expand button on hover */}
               <button

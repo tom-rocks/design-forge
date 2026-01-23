@@ -13,6 +13,7 @@ import {
   LCDFireGrid,
   HighriseSearch,
   HistoryGrid,
+  Favorites,
   type ReplayConfig
 } from './components'
 import { Dashboard } from './Dashboard'
@@ -42,7 +43,7 @@ interface GenerationResult {
    APP
    ============================================ */
 
-type RefSource = 'drop' | 'items' | 'history'
+type RefSource = 'drop' | 'items' | 'history' | 'favorites'
 
 // Helper to get aspect ratio icon dimensions
 const getAspectDimensions = (ratio: string | undefined) => {
@@ -805,6 +806,13 @@ export default function App() {
                       <span className="btn-icon icon-works" />
                       Works
                     </button>
+                    <button 
+                      className={`btn ${refineSource === 'favorites' ? 'btn-accent' : 'btn-dark'}`}
+                      onClick={() => setRefineSource('favorites')}
+                    >
+                      <span className="btn-icon icon-star" />
+                      Favorites
+                    </button>
                   </div>
                   <div className="refine-content">
                     {refineSource === 'drop' && (
@@ -841,6 +849,18 @@ export default function App() {
                           detectAndSetAspectRatio(url)
                         }}
                         isActive={refineExpanded}
+                      />
+                    )}
+                    {refineSource === 'favorites' && (
+                      <Favorites 
+                        authenticated={authenticated}
+                        onLogin={login}
+                        singleSelect
+                        onSingleSelect={(fav) => { 
+                          setEditImage({ url: fav.item_data.imageUrl })
+                          detectAndSetAspectRatio(fav.item_data.imageUrl)
+                        }}
+                        isActive={refineSource === 'favorites'}
                       />
                     )}
                   </div>
@@ -955,6 +975,20 @@ export default function App() {
                     <span className="btn-icon icon-works" />
                     Works
                   </button>
+                  <button 
+                    className={`btn ${refSource === 'favorites' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
+                    onClick={() => {
+                      if (refSource === 'favorites' && !refSourceCollapsed) {
+                        setRefSourceCollapsed(true)
+                      } else {
+                        setRefSource('favorites')
+                        setRefSourceCollapsed(false)
+                      }
+                    }}
+                  >
+                    <span className="btn-icon icon-star" />
+                    Favorites
+                  </button>
                 </div>
 
                 {/* Reference content - all tabs stay mounted, collapsible */}
@@ -1009,6 +1043,18 @@ export default function App() {
                             setRefineExpanded(false) // Collapse picker since we have image
                             setTimeout(scrollToRefine, 100)
                           }}
+                        />
+                      </div>
+                      <div className={`ref-tab-content ${refSource === 'favorites' ? 'active' : ''}`}>
+                        <Favorites
+                          authenticated={authenticated}
+                          onLogin={login}
+                          references={references}
+                          onAddReference={addReference}
+                          onRemoveReference={removeReference}
+                          maxRefs={14}
+                          disabled={isGenerating}
+                          isActive={refSource === 'favorites'}
                         />
                       </div>
                     </motion.div>

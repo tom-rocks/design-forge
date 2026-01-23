@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Search, Loader2, WifiOff, Expand, Download, Pin } from 'lucide-react'
+import { Search, Loader2, WifiOff, Expand, Download, Pin, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 import { searchItemsViaAP, fetchImageViaAP, checkAPContext } from '../lib/ap-bridge'
@@ -173,6 +173,108 @@ export default function HighriseSearch({
   
   const isPinned = useCallback((item: HighriseItem) => 
     pinnedItems.some(p => p.id === item.id), [pinnedItems])
+  
+  // Starred (favorited) items - stored on server (by item ID)
+  const [starredUrls, setStarredUrls] = useState<Set<string>>(new Set())
+  
+  // Fetch starred item IDs on mount
+  useEffect(() => {
+    const fetchStarred = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/favorites/urls`, { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          // Use itemIds for items (more reliable), urls as fallback for works
+          setStarredUrls(new Set([...(data.itemIds || []), ...(data.urls || [])]))
+        }
+      } catch (e) {
+        // Ignore errors - user might not be logged in
+      }
+    }
+    fetchStarred()
+  }, [])
+  
+  // Toggle star status - optimistic update
+  const toggleStar = async (item: HighriseItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    // For favorites, always use our server proxy URL (works outside AP context)
+    // Extract dispId from item.id (which is dispId for AP items) or from apImageUrl
+    const dispId = item.id
+    const category = item.category
+    
+    // Construct a universal URL that works everywhere
+    let universalImageUrl: string
+    if (category === 'emote') {
+      // Emotes use direct CDN URL
+      universalImageUrl = item.imageUrl
+    } else if (dispId.startsWith('cn-') || dispId.startsWith('bg-')) {
+      // Containers and backgrounds use CDN URLs (may not work without auth)
+      universalImageUrl = item.imageUrl
+    } else {
+      // Avatar items - use our proxy which always works
+      universalImageUrl = `${API_URL}/api/highrise/proxy/${dispId}.png?v=3`
+    }
+    
+    const isCurrentlyStarred = starredUrls.has(item.id)
+    
+    // Optimistic update - update UI immediately
+    if (isCurrentlyStarred) {
+      setStarredUrls(prev => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+    } else {
+      setStarredUrls(prev => new Set(prev).add(item.id))
+    }
+    
+    try {
+      if (isCurrentlyStarred) {
+        // Note: Full implementation would DELETE the favorite by ID
+        // For now, the optimistic update handles the UI
+      } else {
+        // Add to favorites
+        const res = await fetch(`${API_URL}/api/favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            type: 'item',
+            itemData: {
+              imageUrl: universalImageUrl,
+              itemId: dispId,
+              name: item.name,
+              category: item.category,
+              rarity: item.rarity,
+            },
+          }),
+        })
+        
+        if (!res.ok) {
+          // Revert optimistic update on error
+          setStarredUrls(prev => {
+            const next = new Set(prev)
+            next.delete(item.id)
+            return next
+          })
+        }
+      }
+    } catch (err) {
+      console.error('[Highrise] Error toggling star:', err)
+      // Revert optimistic update on error
+      if (!isCurrentlyStarred) {
+        setStarredUrls(prev => {
+          const next = new Set(prev)
+          next.delete(item.id)
+          return next
+        })
+      }
+    }
+  }
+  
+  const isStarred = useCallback((item: HighriseItem) => 
+    starredUrls.has(item.id), [starredUrls])
 
   // Search items
   const searchItems = useCallback(async (append = false) => {
@@ -529,6 +631,14 @@ export default function HighriseSearch({
                     >
                       <Pin className="w-3 h-3" />
                     </button>
+                    {/* Star button */}
+                    <button
+                      className={`item-star ${isStarred(item) ? 'active' : ''}`}
+                      onClick={(e) => toggleStar(item, e)}
+                      title={isStarred(item) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Star className="w-3 h-3" />
+                    </button>
                     {/* Expand button on hover */}
                     <button
                       className="highrise-item-expand"
@@ -643,6 +753,13 @@ export default function HighriseSearch({
                       title="Unpin"
                     >
                       <Pin className="w-3 h-3" />
+                    </button>
+                    <button
+                      className={`item-star ${isStarred(item) ? 'active' : ''}`}
+                      onClick={(e) => toggleStar(item, e)}
+                      title={isStarred(item) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Star className="w-3 h-3" />
                     </button>
                     <button
                       className="highrise-item-expand"

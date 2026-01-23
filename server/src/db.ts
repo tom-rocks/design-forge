@@ -67,6 +67,37 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id);
     `);
     
+    // Favorite folders table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS favorite_folders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_favorite_folders_user_id ON favorite_folders(user_id);
+    `);
+    console.log('[DB] Favorite folders table ready');
+    
+    // Favorites table (items, works, or dropped images)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS favorites (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        item_data JSONB NOT NULL,
+        folder_id UUID REFERENCES favorite_folders(id) ON DELETE SET NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+      CREATE INDEX IF NOT EXISTS idx_favorites_folder_id ON favorites(folder_id);
+    `);
+    console.log('[DB] Favorites table ready');
+    
     console.log('[DB] Database schema initialized');
   } catch (err) {
     console.error('[DB] Failed to initialize schema:', err);
@@ -234,6 +265,215 @@ export async function getEditChain(id: string): Promise<Generation[]> {
     [id]
   );
   return result.rows;
+}
+
+// ============================================
+// FAVORITES
+// ============================================
+
+export interface FavoriteFolder {
+  id: string;
+  user_id: string;
+  name: string;
+  sort_order: number;
+  created_at: Date;
+}
+
+export interface Favorite {
+  id: string;
+  user_id: string;
+  type: 'item' | 'work' | 'image';
+  item_data: {
+    imageUrl: string;
+    name?: string;
+    category?: string;
+    rarity?: string;
+    prompt?: string;
+    generationId?: string;
+  };
+  folder_id: string | null;
+  sort_order: number;
+  created_at: Date;
+}
+
+// Get all favorites and folders for a user
+export async function getFavorites(userId: string): Promise<{ favorites: Favorite[]; folders: FavoriteFolder[] }> {
+  const foldersResult = await pool.query<FavoriteFolder>(
+    'SELECT * FROM favorite_folders WHERE user_id = $1 ORDER BY sort_order ASC',
+    [userId]
+  );
+  
+  const favoritesResult = await pool.query<Favorite>(
+    'SELECT * FROM favorites WHERE user_id = $1 ORDER BY sort_order ASC',
+    [userId]
+  );
+  
+  return {
+    folders: foldersResult.rows,
+    favorites: favoritesResult.rows,
+  };
+}
+
+// Add a favorite
+export async function addFavorite(params: {
+  userId: string;
+  type: Favorite['type'];
+  itemData: Favorite['item_data'];
+  folderId?: string;
+}): Promise<Favorite> {
+  const { userId, type, itemData, folderId } = params;
+  
+  // Get max sort_order for this user
+  const maxResult = await pool.query(
+    'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM favorites WHERE user_id = $1',
+    [userId]
+  );
+  const sortOrder = maxResult.rows[0].next_order;
+  
+  const result = await pool.query<Favorite>(
+    `INSERT INTO favorites (user_id, type, item_data, folder_id, sort_order)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [userId, type, itemData, folderId || null, sortOrder]
+  );
+  
+  return result.rows[0];
+}
+
+// Update a favorite (move to folder, update sort_order)
+export async function updateFavorite(id: string, userId: string, updates: {
+  folderId?: string | null;
+  sortOrder?: number;
+}): Promise<Favorite | null> {
+  const setClauses: string[] = [];
+  const values: any[] = [];
+  let paramIndex = 1;
+  
+  if (updates.folderId !== undefined) {
+    setClauses.push(`folder_id = $${paramIndex++}`);
+    values.push(updates.folderId);
+  }
+  if (updates.sortOrder !== undefined) {
+    setClauses.push(`sort_order = $${paramIndex++}`);
+    values.push(updates.sortOrder);
+  }
+  
+  if (setClauses.length === 0) return null;
+  
+  values.push(id, userId);
+  const result = await pool.query<Favorite>(
+    `UPDATE favorites SET ${setClauses.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex} RETURNING *`,
+    values
+  );
+  
+  return result.rows[0] || null;
+}
+
+// Delete a favorite
+export async function deleteFavorite(id: string, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    'DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING id',
+    [id, userId]
+  );
+  return result.rowCount !== null && result.rowCount > 0;
+}
+
+// Batch reorder favorites
+export async function reorderFavorites(userId: string, items: { id: string; sortOrder: number; folderId?: string | null }[]): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const item of items) {
+      await client.query(
+        'UPDATE favorites SET sort_order = $1, folder_id = $2 WHERE id = $3 AND user_id = $4',
+        [item.sortOrder, item.folderId ?? null, item.id, userId]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// Create a folder
+export async function createFavoriteFolder(userId: string, name: string): Promise<FavoriteFolder> {
+  // Get max sort_order
+  const maxResult = await pool.query(
+    'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM favorite_folders WHERE user_id = $1',
+    [userId]
+  );
+  const sortOrder = maxResult.rows[0].next_order;
+  
+  const result = await pool.query<FavoriteFolder>(
+    `INSERT INTO favorite_folders (user_id, name, sort_order)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [userId, name, sortOrder]
+  );
+  
+  return result.rows[0];
+}
+
+// Rename a folder
+export async function renameFavoriteFolder(id: string, userId: string, name: string): Promise<FavoriteFolder | null> {
+  const result = await pool.query<FavoriteFolder>(
+    'UPDATE favorite_folders SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
+    [name, id, userId]
+  );
+  return result.rows[0] || null;
+}
+
+// Delete a folder (favorites in it will have folder_id set to NULL)
+export async function deleteFavoriteFolder(id: string, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    'DELETE FROM favorite_folders WHERE id = $1 AND user_id = $2 RETURNING id',
+    [id, userId]
+  );
+  return result.rowCount !== null && result.rowCount > 0;
+}
+
+// Batch reorder folders
+export async function reorderFavoriteFolders(userId: string, folders: { id: string; sortOrder: number }[]): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const folder of folders) {
+      await client.query(
+        'UPDATE favorite_folders SET sort_order = $1 WHERE id = $2 AND user_id = $3',
+        [folder.sortOrder, folder.id, userId]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// Check if an item is favorited (by imageUrl)
+export async function isFavorited(userId: string, imageUrl: string): Promise<boolean> {
+  const result = await pool.query(
+    `SELECT id FROM favorites WHERE user_id = $1 AND item_data->>'imageUrl' = $2 LIMIT 1`,
+    [userId, imageUrl]
+  );
+  return result.rows.length > 0;
+}
+
+// Get favorited image URLs and item IDs for a user (for quick lookup)
+export async function getFavoritedUrls(userId: string): Promise<{ urls: Set<string>; itemIds: Set<string> }> {
+  const result = await pool.query(
+    `SELECT item_data->>'imageUrl' as url, item_data->>'itemId' as item_id FROM favorites WHERE user_id = $1`,
+    [userId]
+  );
+  return {
+    urls: new Set(result.rows.map(r => r.url).filter(Boolean)),
+    itemIds: new Set(result.rows.map(r => r.item_id).filter(Boolean)),
+  };
 }
 
 export default pool;
