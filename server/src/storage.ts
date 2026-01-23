@@ -42,15 +42,15 @@ export async function saveImage(base64DataUrl: string, generationId: string, ind
   return filename;
 }
 
-// Create a thumbnail for an image
+// Create a thumbnail for an image (WebP for best compression)
 export async function createThumbnail(imagePath: string, generationId: string, index: number = 0): Promise<string> {
-  const thumbFilename = `${generationId}-${index}-thumb.jpg`;
+  const thumbFilename = `${generationId}-${index}-thumb.webp`;
   const thumbPath = path.join(THUMBS_DIR, thumbFilename);
   const sourcePath = path.join(IMAGES_DIR, imagePath);
   
   await sharp(sourcePath)
     .resize(200, 200, { fit: 'cover' })
-    .jpeg({ quality: 80 })
+    .webp({ quality: 80 })
     .toFile(thumbPath);
   
   console.log(`[Storage] Created thumbnail: ${thumbFilename}`);
