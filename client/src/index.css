@@ -780,6 +780,7 @@ body {
 .panel {
   background: var(--surface);
   border-radius: var(--radius-lg);
+  overflow: hidden; /* Clip children to rounded corners */
   box-shadow:
     /* Inner top-left highlight */
     inset 1px 1px 0 var(--highlight),
