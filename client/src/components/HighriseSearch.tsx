@@ -459,8 +459,9 @@ export default function HighriseSearch({
     if (existingRef) {
       onRemoveReference(refId)
     } else if (references.length < maxRefs) {
-      // Add reference immediately with thumbnail URL for instant feedback
-      const referenceUrl = getDisplayUrl(item)
+      // Use CRISP URL for clothing items (higher quality for generation)
+      // Otherwise use display URL (proxied data URL or regular imageUrl)
+      const referenceUrl = item.apImageUrlCrisp || getDisplayUrl(item)
       onAddReference({
         id: refId,
         url: referenceUrl,
