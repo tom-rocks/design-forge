@@ -469,7 +469,10 @@ export function Favorites({
   }
   
   const activeFavorite = activeId ? favorites.find(f => f.id === activeId) : null
-  
+  const activeFolder = activeId?.startsWith('folder-') 
+    ? folders.find(f => `folder-${f.id}` === activeId) 
+    : null
+
   return (
     <div 
       className="highrise-search"
@@ -569,11 +572,31 @@ export function Favorites({
           </div>
         </SortableContext>
         
-        {/* Drag overlay */}
+        {/* Drag overlay - shows preview of dragged item or folder */}
         <DragOverlay>
           {activeFavorite && (
             <div className="highrise-item dragging">
               <img src={activeFavorite.item_data.imageUrl} alt="" />
+            </div>
+          )}
+          {activeFolder && (
+            <div className="favorite-folder dragging">
+              <div className="folder-preview">
+                {favorites
+                  .filter(f => f.folder_id === activeFolder.id)
+                  .slice(0, 4)
+                  .map((item) => (
+                    <div key={item.id} className="folder-preview-item">
+                      <img src={item.item_data.imageUrl} alt="" />
+                    </div>
+                  ))}
+                {[...Array(Math.max(0, 4 - favorites.filter(f => f.folder_id === activeFolder.id).length))].map((_, i) => (
+                  <div key={`empty-${i}`} className="folder-preview-item empty" />
+                ))}
+              </div>
+              <div className="folder-name-row">
+                <span className="folder-name">{activeFolder.name}</span>
+              </div>
             </div>
           )}
         </DragOverlay>
