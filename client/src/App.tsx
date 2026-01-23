@@ -526,14 +526,27 @@ export default function App() {
   }
   
   // Bulk add references from alloy (used by lightbox "Use Alloy" button)
-  const addAlloyReferences = (refs: Reference[]) => {
-    setReferences(prev => {
-      // Filter out duplicates and limit to 14 total
-      const newRefs = refs.filter(ref => !prev.find(r => r.url === ref.url))
-      const combined = [...prev, ...newRefs]
-      return combined.slice(0, 14)
+  // Adds refs one at a time with animation, scrolls to alloy block
+  const addAlloyReferences = useCallback((refs: Reference[]) => {
+    // Expand alloy panel if collapsed
+    setAlloyExpanded(true)
+    
+    // Scroll to alloy block
+    setTimeout(() => {
+      crucibleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+    
+    // Add refs one at a time with delay for smooth animation
+    refs.forEach((ref, i) => {
+      setTimeout(() => {
+        setReferences(prev => {
+          // Skip if already at max or duplicate
+          if (prev.length >= 14 || prev.find(r => r.url === ref.url)) return prev
+          return [...prev, ref]
+        })
+      }, 150 + i * 120) // Stagger each by 120ms
     })
-  }
+  }, [])
 
   const cycleOutputCount = () => {
     setOutputCount(prev => prev === 1 ? 2 : prev === 2 ? 4 : 1)
@@ -1218,7 +1231,7 @@ export default function App() {
                               }}
                               title="Refine this image"
                             >
-                              <Hammer className="w-4 h-4" />
+                              <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
                             </button>
                             <button 
                               className="output-action-btn"
@@ -1394,7 +1407,7 @@ export default function App() {
                     }}
                     title="Refine this image"
                   >
-                    <Hammer className="w-5 h-5" />
+                    <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
                   </button>
                   <button 
                     className="lightbox-btn"
@@ -1486,7 +1499,7 @@ export default function App() {
                           }}
                           title="Refine this image"
                         >
-                          <Hammer className="w-5 h-5" />
+                          <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
                         </button>
                         <button 
                           className="lightbox-btn"

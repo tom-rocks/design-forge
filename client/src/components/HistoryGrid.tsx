@@ -534,126 +534,128 @@ export default function HistoryGrid({
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="lightbox-image-container">
-                {!lightboxImageLoaded && (
-                  <div className="lightbox-image-loading">
-                    <Loader2 className="w-8 h-8 animate-spin" />
+              <div className="lightbox-scroll-area">
+                <div className="lightbox-image-container">
+                  {!lightboxImageLoaded && (
+                    <div className="lightbox-image-loading">
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    </div>
+                  )}
+                  <motion.img
+                    src={`${API_URL}${lightbox.imageUrl}`}
+                    alt={lightbox.generation.prompt}
+                    onLoad={() => setLightboxImageLoaded(true)}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                  {/* Specs bar */}
+                <div className="lightbox-specs">
+                  {/* Mode */}
+                  <span className="lightbox-spec" title={lightbox.generation.mode === 'edit' ? 'Refined' : 'Created'}>
+                    {lightbox.generation.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+                  </span>
+                  <span className="lightbox-spec-sep">·</span>
+                  {/* Model */}
+                  <span className="lightbox-spec" title="Pro">
+                    <Gem className="w-4 h-4" />
+                    Pro
+                  </span>
+                  <span className="lightbox-spec-sep">·</span>
+                  {/* Aspect Ratio */}
+                  {lightbox.generation.aspect_ratio && (
+                    <>
+                      <span className="lightbox-spec" title={`Ratio ${lightbox.generation.aspect_ratio}`}>
+                        <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
+                          <rect 
+                            x={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).w) / 2} 
+                            y={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).h) / 2} 
+                            width={getAspectDimensions(lightbox.generation.aspect_ratio).w} 
+                            height={getAspectDimensions(lightbox.generation.aspect_ratio).h} 
+                            fill="currentColor" 
+                            rx="1" 
+                          />
+                        </svg>
+                        {lightbox.generation.aspect_ratio}
+                      </span>
+                      <span className="lightbox-spec-sep">·</span>
+                    </>
+                  )}
+                  {/* Resolution */}
+                  <span className="lightbox-spec" title={`Resolution ${lightbox.generation.resolution || '1K'}`}>
+                    {lightbox.generation.resolution || '1K'}
+                  </span>
+                </div>
+                
+                {/* Alloy section - show references used */}
+                {lightbox.generation.settings?.styleImages && lightbox.generation.settings.styleImages.length > 0 && (
+                  <div className="lightbox-alloy">
+                    <div className="lightbox-alloy-header">
+                      <span className="panel-icon icon-alloy" />
+                      <span className="lightbox-alloy-title">Alloy</span>
+                      <span className="lightbox-alloy-count">{lightbox.generation.settings.styleImages.length}</span>
+                      {onUseAlloy && (
+                        <button
+                          className="lightbox-alloy-use"
+                          onClick={() => useAlloy(lightbox.generation)}
+                          title="Add these references to your alloy"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Use
+                        </button>
+                      )}
+                    </div>
+                    <div className="lightbox-alloy-grid">
+                      {lightbox.generation.settings.styleImages.map((img, i) => {
+                        // Resolve URL - handle relative paths
+                        const imgUrl = img.url.startsWith('http') || img.url.startsWith('data:') 
+                          ? img.url 
+                          : `${API_URL}${img.url}`
+                        return (
+                          <div key={i} className="lightbox-alloy-thumb" title={img.name || `Reference ${i + 1}`}>
+                            <img src={imgUrl} alt={img.name || `Reference ${i + 1}`} />
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
-                <motion.img
-                  src={`${API_URL}${lightbox.imageUrl}`}
-                  alt={lightbox.generation.prompt}
-                  onLoad={() => setLightboxImageLoaded(true)}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-              {/* Specs bar */}
-              <div className="lightbox-specs">
-                {/* Mode */}
-                <span className="lightbox-spec" title={lightbox.generation.mode === 'edit' ? 'Refined' : 'Created'}>
-                  {lightbox.generation.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
-                </span>
-                <span className="lightbox-spec-sep">·</span>
-                {/* Model */}
-                <span className="lightbox-spec" title="Pro">
-                  <Gem className="w-4 h-4" />
-                  Pro
-                </span>
-                <span className="lightbox-spec-sep">·</span>
-                {/* Aspect Ratio */}
-                {lightbox.generation.aspect_ratio && (
-                  <>
-                    <span className="lightbox-spec" title={`Ratio ${lightbox.generation.aspect_ratio}`}>
-                      <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
-                        <rect 
-                          x={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).w) / 2} 
-                          y={(14 - getAspectDimensions(lightbox.generation.aspect_ratio).h) / 2} 
-                          width={getAspectDimensions(lightbox.generation.aspect_ratio).w} 
-                          height={getAspectDimensions(lightbox.generation.aspect_ratio).h} 
-                          fill="currentColor" 
-                          rx="1" 
-                        />
-                      </svg>
-                      {lightbox.generation.aspect_ratio}
-                    </span>
-                    <span className="lightbox-spec-sep">·</span>
-                  </>
-                )}
-                {/* Resolution */}
-                <span className="lightbox-spec" title={`Resolution ${lightbox.generation.resolution || '1K'}`}>
-                  {lightbox.generation.resolution || '1K'}
-                </span>
-              </div>
               
-              {/* Alloy section - show references used */}
-              {lightbox.generation.settings?.styleImages && lightbox.generation.settings.styleImages.length > 0 && (
-                <div className="lightbox-alloy">
-                  <div className="lightbox-alloy-header">
-                    <span className="panel-icon icon-alloy" />
-                    <span className="lightbox-alloy-title">Alloy</span>
-                    <span className="lightbox-alloy-count">{lightbox.generation.settings.styleImages.length}</span>
-                    {onUseAlloy && (
+                <div className="lightbox-footer">
+                  <p className="lightbox-prompt">{lightbox.generation.prompt}</p>
+                  <div className="lightbox-actions">
+                    {onReplay && (
                       <button
-                        className="lightbox-alloy-use"
-                        onClick={() => useAlloy(lightbox.generation)}
-                        title="Add these references to your alloy"
+                        className="lightbox-btn"
+                        onClick={() => replayGeneration(lightbox.generation)}
+                        title="Replay settings"
                       >
-                        <Plus className="w-3 h-3" />
-                        Use
+                        <RotateCcw className="w-5 h-5" />
                       </button>
                     )}
-                  </div>
-                  <div className="lightbox-alloy-grid">
-                    {lightbox.generation.settings.styleImages.map((img, i) => {
-                      // Resolve URL - handle relative paths
-                      const imgUrl = img.url.startsWith('http') || img.url.startsWith('data:') 
-                        ? img.url 
-                        : `${API_URL}${img.url}`
-                      return (
-                        <div key={i} className="lightbox-alloy-thumb" title={img.name || `Reference ${i + 1}`}>
-                          <img src={imgUrl} alt={img.name || `Reference ${i + 1}`} />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              <div className="lightbox-footer">
-                <p className="lightbox-prompt">{lightbox.generation.prompt}</p>
-                <div className="lightbox-actions">
-                  {onReplay && (
+                    {onRefine && (
+                      <button
+                        className="lightbox-btn"
+                        onClick={() => {
+                          onRefine(`${API_URL}${lightbox.imageUrl}`)
+                          setLightbox(null)
+                        }}
+                        title="Refine this image"
+                      >
+                        <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
+                      </button>
+                    )}
                     <button
                       className="lightbox-btn"
-                      onClick={() => replayGeneration(lightbox.generation)}
-                      title="Replay settings"
+                      onClick={() => downloadImageFromUrl(`${API_URL}${lightbox.imageUrl}`, lightbox.generation.prompt)}
+                      title="Download"
                     >
-                      <RotateCcw className="w-5 h-5" />
+                      <Download className="w-5 h-5" />
                     </button>
-                  )}
-                  {onRefine && (
-                    <button
-                      className="lightbox-btn"
-                      onClick={() => {
-                        onRefine(`${API_URL}${lightbox.imageUrl}`)
-                        setLightbox(null)
-                      }}
-                      title="Refine this image"
-                    >
-                      <Hammer className="w-5 h-5" />
-                    </button>
-                  )}
-                  <button
-                    className="lightbox-btn"
-                    onClick={() => downloadImageFromUrl(`${API_URL}${lightbox.imageUrl}`, lightbox.generation.prompt)}
-                    title="Download"
-                  >
-                    <Download className="w-5 h-5" />
-                  </button>
+                  </div>
                 </div>
-              </div>
+              </div>{/* End lightbox-scroll-area */}
             </motion.div>
           </motion.div>
         )}
