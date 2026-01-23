@@ -1895,11 +1895,11 @@ body {
   -webkit-user-select: none;
   touch-action: manipulation;
   aspect-ratio: 1;
+  display: grid;
 }
 
 .highrise-item img {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -2337,11 +2337,11 @@ body {
   -webkit-user-select: none;
   touch-action: manipulation;
   aspect-ratio: 1;
+  display: grid;
 }
 
 .history-item img {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
