@@ -149,7 +149,7 @@ export function Dashboard({ onBack }: DashboardProps) {
       <div className="dashboard">
         <div className="dashboard-error">
           <p>Error: {error}</p>
-          <button className="btn btn-dark" onClick={fetchData}>Retry</button>
+          <button className="specs-btn" onClick={fetchData}>Retry</button>
         </div>
       </div>
     )

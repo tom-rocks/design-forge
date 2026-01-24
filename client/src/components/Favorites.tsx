@@ -656,7 +656,7 @@ export function Favorites({
     return (
       <div className="history-empty">
         <span>{error}</span>
-        <button onClick={() => fetchFavorites()} className="btn btn-dark">
+        <button onClick={() => fetchFavorites()} className="specs-btn">
           Retry
         </button>
       </div>
