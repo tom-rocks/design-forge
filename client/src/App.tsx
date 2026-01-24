@@ -1399,7 +1399,10 @@ export default function App() {
           <div className="lcd-screen lcd-floating lcd-interactive">
             <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" />
             <span className="lcd-spec-item lcd-pro lit">
-              <Gem className="lcd-icon" /> PRO
+              <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M7 10h10v2H7v-2zm-3 4h16v2H4v-2zm2-8h12l2 4H4l2-4z"/>
+              </svg>
+              V.1.21
             </span>
             <span className="lcd-spec-sep">│</span>
             {[
