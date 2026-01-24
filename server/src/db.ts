@@ -120,7 +120,6 @@ export async function initDatabase() {
       );
       
       CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
-      CREATE INDEX IF NOT EXISTS idx_favorites_folder_ids ON favorites USING GIN(folder_ids);
     `);
     console.log('[DB] Favorites table ready');
     
@@ -128,18 +127,23 @@ export async function initDatabase() {
     await client.query(`
       DO $$
       BEGIN
+        -- Add folder_ids column if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'folder_ids') THEN
+          ALTER TABLE favorites ADD COLUMN folder_ids UUID[] DEFAULT '{}';
+        END IF;
+        
+        -- Migrate data from old folder_id if it exists
         IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'folder_id') THEN
-          -- Add folder_ids if it doesn't exist
-          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'folder_ids') THEN
-            ALTER TABLE favorites ADD COLUMN folder_ids UUID[] DEFAULT '{}';
-          END IF;
-          -- Migrate data
           UPDATE favorites SET folder_ids = ARRAY[folder_id] WHERE folder_id IS NOT NULL AND (folder_ids IS NULL OR folder_ids = '{}');
-          -- Drop old column and index
           DROP INDEX IF EXISTS idx_favorites_folder_id;
           ALTER TABLE favorites DROP COLUMN IF EXISTS folder_id;
         END IF;
       END $$;
+    `);
+    
+    // Create GIN index on folder_ids (after migration ensures column exists)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_favorites_folder_ids ON favorites USING GIN(folder_ids);
     `);
     console.log('[DB] Favorites migration complete');
     
