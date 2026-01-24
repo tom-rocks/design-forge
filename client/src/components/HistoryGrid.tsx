@@ -7,6 +7,7 @@ import { Lightbox } from './Lightbox'
 const PINNED_IMAGES_KEY = 'pinned-history-images'
 const GENERATIONS_CACHE_KEY = 'cached-generations'
 const CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
+const CACHE_VERSION = 2 // Bump to invalidate old caches (v2: added thumbnailUrls)
 
 // Module-level cache for loaded images (survives component remount/tab switch)
 const loadedImageCache = new Set<string>()
@@ -15,7 +16,15 @@ const loadedImageCache = new Set<string>()
 function getCachedGenerations(): { data: Generation[]; timestamp: number } | null {
   try {
     const cached = localStorage.getItem(GENERATIONS_CACHE_KEY)
-    if (cached) return JSON.parse(cached)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      // Invalidate old cache versions
+      if (parsed.version !== CACHE_VERSION) {
+        localStorage.removeItem(GENERATIONS_CACHE_KEY)
+        return null
+      }
+      return parsed
+    }
   } catch {}
   return null
 }
@@ -24,7 +33,8 @@ function setCachedGenerations(data: Generation[]) {
   try {
     localStorage.setItem(GENERATIONS_CACHE_KEY, JSON.stringify({
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      version: CACHE_VERSION
     }))
   } catch {}
 }
