@@ -1352,12 +1352,12 @@ body {
 }
 
 .output-action-btn.active {
-  background: var(--accent);
-  color: white;
+  background: #ffc107;
+  color: #5c4600;
 }
 
 .output-action-btn.active:hover {
-  background: #ff8a50;
+  background: #ffca28;
 }
 
 /* ============================================
@@ -2515,6 +2515,12 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   max-height: calc(90vh - 32px); /* Account for padding */
+  overscroll-behavior: contain;
+}
+
+/* Prevent scroll area from capturing wheel events when image is being zoomed */
+.lightbox-image-container {
+  overscroll-behavior: none;
 }
 
 .lightbox-image-container {

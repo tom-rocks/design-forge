@@ -580,8 +580,8 @@ export default function App() {
   const toggleOutputFavorite = useCallback(async (imageUrl: string) => {
     const isCurrentlyStarred = starredOutputUrls.has(imageUrl)
     
+    // Optimistic update - update UI immediately
     if (isCurrentlyStarred) {
-      // Remove from local state (we don't have the favorite ID easily, so just update UI)
       setStarredOutputUrls(prev => {
         const next = new Set(prev)
         next.delete(imageUrl)
@@ -590,7 +590,10 @@ export default function App() {
       // Note: To properly remove, we'd need to find the favorite by URL and delete it
       // For now, just update local state - user can unfavorite from Favorites tab
     } else {
-      // Add to favorites
+      // Add to UI immediately (optimistic)
+      setStarredOutputUrls(prev => new Set(prev).add(imageUrl))
+      
+      // Then persist to server
       try {
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
@@ -606,11 +609,22 @@ export default function App() {
           }),
         })
         
-        if (res.ok) {
-          setStarredOutputUrls(prev => new Set(prev).add(imageUrl))
+        if (!res.ok) {
+          // Revert on failure
+          setStarredOutputUrls(prev => {
+            const next = new Set(prev)
+            next.delete(imageUrl)
+            return next
+          })
         }
       } catch (e) {
         console.error('Failed to add favorite:', e)
+        // Revert on failure
+        setStarredOutputUrls(prev => {
+          const next = new Set(prev)
+          next.delete(imageUrl)
+          return next
+        })
       }
     }
   }, [starredOutputUrls, prompt])

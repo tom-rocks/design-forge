@@ -68,12 +68,21 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
     setPan({ x: 0, y: 0 })
   }, [data?.imageUrl])
   
-  // Handle scroll to zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault()
-    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-    setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)))
-  }, [])
+  // Handle scroll to zoom - use native event listener for reliable preventDefault
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
+      setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)))
+    }
+    
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [data?.imageUrl])
   
   // Handle middle mouse button pan
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -158,7 +167,6 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
             <div 
               ref={containerRef}
               className={`lightbox-image-container ${isZoomed ? 'zoomed' : ''} ${isPanning ? 'panning' : ''}`}
-              onWheel={handleWheel}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
