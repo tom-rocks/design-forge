@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star } from 'lucide-react'
+
+// Track which URLs have been loaded this session (survives component unmount)
+const loadedUrls = new Set<string>()
 
 // Helper to get aspect ratio icon dimensions
 const getAspectDimensions = (ratio: string | undefined) => {
@@ -39,10 +42,36 @@ interface LightboxProps {
 }
 
 export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseAlloy, onFavorite, isFavorited }: LightboxProps) {
-  const [imageLoaded, setImageLoaded] = useState(false)
+  const imgRef = useRef<HTMLImageElement>(null)
+  
+  // Check if this URL was already loaded this session
+  const [imageLoaded, setImageLoaded] = useState(() => 
+    data ? loadedUrls.has(data.imageUrl) : false
+  )
+  
+  // When data changes, check if we've seen this URL before
+  useEffect(() => {
+    if (data) {
+      if (loadedUrls.has(data.imageUrl)) {
+        setImageLoaded(true)
+      } else {
+        setImageLoaded(false)
+      }
+    }
+  }, [data?.imageUrl])
+  
+  // Also check if browser has it cached (complete = true before onLoad)
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setImageLoaded(true)
+      if (data) loadedUrls.add(data.imageUrl)
+    }
+  }, [data?.imageUrl])
 
-  // Reset loaded state when data changes
-  const handleImageLoad = () => setImageLoaded(true)
+  const handleImageLoad = () => {
+    setImageLoaded(true)
+    if (data) loadedUrls.add(data.imageUrl)
+  }
 
   if (!data) return null
 
@@ -74,12 +103,13 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                 </div>
               )}
               <motion.img
+                ref={imgRef}
                 src={data.imageUrl}
                 alt={displayText || 'Image'}
                 onLoad={handleImageLoad}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: imageLoaded ? 1 : 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               />
             </div>
 

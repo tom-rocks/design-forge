@@ -6,6 +6,10 @@ import { searchItemsViaAP, fetchImageViaAP, checkAPContext } from '../lib/ap-bri
 
 const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 
+// Module-level cache for loaded images (survives component remount/tab switch)
+const loadedImageCache = new Set<string>()
+const lightboxLoadedCache = new Set<string>()
+
 interface HighriseItem {
   id: string
   dispId: string  // The display ID used for URL construction (e.g., "shirt-cool-jacket")
@@ -58,7 +62,8 @@ export default function HighriseSearch({
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
   const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set()) // Successfully loaded images
+  // Initialize from module-level cache so state persists across tab switches
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(() => new Set(loadedImageCache))
   const [proxiedImages, setProxiedImages] = useState<Map<string, string>>(new Map()) // item.id → data URL
   const [proxyingImages, setProxyingImages] = useState<Set<string>>(new Set()) // Currently being proxied
   
@@ -141,12 +146,17 @@ export default function HighriseSearch({
   }, [proxiedImages, getDisplayUrl, useAPBridge])
   const gridRef = useRef<HTMLDivElement>(null)
   
-  // Reset image loaded state when lightbox changes
+  // Check if lightbox image was already loaded (from cache)
   useEffect(() => {
     if (lightbox) {
-      setLightboxImageLoaded(false)
+      const url = getDisplayUrl(lightbox)
+      if (lightboxLoadedCache.has(url)) {
+        setLightboxImageLoaded(true)
+      } else {
+        setLightboxImageLoaded(false)
+      }
     }
-  }, [lightbox?.id])
+  }, [lightbox?.id, getDisplayUrl])
   
   // Pinned items - persisted to localStorage
   // Normalize URLs on load to use proxy
@@ -614,6 +624,7 @@ export default function HighriseSearch({
                           }
                         } else {
                           // Successfully loaded a real image - mark as loaded
+                          loadedImageCache.add(item.id)
                           setLoadedImages(prev => new Set(prev).add(item.id))
                         }
                       }}
@@ -740,6 +751,7 @@ export default function HighriseSearch({
                             setFailedImages(prev => new Set(prev).add(item.id))
                           }
                         } else {
+                          loadedImageCache.add(item.id)
                           setLoadedImages(prev => new Set(prev).add(item.id))
                         }
                       }}
@@ -831,10 +843,13 @@ export default function HighriseSearch({
                 <motion.img
                   src={getDisplayUrl(lightbox)}
                   alt={lightbox.name}
-                  onLoad={() => setLightboxImageLoaded(true)}
+                  onLoad={() => {
+                    setLightboxImageLoaded(true)
+                    lightboxLoadedCache.add(getDisplayUrl(lightbox))
+                  }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.2 }}
                 />
               </div>
               <div className="lightbox-footer">

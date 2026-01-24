@@ -8,6 +8,9 @@ const PINNED_IMAGES_KEY = 'pinned-history-images'
 const GENERATIONS_CACHE_KEY = 'cached-generations'
 const CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
 
+// Module-level cache for loaded images (survives component remount/tab switch)
+const loadedImageCache = new Set<string>()
+
 // Cache generations in localStorage
 function getCachedGenerations(): { data: Generation[]; timestamp: number } | null {
   try {
@@ -118,7 +121,8 @@ export default function HistoryGrid({
   const [offset, setOffset] = useState(0)
   const [lightbox, setLightbox] = useState<DisplayImage | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
+  // Initialize from module-level cache so state persists across tab switches
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(() => new Set(loadedImageCache))
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
   
@@ -497,7 +501,10 @@ export default function HistoryGrid({
                 loading="lazy"
                 decoding="async"
                 className={loadedImages.has(img.id) ? 'loaded' : ''}
-                onLoad={() => setLoadedImages(prev => new Set(prev).add(img.id))}
+                onLoad={() => {
+                  loadedImageCache.add(img.id)
+                  setLoadedImages(prev => new Set(prev).add(img.id))
+                }}
                 onError={(e) => {
                   // If thumbnail fails (502), fall back to full image
                   const target = e.target as HTMLImageElement
