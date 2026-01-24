@@ -1151,6 +1151,7 @@ export default function App() {
                               onRefine={(url) => {
                                 setEditImage({ url })
                                 detectAndSetAspectRatio(url)
+                                setReferences([]) // Clear alloy when refining
                                 setRefineExpanded(true) // Expand to show the image was added
                                 setTimeout(scrollToRefine, 100)
                               }}
@@ -1339,6 +1340,7 @@ export default function App() {
                               onClick={() => {
                                 setEditImage({ url })
                                 detectAndSetAspectRatio(url)
+                                setReferences([]) // Clear alloy when refining
                                 setRefineExpanded(true) // Expand to show the image was added
                                 setTimeout(scrollToRefine, 100)
                               }}
@@ -1499,6 +1501,7 @@ export default function App() {
         onRefine={(url) => {
           setEditImage({ url })
           detectAndSetAspectRatio(url)
+          setReferences([]) // Clear alloy when refining
           setRefineExpanded(true)
           setOutputLightbox(null)
           setTimeout(scrollToRefine, 100)
@@ -1646,6 +1649,7 @@ export default function App() {
                             onClick={() => {
                               setEditImage({ url: galleryExpanded.url })
                               detectAndSetAspectRatio(galleryExpanded.url)
+                              setReferences([]) // Clear alloy when refining
                               setRefineExpanded(true) // Expand to show the image was added
                               setGalleryOpen(false)
                               setGalleryExpanded(null)
