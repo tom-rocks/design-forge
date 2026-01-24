@@ -58,7 +58,16 @@ app.use(helmet({
 }));
 
 // Gzip/Brotli compression for responses (~70% smaller)
-app.use(compression());
+// Skip compression for images (already compressed)
+app.use(compression({
+  filter: (req, res) => {
+    const contentType = res.getHeader('Content-Type');
+    if (typeof contentType === 'string' && contentType.startsWith('image/')) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
 
 // CORS - allow Railway frontend, local dev, and Highrise AP
 app.use(cors({
