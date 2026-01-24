@@ -1856,7 +1856,7 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  max-height: 480px;
+  max-height: 420px;
   overflow: hidden auto; /* clip horizontal, scroll vertical */
   padding: 10px;
   background: var(--surface-inset);
