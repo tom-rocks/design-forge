@@ -4,6 +4,57 @@ import { motion } from 'framer-motion'
 import { API_URL } from '../config'
 import { Lightbox } from './Lightbox'
 
+// Simple lazy image - only loads when visible in viewport
+function LazyImg({ src, fallbackSrc, alt, onLoad, className }: {
+  src: string
+  fallbackSrc?: string
+  alt?: string
+  onLoad?: () => void
+  className?: string
+}) {
+  const [isVisible, setIsVisible] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [useFallback, setUseFallback] = useState(false)
+  const ref = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '200px' } // Start loading 200px before visible
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <img
+      ref={ref}
+      src={isVisible ? (useFallback && fallbackSrc ? fallbackSrc : src) : undefined}
+      alt={alt}
+      decoding="async"
+      className={`${className || ''} ${loaded ? 'loaded' : ''}`}
+      onLoad={() => {
+        setLoaded(true)
+        onLoad?.()
+      }}
+      onError={() => {
+        if (fallbackSrc && !useFallback) {
+          setUseFallback(true)
+        }
+      }}
+    />
+  )
+}
+
 const PINNED_IMAGES_KEY = 'pinned-history-images'
 
 // Full generation data from API - includes all settings for replay
@@ -98,7 +149,7 @@ export default function HistoryGrid({
   const [offset, setOffset] = useState(0)
   const [lightbox, setLightbox] = useState<DisplayImage | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
+  // Note: image loaded state is now handled internally by LazyImg
   const gridRef = useRef<HTMLDivElement>(null)
   const lastFetchRef = useRef<number>(0)
   
@@ -450,20 +501,10 @@ export default function HistoryGrid({
               onClick={() => !disabled && toggleImage(img)}
               title={gen.prompt}
             >
-              <img
+              <LazyImg
                 src={`${API_URL}${img.thumbnailUrl || img.imageUrl}`}
+                fallbackSrc={img.thumbnailUrl ? `${API_URL}${img.imageUrl}` : undefined}
                 alt={gen.prompt}
-                loading="lazy"
-                decoding="async"
-                className={loadedImages.has(img.id) ? 'loaded' : ''}
-                onLoad={() => setLoadedImages(prev => new Set(prev).add(img.id))}
-                onError={(e) => {
-                  // If thumbnail fails (502), fall back to full image
-                  const target = e.target as HTMLImageElement
-                  if (img.thumbnailUrl && !target.src.includes(img.imageUrl)) {
-                    target.src = `${API_URL}${img.imageUrl}`
-                  }
-                }}
               />
               {selected && (
                 <div className="history-item-check">
