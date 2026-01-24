@@ -237,7 +237,8 @@ export function Favorites({
       // (handles migration from old folder_id to new folder_ids)
       const normalizedFavorites = (data.favorites || []).map((f: Favorite) => ({
         ...f,
-        folder_ids: f.folder_ids || (f as any).folder_id ? [(f as any).folder_id] : []
+        folder_ids: Array.isArray(f.folder_ids) ? f.folder_ids : 
+                    (f as any).folder_id ? [(f as any).folder_id] : []
       }))
       setFavorites(normalizedFavorites)
       setFolders(data.folders || [])
