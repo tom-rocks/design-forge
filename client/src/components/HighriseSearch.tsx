@@ -9,6 +9,9 @@ const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 // Module-level cache for loaded images (survives component remount/tab switch)
 const loadedImageCache = new Set<string>()
 const lightboxLoadedCache = new Set<string>()
+// Module-level cache for AP-proxied images (item.id → data URL)
+// This survives component unmount so we don't re-fetch on tab switch
+const proxiedImageCache = new Map<string, string>()
 
 interface HighriseItem {
   id: string
@@ -64,14 +67,19 @@ export default function HighriseSearch({
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   // Initialize from module-level cache so state persists across tab switches
   const [loadedImages, setLoadedImages] = useState<Set<string>>(() => new Set(loadedImageCache))
-  const [proxiedImages, setProxiedImages] = useState<Map<string, string>>(new Map()) // item.id → data URL
+  // Initialize proxied images from module-level cache
+  const [proxiedImages, setProxiedImages] = useState<Map<string, string>>(() => new Map(proxiedImageCache))
   const [proxyingImages, setProxyingImages] = useState<Set<string>>(new Set()) // Currently being proxied
   
   // Get display URL - use proxied data URL if available, otherwise original URL
   const getDisplayUrl = useCallback((item: HighriseItem) => {
-    // Use proxied data URL if we fetched it via AP
+    // Use proxied data URL if we fetched it via AP (check both state and module cache)
     if (proxiedImages.has(item.id)) {
       return proxiedImages.get(item.id)!
+    }
+    // Also check module-level cache (for images proxied before component remount)
+    if (proxiedImageCache.has(item.id)) {
+      return proxiedImageCache.get(item.id)!
     }
     return item.imageUrl
   }, [proxiedImages])
@@ -79,8 +87,9 @@ export default function HighriseSearch({
   // Proxy image through AP parent
   const proxyImageViaAP = useCallback(async (item: HighriseItem) => {
     console.log(`[Highrise] proxyImageViaAP called for ${item.id}, apUrl: ${item.apImageUrl}`)
-    if (!item.apImageUrl || proxyingImages.has(item.id) || proxiedImages.has(item.id)) {
-      console.log(`[Highrise] Skipping proxy: apUrl=${!!item.apImageUrl}, alreadyProxying=${proxyingImages.has(item.id)}, alreadyProxied=${proxiedImages.has(item.id)}`)
+    // Check both module-level cache and state
+    if (!item.apImageUrl || proxyingImages.has(item.id) || proxiedImages.has(item.id) || proxiedImageCache.has(item.id)) {
+      console.log(`[Highrise] Skipping proxy: apUrl=${!!item.apImageUrl}, alreadyProxying=${proxyingImages.has(item.id)}, alreadyProxied=${proxiedImages.has(item.id) || proxiedImageCache.has(item.id)}`)
       return
     }
     if (!useAPBridge || !checkAPContext()) {
@@ -95,6 +104,8 @@ export default function HighriseSearch({
     
     try {
       const dataUrl = await fetchImageViaAP(item.apImageUrl)
+      // Update both module-level cache and React state
+      proxiedImageCache.set(item.id, dataUrl)
       setProxiedImages(prev => new Map(prev).set(item.id, dataUrl))
       console.log(`[Highrise] Successfully proxied ${item.id} via AP, got ${dataUrl.length} bytes`)
     } catch (e) {
