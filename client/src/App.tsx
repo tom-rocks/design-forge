@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Gem, Hammer, Plus, Download, X, Flame, Search, BarChart3, RotateCcw, Star } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Plus, Download, X, Search, BarChart3, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -46,18 +46,6 @@ interface GenerationResult {
    ============================================ */
 
 type RefSource = 'drop' | 'items' | 'history' | 'favorites'
-
-// Helper to get aspect ratio icon dimensions
-const getAspectDimensions = (ratio: string | undefined) => {
-  switch (ratio) {
-    case '1:1': return { w: 10, h: 10 }
-    case '3:4': return { w: 9, h: 12 }
-    case '4:3': return { w: 12, h: 9 }
-    case '9:16': return { w: 7, h: 12 }
-    case '16:9': return { w: 12, h: 7 }
-    default: return { w: 10, h: 10 }
-  }
-}
 
 export default function App() {
   // Simple routing based on pathname
