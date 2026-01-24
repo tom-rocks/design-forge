@@ -5,6 +5,26 @@ import { API_URL } from '../config'
 import { Lightbox } from './Lightbox'
 
 const PINNED_IMAGES_KEY = 'pinned-history-images'
+const GENERATIONS_CACHE_KEY = 'cached-generations'
+const CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
+
+// Cache generations in localStorage
+function getCachedGenerations(): { data: Generation[]; timestamp: number } | null {
+  try {
+    const cached = localStorage.getItem(GENERATIONS_CACHE_KEY)
+    if (cached) return JSON.parse(cached)
+  } catch {}
+  return null
+}
+
+function setCachedGenerations(data: Generation[]) {
+  try {
+    localStorage.setItem(GENERATIONS_CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }))
+  } catch {}
+}
 
 // Full generation data from API - includes all settings for replay
 interface Generation {
@@ -227,15 +247,31 @@ export default function HistoryGrid({
     return [...pinned, ...unpinned]
   }, [generations, searchQuery, pinnedImageIds])
 
-  // Fetch user's generations
-  const fetchGenerations = useCallback(async (append = false) => {
+  // Fetch user's generations (with localStorage cache for instant load)
+  const fetchGenerations = useCallback(async (append = false, skipCache = false) => {
     if (!authenticated) return
     
     const currentOffset = append ? offset + 20 : 0
     
+    // On initial load, show cached data immediately
+    if (!append && !skipCache) {
+      const cached = getCachedGenerations()
+      if (cached) {
+        setGenerations(cached.data)
+        // If cache is fresh, just refresh in background
+        if (Date.now() - cached.timestamp < CACHE_MAX_AGE) {
+          lastFetchRef.current = Date.now()
+          // Still refresh in background
+          setTimeout(() => fetchGenerations(false, true), 50)
+          return
+        }
+      }
+    }
+    
     if (append) {
       setLoadingMore(true)
-    } else {
+    } else if (!getCachedGenerations()) {
+      // Only show loading spinner if no cache
       setLoading(true)
       setOffset(0)
     }
@@ -247,10 +283,15 @@ export default function HistoryGrid({
       const data = await res.json()
       
       if (append) {
-        setGenerations(prev => [...prev, ...data.generations])
+        setGenerations(prev => {
+          const updated = [...prev, ...data.generations]
+          setCachedGenerations(updated)
+          return updated
+        })
         setOffset(currentOffset)
       } else {
         setGenerations(data.generations || [])
+        setCachedGenerations(data.generations || [])
       }
       
       setHasMore(data.hasMore || false)
