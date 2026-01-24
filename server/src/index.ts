@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import passport from 'passport';
 import { createServer } from 'http';
@@ -43,6 +46,17 @@ async function init() {
 
 // Initialize WebSocket bridge for AP connection
 initBridgeServer(server);
+
+// Security headers (relaxed for our use case - embedded in AP iframe)
+app.use(helmet({
+  contentSecurityPolicy: false, // We load from various origins
+  crossOriginEmbedderPolicy: false, // Allow embedding
+  crossOriginOpenerPolicy: false, // Allow cross-origin
+  crossOriginResourcePolicy: false, // Allow images to load
+}));
+
+// Gzip/Brotli compression for responses (~70% smaller)
+app.use(compression());
 
 // CORS - allow Railway frontend, local dev, and Highrise AP
 app.use(cors({
@@ -88,8 +102,18 @@ app.use(passport.session());
 // Setup Google OAuth if configured
 setupPassport();
 
+// Rate limiting for generation endpoint (prevent abuse)
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute
+  message: { error: 'Too many generation requests, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // API routes
-app.use('/api', generateRouter);
+app.use('/api/generate', generateLimiter, generateRouter);
+app.use('/api', generateRouter); // Keep old route for backwards compat
 app.use('/api/highrise', highriseRouter);
 app.use('/api/generations', generationsRouter);
 app.use('/api/auth', authRouter);

@@ -4079,3 +4079,53 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* ============================================
+   ERROR BOUNDARY
+   ============================================ */
+
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 20px;
+}
+
+.error-boundary-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.error-boundary-content h2 {
+  margin: 16px 0 8px;
+  color: var(--text);
+  font-size: 1.5rem;
+}
+
+.error-boundary-content p {
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.error-boundary-content .error-message {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-align: left;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-boundary-content .specs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
