@@ -176,39 +176,28 @@ router.get('/:id/image/:index', async (req: Request, res: Response) => {
   }
 });
 
-// Serve a generation thumbnail by index - FAST path, no DB query
-// Thumbnail filenames are predictable: {genId}-{index}-thumb.webp
+// Serve a generation thumbnail by index
 router.get('/:id/thumbnail/:index', async (req: Request, res: Response) => {
   try {
-    const { id, index } = req.params;
+    const gen = await getGeneration(req.params.id);
+    const index = parseInt(req.params.index);
+    const thumbs = gen?.thumbnail_paths || [];
     
-    // Try WebP first (new format), then JPG (old format)
-    const webpPath = getThumbnailPath(`${id}-${index}-thumb.webp`);
-    const jpgPath = getThumbnailPath(`${id}-${index}-thumb.jpg`);
-    const oldPath = getThumbnailPath(`${id}-thumb.jpg`); // Very old single-thumb format
-    
-    let thumbPath: string | null = null;
-    let contentType = 'image/webp';
-    
-    if (await fileExists(webpPath)) {
-      thumbPath = webpPath;
-      contentType = 'image/webp';
-    } else if (await fileExists(jpgPath)) {
-      thumbPath = jpgPath;
-      contentType = 'image/jpeg';
-    } else if (index === '0' && await fileExists(oldPath)) {
-      thumbPath = oldPath;
-      contentType = 'image/jpeg';
-    }
-    
-    if (!thumbPath) {
+    if (!gen || !thumbs[index]) {
       res.status(404).json({ error: 'Thumbnail not found' });
       return;
     }
     
+    const thumbPath = getThumbnailPath(thumbs[index]);
+    if (!(await fileExists(thumbPath))) {
+      res.status(404).json({ error: 'Thumbnail file not found' });
+      return;
+    }
+    
+    const filename = thumbs[index];
     res.set({
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'Content-Type': contentType,
+      'Content-Type': filename.endsWith('.webp') ? 'image/webp' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
     });
     res.sendFile(thumbPath);
   } catch (err) {
@@ -220,35 +209,24 @@ router.get('/:id/thumbnail/:index', async (req: Request, res: Response) => {
 // Backwards compat: Serve first thumbnail (old route without index)
 router.get('/:id/thumbnail', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const gen = await getGeneration(req.params.id);
+    const thumbs = gen?.thumbnail_paths || [];
     
-    // Try WebP first (new format), then JPG (old format)
-    const webpPath = getThumbnailPath(`${id}-0-thumb.webp`);
-    const jpgPath = getThumbnailPath(`${id}-0-thumb.jpg`);
-    const oldPath = getThumbnailPath(`${id}-thumb.jpg`); // Very old single-thumb format
-    
-    let thumbPath: string | null = null;
-    let contentType = 'image/webp';
-    
-    if (await fileExists(webpPath)) {
-      thumbPath = webpPath;
-      contentType = 'image/webp';
-    } else if (await fileExists(jpgPath)) {
-      thumbPath = jpgPath;
-      contentType = 'image/jpeg';
-    } else if (await fileExists(oldPath)) {
-      thumbPath = oldPath;
-      contentType = 'image/jpeg';
-    }
-    
-    if (!thumbPath) {
+    if (!gen || !thumbs[0]) {
       res.status(404).json({ error: 'Thumbnail not found' });
       return;
     }
     
+    const thumbPath = getThumbnailPath(thumbs[0]);
+    if (!(await fileExists(thumbPath))) {
+      res.status(404).json({ error: 'Thumbnail file not found' });
+      return;
+    }
+    
+    const filename = thumbs[0];
     res.set({
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'Content-Type': contentType,
+      'Content-Type': filename.endsWith('.webp') ? 'image/webp' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
     });
     res.sendFile(thumbPath);
   } catch (err) {
