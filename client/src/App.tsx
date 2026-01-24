@@ -1400,7 +1400,7 @@ export default function App() {
             <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                <path d="M7 10h10v2H7v-2zm-3 4h16v2H4v-2zm2-8h12l2 4H4l2-4z"/>
+                <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
               </svg>
               V.1.21
             </span>
