@@ -1326,7 +1326,7 @@ export default function App() {
                           transition={{ delay: i * 0.15, duration: 0.4 }}
                           onClick={() => setOutputLightbox({
                             imageUrl: url,
-                            prompt,
+                            prompt: result?.prompt || prompt,
                             mode: editImage ? 'edit' : 'create',
                             resolution,
                             aspectRatio,
