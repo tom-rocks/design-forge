@@ -447,6 +447,8 @@ export default function HighriseSearch({
     if (!query.trim() && !bridgeConnected) return
     
     const timeout = setTimeout(() => {
+      // Scroll to top for new search
+      gridRef.current?.scrollTo({ top: 0 })
       searchItems(false)
     }, 300)
     return () => clearTimeout(timeout)
@@ -455,6 +457,7 @@ export default function HighriseSearch({
   // Initial load when bridge connects
   useEffect(() => {
     if (bridgeConnected && items.length === 0) {
+      gridRef.current?.scrollTo({ top: 0 })
       searchItems(false)
     }
   }, [bridgeConnected])
