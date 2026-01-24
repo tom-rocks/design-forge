@@ -454,8 +454,16 @@ export default function HistoryGrid({
                 src={`${API_URL}${img.thumbnailUrl || img.imageUrl}`}
                 alt={gen.prompt}
                 loading="lazy"
+                decoding="async"
                 className={loadedImages.has(img.id) ? 'loaded' : ''}
                 onLoad={() => setLoadedImages(prev => new Set(prev).add(img.id))}
+                onError={(e) => {
+                  // If thumbnail fails (502), fall back to full image
+                  const target = e.target as HTMLImageElement
+                  if (img.thumbnailUrl && !target.src.includes(img.imageUrl)) {
+                    target.src = `${API_URL}${img.imageUrl}`
+                  }
+                }}
               />
               {selected && (
                 <div className="history-item-check">
