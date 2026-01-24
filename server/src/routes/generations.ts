@@ -164,6 +164,11 @@ router.get('/:id/image/:index', async (req: Request, res: Response) => {
     const stats = await fs.stat(imagePath);
     log('info', `[${reqId}] Serving file: ${stats.size} bytes`);
     
+    // Set caching headers - images are immutable
+    res.set({
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Content-Type': filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
+    });
     res.sendFile(imagePath);
   } catch (err) {
     log('error', `[${reqId}] Exception serving image`, { error: String(err), stack: (err as Error).stack });
@@ -189,6 +194,12 @@ router.get('/:id/thumbnail/:index', async (req: Request, res: Response) => {
       return;
     }
     
+    // Set caching headers - thumbnails are immutable
+    const filename = thumbs[index];
+    res.set({
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Content-Type': filename.endsWith('.webp') ? 'image/webp' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
+    });
     res.sendFile(thumbPath);
   } catch (err) {
     console.error('[Generations] Thumbnail error:', err);
@@ -213,6 +224,12 @@ router.get('/:id/thumbnail', async (req: Request, res: Response) => {
       return;
     }
     
+    // Set caching headers - thumbnails are immutable
+    const filename = thumbs[0];
+    res.set({
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Content-Type': filename.endsWith('.webp') ? 'image/webp' : filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
+    });
     res.sendFile(thumbPath);
   } catch (err) {
     console.error('[Generations] Thumbnail error:', err);
