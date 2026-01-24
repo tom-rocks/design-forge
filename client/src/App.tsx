@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Gem, Hammer, Plus, Download, X, Flame, Search, BarChart3, RotateCcw } from 'lucide-react'
+import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Gem, Hammer, Plus, Download, X, Flame, Search, BarChart3, RotateCcw, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -1327,6 +1327,13 @@ export default function App() {
                             <Maximize2 className="w-5 h-5" />
                           </div>
                           <div className="output-actions" onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              className={`output-action-btn ${starredOutputUrls.has(url) ? 'active' : ''}`}
+                              onClick={() => toggleOutputFavorite(url)}
+                              title={starredOutputUrls.has(url) ? 'Remove from favorites' : 'Add to favorites'}
+                            >
+                              <Star className="w-4 h-4" />
+                            </button>
                             <button 
                               className="output-action-btn"
                               onClick={() => {

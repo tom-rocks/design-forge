@@ -1,9 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star } from 'lucide-react'
+import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star, ZoomIn, RotateCw } from 'lucide-react'
 
 // Track which URLs have been loaded this session (survives component unmount)
 const loadedUrls = new Set<string>()
+
+// Zoom/pan constants
+const MIN_ZOOM = 1
+const MAX_ZOOM = 5
+const ZOOM_STEP = 0.2
 
 // Helper to get aspect ratio icon dimensions
 const getAspectDimensions = (ratio: string | undefined) => {
@@ -43,11 +48,65 @@ interface LightboxProps {
 
 export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseAlloy, onFavorite, isFavorited }: LightboxProps) {
   const imgRef = useRef<HTMLImageElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   
   // Check if this URL was already loaded this session
   const [imageLoaded, setImageLoaded] = useState(() => 
     data ? loadedUrls.has(data.imageUrl) : false
   )
+  
+  // Zoom and pan state
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const panStart = useRef({ x: 0, y: 0 })
+  const panOffset = useRef({ x: 0, y: 0 })
+  
+  // Reset zoom/pan when image changes
+  useEffect(() => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }, [data?.imageUrl])
+  
+  // Handle scroll to zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
+    setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)))
+  }, [])
+  
+  // Handle middle mouse button pan
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Middle mouse button (button === 1)
+    if (e.button === 1) {
+      e.preventDefault()
+      setIsPanning(true)
+      panStart.current = { x: e.clientX, y: e.clientY }
+      panOffset.current = { ...pan }
+    }
+  }, [pan])
+  
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanning) return
+    const dx = e.clientX - panStart.current.x
+    const dy = e.clientY - panStart.current.y
+    setPan({
+      x: panOffset.current.x + dx,
+      y: panOffset.current.y + dy
+    })
+  }, [isPanning])
+  
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false)
+  }, [])
+  
+  // Reset zoom and pan
+  const handleResetZoom = useCallback(() => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }, [])
+  
+  const isZoomed = zoom !== 1 || pan.x !== 0 || pan.y !== 0
   
   // When data changes, check if we've seen this URL before
   useEffect(() => {
@@ -96,7 +155,15 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
           onClick={(e) => e.stopPropagation()}
         >
           <div className="lightbox-scroll-area">
-            <div className="lightbox-image-container">
+            <div 
+              ref={containerRef}
+              className={`lightbox-image-container ${isZoomed ? 'zoomed' : ''} ${isPanning ? 'panning' : ''}`}
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
               {!imageLoaded && (
                 <div className="lightbox-image-loading">
                   <Loader2 className="w-8 h-8 animate-spin" />
@@ -110,7 +177,27 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                 initial={{ opacity: 0 }}
                 animate={{ opacity: imageLoaded ? 1 : 0 }}
                 transition={{ duration: 0.2 }}
+                style={{
+                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                  cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default'
+                }}
+                draggable={false}
               />
+              {isZoomed && (
+                <button 
+                  className="lightbox-reset-zoom"
+                  onClick={handleResetZoom}
+                  title="Reset zoom"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </button>
+              )}
+              {zoom === 1 && (
+                <div className="lightbox-zoom-hint">
+                  <ZoomIn className="w-3 h-3" />
+                  <span>Scroll to zoom</span>
+                </div>
+              )}
             </div>
 
             {/* Specs bar */}
