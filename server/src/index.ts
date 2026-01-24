@@ -53,6 +53,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Allow embedding
   crossOriginOpenerPolicy: false, // Allow cross-origin
   crossOriginResourcePolicy: false, // Allow images to load
+  frameguard: false, // Allow embedding in AP iframe
 }));
 
 // Gzip/Brotli compression for responses (~70% smaller)
