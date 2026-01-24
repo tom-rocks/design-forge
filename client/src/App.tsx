@@ -1534,159 +1534,60 @@ export default function App() {
             exit={{ opacity: 0 }}
             onClick={() => setGalleryOpen(false)}
           >
-            {/* Expanded single image view */}
-            <AnimatePresence>
-              {galleryExpanded && (
-                <motion.div 
-                  className="gallery-expanded-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={(e) => {
-                    e.stopPropagation() // Don't close the gallery, just the lightbox
-                    setGalleryExpanded(null)
-                  }}
-                >
-                  <motion.div 
-                    className="lightbox-content"
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="lightbox-scroll-area">
-                      <div className="lightbox-image-container">
-                        <img src={galleryExpanded.url} alt="Full size" />
-                      </div>
-                      {/* Specs bar */}
-                      <div className="lightbox-specs">
-                        <span className="lightbox-spec" title={galleryExpanded.mode === 'edit' ? 'Refined' : 'Created'}>
-                          {galleryExpanded.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
-                        </span>
-                        <span className="lightbox-spec-sep">·</span>
-                        <span className="lightbox-spec" title="Pro">
-                          <Gem className="w-4 h-4" />
-                          Pro
-                        </span>
-                        <span className="lightbox-spec-sep">·</span>
-                        {galleryExpanded.aspectRatio && (
-                          <>
-                            <span className="lightbox-spec" title={`Ratio ${galleryExpanded.aspectRatio}`}>
-                              <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
-                                <rect 
-                                  x={(14 - getAspectDimensions(galleryExpanded.aspectRatio).w) / 2} 
-                                  y={(14 - getAspectDimensions(galleryExpanded.aspectRatio).h) / 2} 
-                                  width={getAspectDimensions(galleryExpanded.aspectRatio).w} 
-                                  height={getAspectDimensions(galleryExpanded.aspectRatio).h} 
-                                  fill="currentColor" 
-                                  rx="1" 
-                                />
-                              </svg>
-                              {galleryExpanded.aspectRatio}
-                            </span>
-                            <span className="lightbox-spec-sep">·</span>
-                          </>
-                        )}
-                        <span className="lightbox-spec" title={`Resolution ${galleryExpanded.resolution || '1K'}`}>
-                          {galleryExpanded.resolution || '1K'}
-                        </span>
-                      </div>
-                      
-                      {/* Alloy section - show references used */}
-                      {galleryExpanded.settings?.styleImages && galleryExpanded.settings.styleImages.length > 0 && (
-                        <div className="lightbox-alloy">
-                          <div className="lightbox-alloy-header">
-                            <span className="panel-icon icon-alloy" />
-                            <span className="lightbox-alloy-title">Alloy</span>
-                            <span className="lightbox-alloy-count">{galleryExpanded.settings.styleImages.length}</span>
-                            <button
-                              className="lightbox-alloy-use"
-                              onClick={() => {
-                                // Convert styleImages to Reference format and add
-                                const refs = galleryExpanded.settings!.styleImages!.map((img, i) => ({
-                                  id: `alloy-gallery-${i}-${Date.now()}`,
-                                  url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/') 
-                                    ? img.url 
-                                    : `${API_URL}${img.url}`,
-                                  name: img.name || `Ref ${i + 1}`,
-                                  type: 'generation' as const,
-                                }))
-                                addAlloyReferences(refs)
-                                setGalleryExpanded(null)
-                                setGalleryOpen(false)
-                              }}
-                              title="Add these references to your alloy"
-                            >
-                              <Plus className="w-3 h-3" />
-                              Use
-                            </button>
-                          </div>
-                          <div className="lightbox-alloy-grid">
-                            {galleryExpanded.settings.styleImages.map((img, i) => {
-                              const imgUrl = img.url.startsWith('http') || img.url.startsWith('data:') 
-                                ? img.url 
-                                : `${API_URL}${img.url}`
-                              return (
-                                <div key={i} className="lightbox-alloy-thumb" title={img.name || `Reference ${i + 1}`}>
-                                  <img src={imgUrl} alt={img.name || `Reference ${i + 1}`} />
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="lightbox-footer">
-                        <p className="lightbox-prompt">{galleryExpanded.prompt}</p>
-                        <div className="lightbox-actions">
-                          <button 
-                            className="lightbox-btn"
-                            onClick={() => {
-                              // Replay - restore all settings
-                              handleReplay({
-                                prompt: galleryExpanded.prompt,
-                                mode: galleryExpanded.mode,
-                                model: galleryExpanded.model,
-                                resolution: galleryExpanded.resolution,
-                                aspectRatio: galleryExpanded.aspectRatio,
-                                references: galleryExpanded.settings?.styleImages,
-                              })
-                              setGalleryExpanded(null)
-                              setGalleryOpen(false)
-                            }}
-                            title="Replay settings"
-                          >
-                            <RotateCcw className="w-5 h-5" />
-                          </button>
-                          <button 
-                            className="lightbox-btn"
-                            onClick={() => {
-                              setEditImage({ url: galleryExpanded.url })
-                              detectAndSetAspectRatio(galleryExpanded.url)
-                              setReferences([]) // Clear alloy when refining
-                              setRefineExpanded(true) // Expand to show the image was added
-                              setGalleryOpen(false)
-                              setGalleryExpanded(null)
-                              setTimeout(scrollToRefine, 100)
-                            }}
-                            title="Refine this image"
-                          >
-                            <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
-                          </button>
-                          <button 
-                            className="lightbox-btn"
-                            onClick={() => downloadOutputImage(galleryExpanded.url)}
-                            title="Download"
-                          >
-                            <Download className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Expanded single image view - uses shared Lightbox component with zoom */}
+            <Lightbox
+              data={galleryExpanded ? {
+                imageUrl: galleryExpanded.url,
+                prompt: galleryExpanded.prompt,
+                mode: galleryExpanded.mode,
+                resolution: galleryExpanded.resolution,
+                aspectRatio: galleryExpanded.aspectRatio,
+                references: galleryExpanded.settings?.styleImages?.map(img => ({
+                  url: img.url.startsWith('http') || img.url.startsWith('data:') 
+                    ? img.url 
+                    : `${API_URL}${img.url}`,
+                  name: img.name,
+                })),
+              } : null}
+              onClose={() => setGalleryExpanded(null)}
+              onDownload={downloadOutputImage}
+              onRefine={(url) => {
+                setEditImage({ url })
+                detectAndSetAspectRatio(url)
+                setReferences([]) // Clear alloy when refining
+                setRefineExpanded(true)
+                setGalleryOpen(false)
+                setGalleryExpanded(null)
+                setTimeout(scrollToRefine, 100)
+              }}
+              onReplay={() => {
+                if (galleryExpanded) {
+                  handleReplay({
+                    prompt: galleryExpanded.prompt,
+                    mode: galleryExpanded.mode,
+                    model: galleryExpanded.model,
+                    resolution: galleryExpanded.resolution,
+                    aspectRatio: galleryExpanded.aspectRatio,
+                    references: galleryExpanded.settings?.styleImages,
+                  })
+                  setGalleryExpanded(null)
+                  setGalleryOpen(false)
+                }
+              }}
+              onUseAlloy={galleryExpanded?.settings?.styleImages ? () => {
+                const refs = galleryExpanded.settings!.styleImages!.map((img, i) => ({
+                  id: `alloy-gallery-${i}-${Date.now()}`,
+                  url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/') 
+                    ? img.url 
+                    : `${API_URL}${img.url}`,
+                  name: img.name || `Ref ${i + 1}`,
+                  type: 'generation' as const,
+                }))
+                addAlloyReferences(refs)
+                setGalleryExpanded(null)
+                setGalleryOpen(false)
+              } : undefined}
+            />
 
             {/* Gallery grid - stays mounted to preserve scroll position */}
             <motion.div 
