@@ -2,11 +2,29 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-// PostgreSQL connection pool
+// PostgreSQL connection pool - increased for concurrent image requests
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 50, // Handle concurrent thumbnail requests (default was 10)
 });
+
+// Simple cache for generation lookups (they're immutable)
+const generationCache = new Map<string, { data: any; expires: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export function getCachedGeneration(id: string): any | null {
+  const cached = generationCache.get(id);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+  generationCache.delete(id);
+  return null;
+}
+
+export function setCachedGeneration(id: string, data: any): void {
+  generationCache.set(id, { data, expires: Date.now() + CACHE_TTL });
+}
 
 // Initialize database schema
 export async function initDatabase() {
@@ -286,11 +304,20 @@ export async function getGenerationsByUser(userId: string, limit = 50, offset = 
 
 // Get a single generation by ID
 export async function getGeneration(id: string): Promise<Generation | null> {
+  // Check cache first
+  const cached = getCachedGeneration(id);
+  if (cached) return cached;
+  
   const result = await pool.query<Generation>(
     'SELECT * FROM generations WHERE id = $1',
     [id]
   );
-  return result.rows[0] || null;
+  const gen = result.rows[0] || null;
+  
+  // Cache the result (generations are immutable)
+  if (gen) setCachedGeneration(id, gen);
+  
+  return gen;
 }
 
 // Delete a generation
