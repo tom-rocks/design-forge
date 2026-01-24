@@ -499,10 +499,21 @@ router.post('/generate', async (req: Request, res: Response) => {
     if (mode === 'edit') {
       // EDIT MODE: Modify the uploaded image
       if (imageParts.length > 0) {
+        // Check what types of references we have
+        const hasAvatarItems = effectiveStyleImages.some(img => 
+          img.url.includes('avataritem') || 
+          img.url.includes('/api/highrise/proxy/') && !img.url.includes('bg-') && !img.url.includes('cn-')
+        );
+        
+        // Build style description based on reference types
+        const styleDesc = hasAvatarItems 
+          ? 'NO outlines, soft gradient shading, 3/4 perspective angle, stylized proportions'
+          : 'NO outlines, soft gradient shading, flat 2D composition';
+        
         // Edit with style references
         fullPrompt = `Edit the first image according to this instruction: ${prompt}
 
-Use the style from the ${imageParts.length} reference image${imageParts.length > 1 ? 's' : ''} (digital art assets with NO outlines, soft gradient shading, 3/4 perspective angle, stylized proportions).
+Use the style from the ${imageParts.length} reference image${imageParts.length > 1 ? 's' : ''} (digital art assets with ${styleDesc}).
 
 Output a modified version of the first image that follows the instruction while matching the reference style.`;
       } else {
@@ -512,15 +523,42 @@ Output a modified version of the first image that follows the instruction while 
     } else {
       // CREATE MODE: Generate new image
       if (imageParts.length > 0) {
-        fullPrompt = `Look at these ${imageParts.length} reference images carefully. They are digital art assets with:
-- NO outlines or black lines
-- Soft gradient shading
+        // Check what types of references we have
+        const hasAvatarItems = effectiveStyleImages.some(img => 
+          img.url.includes('avataritem') || 
+          img.url.includes('/api/highrise/proxy/') && !img.url.includes('bg-') && !img.url.includes('cn-')
+        );
+        const hasBackgrounds = effectiveStyleImages.some(img => 
+          img.url.includes('/background/') || img.url.includes('bg-')
+        );
+        
+        // Build style description based on reference types
+        let styleDesc = `- NO outlines or black lines
+- Soft gradient shading`;
+        
+        if (hasAvatarItems && !hasBackgrounds) {
+          // Only items: include 3/4 perspective
+          styleDesc += `
 - A specific 3/4 perspective angle
-- Stylized proportions
+- Stylized proportions`;
+        } else if (hasBackgrounds && !hasAvatarItems) {
+          // Only backgrounds: flat perspective
+          styleDesc += `
+- Flat 2D composition
+- Environmental/scene design`;
+        } else if (hasAvatarItems && hasBackgrounds) {
+          // Mixed: mention both
+          styleDesc += `
+- Items use 3/4 perspective angle
+- Backgrounds are flat 2D compositions`;
+        }
+        
+        fullPrompt = `Look at these ${imageParts.length} reference images carefully. They are digital art assets with:
+${styleDesc}
 
 Create: ${prompt}
 
-CRITICAL: Match the EXACT same style. No outlines. Same angle. Same soft shading. Same proportions.`;
+CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
       }
     }
     
