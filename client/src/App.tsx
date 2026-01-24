@@ -905,8 +905,8 @@ export default function App() {
                       <HighriseSearch 
                         singleSelect
                         onSingleSelect={(item) => { 
-                          // Use crisp URL for higher quality if available, otherwise regular imageUrl
-                          const url = item.apImageUrlCrisp || item.imageUrl
+                          // Use proxied display URL if available, otherwise fall back to imageUrl
+                          const url = item.displayUrl || item.imageUrl
                           setEditImage({ url })
                           detectAndSetAspectRatio(url)
                         }} 

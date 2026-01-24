@@ -22,6 +22,7 @@ interface HighriseItem {
   imageUrl: string
   apImageUrl?: string // Fallback for new pipeline items
   apImageUrlCrisp?: string // Higher quality version for clothing (used when adding as reference)
+  displayUrl?: string // Resolved URL (proxied data URL if available, otherwise imageUrl)
 }
 
 interface Reference {
@@ -71,7 +72,7 @@ export default function HighriseSearch({
   const [proxiedImages, setProxiedImages] = useState<Map<string, string>>(() => new Map(proxiedImageCache))
   const [proxyingImages, setProxyingImages] = useState<Set<string>>(new Set()) // Currently being proxied
   
-  // Get display URL - use proxied data URL if available, otherwise original URL
+  // Get display URL - use proxied data URL if available, otherwise fall back to server proxy
   const getDisplayUrl = useCallback((item: HighriseItem) => {
     // Use proxied data URL if we fetched it via AP (check both state and module cache)
     if (proxiedImages.has(item.id)) {
@@ -80,6 +81,11 @@ export default function HighriseSearch({
     // Also check module-level cache (for images proxied before component remount)
     if (proxiedImageCache.has(item.id)) {
       return proxiedImageCache.get(item.id)!
+    }
+    // If the URL is an AP URL that requires auth, fall back to server proxy
+    // This ensures we always return a URL that works cross-origin
+    if (item.imageUrl.includes('production-ap.highrise.game')) {
+      return `${API_URL}/api/highrise/proxy/${item.dispId}.png?v=3`
     }
     return item.imageUrl
   }, [proxiedImages])
@@ -479,9 +485,11 @@ export default function HighriseSearch({
 
   // Toggle item selection
   const toggleItem = (item: HighriseItem) => {
-    // Single select mode - just call the callback
+    // Single select mode - just call the callback with the resolved display URL
     if (singleSelect && onSingleSelect) {
-      onSingleSelect(item)
+      // Include the display URL (proxied data URL if available)
+      const displayUrl = getDisplayUrl(item)
+      onSingleSelect({ ...item, displayUrl })
       return
     }
     
