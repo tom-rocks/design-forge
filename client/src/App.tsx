@@ -391,6 +391,7 @@ export default function App() {
   const [promptHot, setPromptHot] = useState(false)
   const [introPlayed, setIntroPlayed] = useState(false)
   const [introAnimating, setIntroAnimating] = useState(false)
+  const lastModeRef = useRef<'create' | 'edit' | null>(null)
   
   // Refs to track intro animation timers for cancellation
   const introTimersRef = useRef<{ start?: ReturnType<typeof setTimeout>; type?: ReturnType<typeof setInterval>; cool?: ReturnType<typeof setTimeout>; clear?: ReturnType<typeof setTimeout> }>({})
@@ -409,26 +410,27 @@ export default function App() {
     // Immediately finish
     setPromptHot(false)
     setPrompt('')
-    setIntroPlayed(true)
     setIntroAnimating(false)
   }, [introAnimating])
   
-  // Intro animation - type out placeholder text on first load
-  useEffect(() => {
-    if (introPlayed || prompt) return // Only play once, skip if user already typed
+  // Play intro animation with custom text
+  const playIntroAnimation = useCallback((text: string, delay = 500) => {
+    // Cancel any existing animation
+    if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
+    if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
+    if (introTimersRef.current.cool) clearTimeout(introTimersRef.current.cool)
+    if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
+    introTimersRef.current = {}
     
-    const introText = "Describe what you want to create..."
     let charIndex = 0
-    
     setIntroAnimating(true)
     
-    // Delay before starting animation
     introTimersRef.current.start = setTimeout(() => {
       setPromptHot(true)
       
       introTimersRef.current.type = setInterval(() => {
-        if (charIndex < introText.length) {
-          setPrompt(introText.slice(0, charIndex + 1))
+        if (charIndex < text.length) {
+          setPrompt(text.slice(0, charIndex + 1))
           charIndex++
         } else {
           if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
@@ -444,15 +446,26 @@ export default function App() {
           }, 300)
         }
       }, 45)
-    }, 500)
-    
-    return () => {
-      if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
-      if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
-      if (introTimersRef.current.cool) clearTimeout(introTimersRef.current.cool)
-      if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
-    }
+    }, delay)
+  }, [])
+  
+  // Initial intro animation on first load
+  useEffect(() => {
+    if (introPlayed || prompt) return // Only play once on load, skip if user already typed
+    playIntroAnimation("Describe what you want to create...")
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Play intro animation when switching to refine mode
+  useEffect(() => {
+    const currentMode = editImage ? 'edit' : 'create'
+    
+    // Check if we just switched TO refine mode
+    if (currentMode === 'edit' && lastModeRef.current === 'create' && !prompt.trim()) {
+      playIntroAnimation("Describe what you want to change...", 800)
+    }
+    
+    lastModeRef.current = currentMode
+  }, [editImage, prompt, playIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
@@ -1385,7 +1398,7 @@ export default function App() {
                 onFocus={() => {
                   if (introAnimating) cancelIntroAnimation()
                 }}
-                placeholder={introPlayed ? "Describe what you want to create..." : ""}
+                placeholder={introPlayed ? (editImage ? "Describe what you want to change..." : "Describe what you want to create...") : ""}
                 rows={1}
                 disabled={isGenerating}
               />
