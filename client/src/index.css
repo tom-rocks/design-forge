@@ -4798,8 +4798,8 @@ body {
 
 .prompt-alloy-add {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
@@ -4810,7 +4810,7 @@ body {
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
-  padding: 5px; /* Space for outer decal ring */
+  padding: 4px; /* Space for outer decal ring */
 }
 
 /* Outer decal ring - printed on metal look */
@@ -4828,7 +4828,7 @@ body {
 .prompt-alloy-add::after {
   content: '';
   position: absolute;
-  inset: 5px;
+  inset: 4px;
   border-radius: calc(var(--radius-sm) - 2px);
   background: linear-gradient(180deg, 
     rgba(255, 255, 255, 0.4) 0%, 
@@ -4881,11 +4881,11 @@ body {
   width: 32px;
   height: 32px;
   align-self: center;
-  padding: 4px;
+  padding: 3px;
 }
 
 .prompt-alloy-add.has-refs::after {
-  inset: 4px;
+  inset: 3px;
 }
 
 /* When alloy row has items, make it part of the main row */

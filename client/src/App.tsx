@@ -1140,7 +1140,7 @@ export default function App() {
             
             {/* Forge/Refine button */}
             <Button
-              variant={canGenerate || isGenerating ? 'accent' : 'dark'}
+              variant={(canGenerate || isGenerating) && introPlayed ? 'accent' : 'dark'}
               onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
               disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
               className="floating-forge-btn"
@@ -1187,7 +1187,7 @@ export default function App() {
                 disabled={isGenerating}
                 title="Add style references"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               </button>
             </div>
           </div>
