@@ -1723,11 +1723,12 @@ body {
 
 /* Logo in prompt bar */
 .prompt-bar-logo {
-  height: 36px;
+  height: 32px;
   width: auto;
   filter: invert(1) brightness(0.4);
   flex-shrink: 0;
-  margin-right: 8px;
+  margin-right: 4px;
+  align-self: center;
 }
 
 /* Legacy styles kept for compatibility */
