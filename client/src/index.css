@@ -1883,7 +1883,7 @@ textarea.textarea.floating-prompt-input.forging {
   bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 95;
+  z-index: 102;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1950,7 +1950,7 @@ textarea.textarea.floating-prompt-input.forging {
   bottom: 200px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 95;
+  z-index: 102;
   padding: 6px 12px;
   background: rgba(0, 0, 0, 0.6);
   color: white;
