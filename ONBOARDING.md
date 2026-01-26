@@ -212,6 +212,19 @@ Railway is connected to the repository and automatically deploys when:
 
 ## Railway Deployment
 
+**Project**: `design-forge-v2`  
+**Project ID**: `d20c513d-d582-4d5d-8ed1-24b1362377d1`  
+**Service**: `design-forge-v2`  
+**Environment**: `production`
+
+### Linking to the Correct Project
+
+Before deploying, ensure you're linked to the correct Railway project:
+
+```bash
+railway link -p d20c513d-d582-4d5d-8ed1-24b1362377d1 -e production -s design-forge-v2
+```
+
 ### Configuration Files
 
 **nixpacks.toml** — Defines the build process:
@@ -258,6 +271,16 @@ Set these in Railway dashboard → Variables:
 | `STORAGE_PATH` | No | Path to Railway volume mount |
 
 ### Common Deployment Issues
+
+#### Issue: Deployments not showing / Wrong project
+
+**Cause**: Workspace may be linked to old `design-forge` project instead of `design-forge-v2`.
+
+**Solution**: Re-link to the correct project:
+```bash
+railway link -p d20c513d-d582-4d5d-8ed1-24b1362377d1 -e production -s design-forge-v2
+railway up
+```
 
 #### Issue: "Failed to create code snapshot" / Timeout
 

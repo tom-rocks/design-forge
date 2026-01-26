@@ -47,12 +47,18 @@ A beautiful interface for AI image generation using Gemini Pro 3 via Krea's API.
 
 ## Deployment
 
-The app is designed to be deployed on Railway:
+The app is deployed on Railway as **design-forge-v2** (project ID: `d20c513d-d582-4d5d-8ed1-24b1362377d1`).
 
-1. Push to GitHub
-2. Connect to Railway
-3. Set `KREA_API_KEY` environment variable
-4. Deploy!
+### Manual Deploy
+```bash
+railway link -p d20c513d-d582-4d5d-8ed1-24b1362377d1 -e production -s design-forge-v2
+railway up
+```
+
+### Required Environment Variables
+- `GEMINI_API_KEY` - Google Gemini API key
+- `BRIDGE_SECRET` - Shared secret for WebSocket auth
+- `DATABASE_URL` - Provided by Railway PostgreSQL addon
 
 ## License
 
