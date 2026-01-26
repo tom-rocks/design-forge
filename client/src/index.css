@@ -468,6 +468,8 @@ body {
   transform: translateY(-50%);
   z-index: 90;
   pointer-events: none;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 .works-sidebar-inner {
@@ -484,6 +486,8 @@ body {
   border: 1px solid #d0ccc8;
   display: flex;
   flex-direction: column;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 /* Header - light grey */
@@ -519,6 +523,8 @@ body {
   min-height: 0;
   max-height: calc(75vh - 100px);
   background: #e8e4e0;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 .works-sidebar-loading,
@@ -535,6 +541,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 .works-sidebar-item {
