@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight } from 'lucide-react'
+import { Loader2, ChevronRight, ImageOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -39,8 +39,13 @@ export function WorksSidebar({
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const LIMIT = 20
+
+  const handleImageError = useCallback((imageId: string) => {
+    setFailedImages(prev => new Set(prev).add(imageId))
+  }, [])
 
   // Flatten generations into individual images
   const displayImages: DisplayImage[] = generations.flatMap(gen => 
@@ -147,7 +152,7 @@ export function WorksSidebar({
                 {displayImages.map((img) => (
                   <motion.button
                     key={img.id}
-                    className="works-sidebar-item"
+                    className={`works-sidebar-item ${failedImages.has(img.id) ? 'failed' : ''}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
@@ -158,14 +163,21 @@ export function WorksSidebar({
                     )}
                     title={img.generation.prompt || 'Click to refine'}
                   >
-                    <img 
-                      src={img.thumbnailUrl 
-                        ? `${API_URL}${img.thumbnailUrl}` 
-                        : `${API_URL}${img.imageUrl}`
-                      }
-                      alt=""
-                      loading="lazy"
-                    />
+                    {failedImages.has(img.id) ? (
+                      <div className="works-sidebar-item-error">
+                        <ImageOff className="w-5 h-5" />
+                      </div>
+                    ) : (
+                      <img 
+                        src={img.thumbnailUrl 
+                          ? `${API_URL}${img.thumbnailUrl}` 
+                          : `${API_URL}${img.imageUrl}`
+                        }
+                        alt=""
+                        loading="lazy"
+                        onError={() => handleImageError(img.id)}
+                      />
+                    )}
                   </motion.button>
                 ))}
               </AnimatePresence>
