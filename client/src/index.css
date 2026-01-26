@@ -1899,9 +1899,16 @@ textarea.textarea.floating-prompt-input.forging {
   margin: 0 4px;
 }
 
+.canvas-zoom-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: var(--text-dim);
+}
+
 .canvas-zoom-level {
-  min-width: 48px;
-  text-align: center;
+  min-width: 40px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ZoomIn, ZoomOut, RotateCcw, Star, Download } from 'lucide-react'
+import { Search, RotateCcw, Star, Download } from 'lucide-react'
 
 interface ImageCanvasProps {
   images: string[]
@@ -82,14 +82,6 @@ export function ImageCanvas({
     setIsDragging(false)
   }, [])
 
-  const zoomIn = useCallback(() => {
-    setScale(s => Math.min(MAX_SCALE, s + ZOOM_STEP))
-  }, [])
-
-  const zoomOut = useCallback(() => {
-    setScale(s => Math.max(MIN_SCALE, s - ZOOM_STEP))
-  }, [])
-
   const resetView = useCallback(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
@@ -155,15 +147,12 @@ export function ImageCanvas({
 
       {/* Controls bar - zoom and image actions */}
       <div className="image-canvas-controls">
-        {/* Zoom controls */}
-        <button className="canvas-control-btn" onClick={zoomOut} title="Zoom out">
-          <ZoomOut className="w-4 h-4" />
-        </button>
-        <span className="canvas-zoom-level">{Math.round(scale * 100)}%</span>
-        <button className="canvas-control-btn" onClick={zoomIn} title="Zoom in">
-          <ZoomIn className="w-4 h-4" />
-        </button>
-        <button className="canvas-control-btn" onClick={resetView} title="Reset view">
+        {/* Zoom indicator */}
+        <div className="canvas-zoom-indicator">
+          <Search className="w-4 h-4" />
+          <span className="canvas-zoom-level">{Math.round(scale * 100)}%</span>
+        </div>
+        <button className="canvas-control-btn" onClick={resetView} title="Reset zoom">
           <RotateCcw className="w-4 h-4" />
         </button>
         
