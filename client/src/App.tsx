@@ -326,6 +326,41 @@ export default function App() {
 
   // Replay animation state
   const [promptHot, setPromptHot] = useState(false)
+  const [introPlayed, setIntroPlayed] = useState(false)
+  
+  // Intro animation - type out placeholder text on first load
+  useEffect(() => {
+    if (introPlayed || prompt) return // Only play once, skip if user already typed
+    
+    const introText = "Describe what you want to create..."
+    let charIndex = 0
+    
+    // Small delay before starting
+    const startTimer = setTimeout(() => {
+      setPromptHot(true)
+      
+      const typeInterval = setInterval(() => {
+        if (charIndex < introText.length) {
+          setPrompt(introText.slice(0, charIndex + 1))
+          charIndex++
+        } else {
+          clearInterval(typeInterval)
+          // Cool down and clear after a moment
+          setTimeout(() => {
+            setPromptHot(false)
+            setTimeout(() => {
+              setPrompt('')
+              setIntroPlayed(true)
+            }, 500)
+          }, 300)
+        }
+      }, 25)
+      
+      return () => clearInterval(typeInterval)
+    }, 400)
+    
+    return () => clearTimeout(startTimer)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
