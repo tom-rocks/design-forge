@@ -124,35 +124,35 @@ export function WorksSidebar({
   }
 
   return (
-    <div className="works-sidebar">
-      <div className="works-sidebar-inner">
+    <div className="gen-panel">
+      <div className="gen-panel-box">
         {/* Header */}
-        <div className="works-sidebar-header">
+        <div className="gen-panel-head">
           <span className="btn-icon icon-works" />
-          <span className="works-sidebar-title">Works</span>
+          <span className="gen-panel-label">Works</span>
         </div>
 
         {/* Scrollable content */}
         <div 
-          className="works-sidebar-scroll" 
+          className="gen-panel-list" 
           ref={scrollRef}
           onScroll={handleScroll}
         >
           {loading ? (
-            <div className="works-sidebar-loading">
+            <div className="gen-panel-wait">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : displayImages.length === 0 ? (
-            <div className="works-sidebar-empty">
+            <div className="gen-panel-none">
               No works yet
             </div>
           ) : (
-            <div className="works-sidebar-grid">
+            <div className="gen-panel-items">
               <AnimatePresence mode="popLayout">
                 {displayImages.map((img) => (
                   <motion.button
                     key={img.id}
-                    className={`works-sidebar-item ${failedImages.has(img.id) ? 'failed' : ''}`}
+                    className={`gen-panel-thumb ${failedImages.has(img.id) ? 'failed' : ''}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
@@ -164,7 +164,7 @@ export function WorksSidebar({
                     title={img.generation.prompt || 'Click to refine'}
                   >
                     {failedImages.has(img.id) ? (
-                      <div className="works-sidebar-item-error">
+                      <div className="gen-panel-thumb-err">
                         <ImageOff className="w-5 h-5" />
                       </div>
                     ) : (
@@ -183,7 +183,7 @@ export function WorksSidebar({
               </AnimatePresence>
               
               {loadingMore && (
-                <div className="works-sidebar-loading-more">
+                <div className="gen-panel-more-wait">
                   <Loader2 className="w-4 h-4 animate-spin" />
                 </div>
               )}
@@ -193,7 +193,7 @@ export function WorksSidebar({
 
         {/* Footer button */}
         <button 
-          className="works-sidebar-more"
+          className="gen-panel-all"
           onClick={onOpenWorksModal}
         >
           <span>All Works</span>

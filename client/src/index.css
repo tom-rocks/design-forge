@@ -461,7 +461,8 @@ body {
    WORKS SIDEBAR - Left side works list
    ============================================ */
 
-.works-sidebar {
+/* Generation Panel - renamed to avoid cached CSS conflicts */
+.gen-panel {
   position: fixed;
   left: 20px;
   top: 50%;
@@ -470,7 +471,7 @@ body {
   pointer-events: none;
 }
 
-.works-sidebar-inner {
+.gen-panel-box {
   width: 128px;
   height: 500px;
   pointer-events: auto;
@@ -483,7 +484,7 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.works-sidebar-header {
+.gen-panel-head {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -494,13 +495,13 @@ body {
   flex-shrink: 0;
 }
 
-.works-sidebar-header .btn-icon {
+.gen-panel-head .btn-icon {
   width: 14px;
   height: 14px;
   opacity: 0.5;
 }
 
-.works-sidebar-title {
+.gen-panel-label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -508,7 +509,7 @@ body {
   color: #6b6560;
 }
 
-.works-sidebar-scroll {
+.gen-panel-list {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -516,8 +517,8 @@ body {
   background-color: #e8e4e0;
 }
 
-.works-sidebar-loading,
-.works-sidebar-empty {
+.gen-panel-wait,
+.gen-panel-none {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -526,18 +527,18 @@ body {
   font-size: 10px;
 }
 
-.works-sidebar-grid {
+.gen-panel-items {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.works-sidebar-item {
+.gen-panel-thumb {
   width: 108px;
   height: 108px;
-  border-radius: var(--radius-md);
+  border-radius: 5px;
   overflow: hidden;
-  background: var(--surface-inset);
+  background-color: #c8c4c0;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -547,40 +548,40 @@ body {
     0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.works-sidebar-item:hover {
+.gen-panel-thumb:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.works-sidebar-item img {
+.gen-panel-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.works-sidebar-item.failed {
+.gen-panel-thumb.failed {
   cursor: default;
 }
 
-.works-sidebar-item-error {
+.gen-panel-thumb-err {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-inset);
-  color: var(--text-light);
+  background-color: #c8c4c0;
+  color: #8a8580;
 }
 
-.works-sidebar-loading-more {
+.gen-panel-more-wait {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px;
-  color: var(--text-light);
+  color: #8a8580;
 }
 
-.works-sidebar-more {
+.gen-panel-all {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -589,7 +590,7 @@ body {
   padding: 10px 16px;
   border: none;
   border-radius: 6px;
-  background: #5a5550;
+  background-color: #5a5550;
   color: white;
   font-size: 11px;
   font-weight: 700;
@@ -603,15 +604,15 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.works-sidebar-more:hover {
-  background: var(--btn-dark-hover);
+.gen-panel-all:hover {
+  background-color: #3a3938;
   transform: translateY(-1px);
   box-shadow: 
     0 4px 8px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.works-sidebar-more:active {
+.gen-panel-all:active {
   transform: translateY(0);
   box-shadow: 
     0 1px 2px rgba(0, 0, 0, 0.2),
@@ -620,7 +621,7 @@ body {
 
 /* Hide on smaller screens */
 @media (max-width: 1100px) {
-  .works-sidebar {
+  .gen-panel {
     display: none;
   }
 }
