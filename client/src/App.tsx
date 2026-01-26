@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, User, Trash2, Maximize2, ChevronDown, Plus, Download, X, Search, BarChart3, Star } from 'lucide-react'
+import { LogIn, User, Maximize2, ChevronDown, Plus, Download, X, Search, BarChart3, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -8,7 +8,6 @@ import {
   Button, 
   Panel, PanelHeader, PanelBody, 
   Textarea,
-  Thumb,
   LCDFireGrid,
   HighriseSearch,
   HistoryGrid,
@@ -86,7 +85,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
-  const [favoritesResetKey, setFavoritesResetKey] = useState(0)
+  const [favoritesResetKey, _setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
   // Forge specs state
@@ -103,7 +102,7 @@ export default function App() {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   
   // Pipe fill state (0-1)
-  const [pipeFill, setPipeFill] = useState(0)
+  const [_pipeFill, setPipeFill] = useState(0)
   // Output frame hot state (delayed after pipe fills)
   const [outputHot, setOutputHot] = useState(false)
   
