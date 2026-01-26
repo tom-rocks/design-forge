@@ -322,11 +322,6 @@ body {
   right: 0;
   z-index: 100;
   padding: 0 20px 20px;
-  background: linear-gradient(to top, 
-    var(--bg) 0%, 
-    var(--bg) 85%, 
-    transparent 100%
-  );
   pointer-events: none;
 }
 
