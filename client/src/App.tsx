@@ -549,6 +549,13 @@ export default function App() {
 
   // Toggle favorite for output image
   const toggleOutputFavorite = useCallback(async (imageUrl: string) => {
+    // Check if user is authenticated first
+    if (!authenticated) {
+      setError('Please sign in to save favorites')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+    
     const isCurrentlyStarred = starredOutputUrls.has(imageUrl)
     
     // Optimistic update - update UI immediately
@@ -587,6 +594,10 @@ export default function App() {
             next.delete(imageUrl)
             return next
           })
+          if (res.status === 401) {
+            setError('Session expired - please refresh the page')
+            setTimeout(() => setError(null), 5000)
+          }
         }
       } catch (e) {
         console.error('Failed to add favorite:', e)
@@ -598,7 +609,7 @@ export default function App() {
         })
       }
     }
-  }, [starredOutputUrls, prompt])
+  }, [authenticated, starredOutputUrls, prompt])
 
   // Handle drop on refinement dropzone
   const handleRefineDrop = useCallback((e: React.DragEvent) => {

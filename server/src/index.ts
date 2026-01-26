@@ -4,6 +4,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import passport from 'passport';
 import { createServer } from 'http';
 import { config } from 'dotenv';
@@ -18,7 +19,7 @@ import dashboardRouter from './routes/dashboard.js';
 import favoritesRouter from './routes/favorites.js';
 import migrateThumbnailsRouter from './routes/migrate-thumbnails.js';
 import { initBridgeServer, isBridgeConnected } from './bridge.js';
-import { initDatabase } from './db.js';
+import pool, { initDatabase } from './db.js';
 import { initStorage } from './storage.js';
 
 // Load environment variables
@@ -91,8 +92,9 @@ if (isProduction) {
   app.set('trust proxy', 1);
 }
 
-// Session configuration
-app.use(session({
+// Session configuration with PostgreSQL store for persistence across restarts
+const PgSession = connectPgSimple(session);
+const sessionConfig: session.SessionOptions = {
   secret: process.env.SESSION_SECRET || 'dev-session-secret-change-in-prod',
   resave: false,
   saveUninitialized: false,
@@ -102,7 +104,21 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: isProduction ? 'none' : 'lax',
   },
-}));
+};
+
+// Use PostgreSQL session store in production if database is available
+if (process.env.DATABASE_URL) {
+  sessionConfig.store = new PgSession({
+    pool,
+    tableName: 'user_sessions',
+    createTableIfMissing: true,
+  });
+  console.log('🔐 Using PostgreSQL session store');
+} else {
+  console.log('⚠️ Using in-memory session store (no DATABASE_URL)');
+}
+
+app.use(session(sessionConfig));
 
 console.log(`🔐 Session config: secure=${isProduction}, sameSite=${isProduction ? 'none' : 'lax'}`);
 
