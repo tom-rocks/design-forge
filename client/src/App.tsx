@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Maximize2, Plus, Download, X, Search, Star } from 'lucide-react'
+import { LogIn, Plus, X, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -14,6 +14,7 @@ import {
   Lightbox,
   AlloyModal,
   WorksSidebar,
+  ImageCanvas,
   type ReplayConfig,
   type LightboxData
 } from './components'
@@ -826,7 +827,7 @@ export default function App() {
               <p className="canvas-status">Forging...</p>
             </motion.div>
           ) : validImages.length > 0 && loadedImages.size > 0 ? (
-            /* OUTPUT IMAGES */
+            /* OUTPUT IMAGES - Zoomable Canvas */
             <motion.div 
               key="output"
               className="canvas-output"
@@ -836,57 +837,25 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.3 }}
             >
-              <div className={`canvas-output-grid cols-${Math.min(validImages.length, 2)}`}>
-                {validImages.filter(url => loadedImages.has(url)).map((url, i) => (
-                  <motion.div 
-                    key={url}
-                    className="canvas-output-image"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.1, duration: 0.3 }}
-                    onClick={() => setOutputLightbox({
-                      imageUrl: url,
-                      prompt: result?.prompt || prompt,
-                      mode: editImage ? 'edit' : 'create',
-                      resolution,
-                      aspectRatio,
-                      references: references.map(r => ({ url: r.url, name: r.name })),
-                    })}
-                  >
-                    <img src={url} alt={`Output ${i + 1}`} />
-                    <div className="canvas-output-overlay">
-                      <Maximize2 className="w-6 h-6" />
-                    </div>
-                    <div className="canvas-output-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className={`canvas-action-btn ${starredOutputUrls.has(url) ? 'active' : ''}`}
-                        onClick={() => toggleOutputFavorite(url)}
-                        title={starredOutputUrls.has(url) ? 'Remove from favorites' : 'Add to favorites'}
-                      >
-                        <Star className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className="canvas-action-btn"
-                        onClick={() => {
-                          setEditImage({ url })
-                          detectAndSetAspectRatio(url)
-                          setReferences([])
-                        }}
-                        title="Refine this image"
-                      >
-                        <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
-                      </button>
-                      <button 
-                        className="canvas-action-btn"
-                        onClick={() => downloadOutputImage(url)}
-                        title="Download"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              <ImageCanvas
+                images={validImages.filter(url => loadedImages.has(url))}
+                onImageClick={(url) => setOutputLightbox({
+                  imageUrl: url,
+                  prompt: result?.prompt || prompt,
+                  mode: editImage ? 'edit' : 'create',
+                  resolution,
+                  aspectRatio,
+                  references: references.map(r => ({ url: r.url, name: r.name })),
+                })}
+                onFavorite={toggleOutputFavorite}
+                onRefine={(url) => {
+                  setEditImage({ url })
+                  detectAndSetAspectRatio(url)
+                  setReferences([])
+                }}
+                onDownload={downloadOutputImage}
+                starredUrls={starredOutputUrls}
+              />
             </motion.div>
           ) : editImage ? (
             /* EDIT IMAGE SELECTED */

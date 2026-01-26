@@ -1715,6 +1715,214 @@ body {
   background: var(--accent);
 }
 
+/* ============================================
+   IMAGE CANVAS - Zoomable/Pannable output view
+   ============================================ */
+
+.image-canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-canvas-viewport {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  cursor: grab;
+  background: 
+    radial-gradient(circle at center, transparent 0%, var(--bg) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 19px,
+      var(--border) 19px,
+      var(--border) 20px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 19px,
+      var(--border) 19px,
+      var(--border) 20px
+    );
+  background-size: 100% 100%, 20px 20px, 20px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.image-canvas-viewport.dragging {
+  cursor: grabbing;
+}
+
+.image-canvas-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100%;
+  min-height: 100%;
+  padding: 40px;
+  transition: transform 0.05s linear;
+}
+
+.image-canvas-viewport.dragging .image-canvas-content {
+  transition: none;
+}
+
+.image-canvas-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.image-canvas-grid.single {
+  grid-template-columns: 1fr;
+  max-width: 480px;
+}
+
+.image-canvas-grid.double {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 600px;
+}
+
+.image-canvas-grid.quad {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 600px;
+}
+
+.image-canvas-grid.multi {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 800px;
+}
+
+.image-canvas-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--surface);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.image-canvas-item:hover {
+  transform: scale(1.02);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 0 0 2px var(--accent-muted);
+}
+
+.image-canvas-item.selected {
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 0 0 3px var(--accent);
+}
+
+.image-canvas-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.image-canvas-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: white;
+  pointer-events: none;
+}
+
+.image-canvas-item:hover .image-canvas-overlay {
+  opacity: 1;
+}
+
+.image-canvas-actions {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.image-canvas-item:hover .image-canvas-actions {
+  opacity: 1;
+}
+
+/* Canvas controls */
+.image-canvas-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+}
+
+.canvas-control-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.canvas-control-btn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.canvas-zoom-level {
+  min-width: 48px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.image-canvas-hint {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 11px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0.7;
+  animation: hint-fade 3s ease-out forwards;
+}
+
+@keyframes hint-fade {
+  0%, 70% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
 /* Edit image preview */
 .canvas-edit-image {
   padding: 32px;
