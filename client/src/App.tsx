@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search } from 'lucide-react'
+import { LogIn, Plus, X, Search, ImageOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -80,6 +80,7 @@ export default function App() {
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
+  const [editImageError, setEditImageError] = useState(false)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   void refineGlow // Suppress unused warning - effect still sets this
@@ -264,13 +265,16 @@ export default function App() {
   }, [])
   
   // Trigger glow effect when editImage is set, fade after 3 seconds
+  // Also reset error state when editImage changes
   useEffect(() => {
     if (editImage) {
+      setEditImageError(false) // Reset error when new image is selected
       setRefineGlow(true)
       const timer = setTimeout(() => setRefineGlow(false), 3000)
       return () => clearTimeout(timer)
     } else {
       setRefineGlow(false)
+      setEditImageError(false)
     }
   }, [editImage])
   
@@ -867,8 +871,19 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="canvas-edit-preview">
-                <img src={editImage.url} alt="Image to refine" />
+              <div className={`canvas-edit-preview ${editImageError ? 'error' : ''}`}>
+                {editImageError ? (
+                  <div className="canvas-edit-error">
+                    <ImageOff className="w-12 h-12" />
+                    <span>Image unavailable</span>
+                  </div>
+                ) : (
+                  <img 
+                    src={editImage.url} 
+                    alt="Image to refine" 
+                    onError={() => setEditImageError(true)}
+                  />
+                )}
                 <button 
                   onClick={() => setEditImage(null)} 
                   className="canvas-edit-remove"
@@ -877,7 +892,7 @@ export default function App() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="canvas-edit-label">Refine Mode</p>
+              <p className="canvas-edit-label">{editImageError ? 'Image not found' : 'Refine Mode'}</p>
             </motion.div>
           ) : (
             /* EMPTY STATE - Source picker */

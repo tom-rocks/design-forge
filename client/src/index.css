@@ -1960,6 +1960,28 @@ body {
   height: auto;
 }
 
+.canvas-edit-preview.error {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--text-light);
+}
+
+.canvas-edit-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  background: var(--surface-inset);
+  color: var(--text-light);
+  min-width: 200px;
+  min-height: 200px;
+}
+
+.canvas-edit-error span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .canvas-edit-remove {
   position: absolute;
   top: 8px;
