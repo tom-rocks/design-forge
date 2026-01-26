@@ -21,7 +21,7 @@ export function ImageCanvas({
   onRefine,
   onDownload,
   starredUrls = new Set(),
-  prompt,
+  prompt: _prompt, // Reserved for future use
   mode,
   resolution,
   aspectRatio
