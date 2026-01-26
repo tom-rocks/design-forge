@@ -474,14 +474,14 @@ body {
   width: 128px;
   max-height: 75vh;
   pointer-events: auto;
-  background: #e8e4e0 !important;
+  background: #e8e4e0;
   border-radius: var(--radius-lg);
   padding: 0;
   box-shadow: 
     0 4px 20px rgba(0, 0, 0, 0.15),
-    0 1px 4px rgba(0, 0, 0, 0.1);
-  border: 3px solid red !important;
-  overflow: hidden;
+    0 1px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid #d0ccc8;
   display: flex;
   flex-direction: column;
 }
@@ -517,7 +517,8 @@ body {
   overflow-x: hidden;
   padding: 10px;
   min-height: 0;
-  background: var(--surface);
+  max-height: calc(75vh - 100px);
+  background: #e8e4e0;
 }
 
 .works-sidebar-loading,
@@ -592,8 +593,8 @@ body {
   margin: 10px;
   padding: 10px 16px;
   border: none;
-  border-radius: var(--radius-md);
-  background: var(--btn-dark);
+  border-radius: 6px;
+  background: #5a5550;
   color: white;
   font-size: 11px;
   font-weight: 700;
@@ -601,6 +602,7 @@ body {
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-shrink: 0;
   box-shadow: 
     0 2px 4px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
