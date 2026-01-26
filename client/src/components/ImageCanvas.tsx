@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ZoomIn, ZoomOut, Maximize2, RotateCcw, Star, Download } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, Star, Download } from 'lucide-react'
 
 interface ImageCanvasProps {
   images: string[]
@@ -147,50 +147,15 @@ export function ImageCanvas({
                 onDoubleClick={() => onImageClick?.(url, i)}
               >
                 <img src={url} alt={`Output ${i + 1}`} draggable={false} />
-                
-                {/* Hover overlay */}
-                <div className="image-canvas-overlay">
-                  <Maximize2 className="w-6 h-6" />
-                </div>
-
-                {/* Action buttons */}
-                <div className="image-canvas-actions" onClick={(e) => e.stopPropagation()}>
-                  {onFavorite && (
-                    <button 
-                      className={`canvas-action-btn ${starredUrls.has(url) ? 'active' : ''}`}
-                      onClick={() => onFavorite(url)}
-                      title={starredUrls.has(url) ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      <Star className="w-4 h-4" />
-                    </button>
-                  )}
-                  {onRefine && (
-                    <button 
-                      className="canvas-action-btn"
-                      onClick={() => onRefine(url)}
-                      title="Refine this image"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
-                  )}
-                  {onDownload && (
-                    <button 
-                      className="canvas-action-btn"
-                      onClick={() => onDownload(url)}
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Zoom controls */}
+      {/* Controls bar - zoom and image actions */}
       <div className="image-canvas-controls">
+        {/* Zoom controls */}
         <button className="canvas-control-btn" onClick={zoomOut} title="Zoom out">
           <ZoomOut className="w-4 h-4" />
         </button>
@@ -201,6 +166,44 @@ export function ImageCanvas({
         <button className="canvas-control-btn" onClick={resetView} title="Reset view">
           <RotateCcw className="w-4 h-4" />
         </button>
+        
+        {/* Separator */}
+        {(onFavorite || onRefine || onDownload) && images.length > 0 && (
+          <div className="canvas-controls-sep" />
+        )}
+        
+        {/* Image actions - for selected or single image */}
+        {images.length > 0 && (
+          <>
+            {onFavorite && (
+              <button 
+                className={`canvas-control-btn ${starredUrls.has(images[selectedIndex ?? 0]) ? 'active' : ''}`}
+                onClick={() => onFavorite(images[selectedIndex ?? 0])}
+                title={starredUrls.has(images[selectedIndex ?? 0]) ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Star className="w-4 h-4" />
+              </button>
+            )}
+            {onRefine && (
+              <button 
+                className="canvas-control-btn"
+                onClick={() => onRefine(images[selectedIndex ?? 0])}
+                title="Refine this image"
+              >
+                <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
+              </button>
+            )}
+            {onDownload && (
+              <button 
+                className="canvas-control-btn"
+                onClick={() => onDownload(images[selectedIndex ?? 0])}
+                title="Download"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {/* Zoom hint */}
