@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search, ImageOff, Trash2 } from 'lucide-react'
+import { LogIn, Plus, X, Search, ImageOff, Trash2, Star, Download, RotateCcw, Flame, Hammer, Gem } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -20,7 +20,17 @@ import {
 } from './components'
 import { Dashboard } from './Dashboard'
 
-
+// Helper to get aspect ratio icon dimensions
+const getAspectDimensions = (ratio: string) => {
+  switch (ratio) {
+    case '1:1': return { w: 10, h: 10 }
+    case '3:4': return { w: 9, h: 12 }
+    case '4:3': return { w: 12, h: 9 }
+    case '9:16': return { w: 7, h: 12 }
+    case '16:9': return { w: 12, h: 7 }
+    default: return { w: 10, h: 10 }
+  }
+}
 
 /* ============================================
    TYPES
@@ -910,21 +920,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.3 }}
             >
-              <ImageCanvas
-                images={validImages}
-                onFavorite={toggleOutputFavorite}
-                onRefine={(url) => {
-                  setEditImage({ url })
-                  detectAndSetAspectRatio(url)
-                  setReferences([])
-                }}
-                onDownload={downloadOutputImage}
-                starredUrls={starredOutputUrls}
-                prompt={result?.prompt || prompt}
-                mode={editImage ? 'edit' : 'create'}
-                resolution={resolution}
-                aspectRatio={aspectRatio}
-              />
+              <ImageCanvas images={validImages} />
             </motion.div>
           ) : editImage ? (
             /* EDIT IMAGE SELECTED */
@@ -1108,6 +1104,75 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* CANVAS CONTROLS BAR - Always visible when images exist */}
+        {validImages.length > 0 && (
+          <div className="image-canvas-controls">
+            {/* Specs - same as lightbox */}
+            <div className="lightbox-specs" style={{ margin: 0, padding: '6px 10px' }}>
+              {/* Mode */}
+              <span className="lightbox-spec" title={editImage ? 'Refined' : 'Created'}>
+                {editImage ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+              </span>
+              <span className="lightbox-spec-sep">·</span>
+              {/* Model */}
+              <span className="lightbox-spec" title="Pro">
+                <Gem className="w-4 h-4" />
+                Pro
+              </span>
+              <span className="lightbox-spec-sep">·</span>
+              {/* Aspect Ratio */}
+              <span className="lightbox-spec" title={`Ratio ${aspectRatio}`}>
+                <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
+                  <rect 
+                    x={(14 - getAspectDimensions(aspectRatio).w) / 2} 
+                    y={(14 - getAspectDimensions(aspectRatio).h) / 2} 
+                    width={getAspectDimensions(aspectRatio).w} 
+                    height={getAspectDimensions(aspectRatio).h} 
+                    fill="currentColor" 
+                    rx="1" 
+                  />
+                </svg>
+                {aspectRatio}
+              </span>
+              <span className="lightbox-spec-sep">·</span>
+              {/* Resolution */}
+              <span className="lightbox-spec" title={`Resolution ${resolution}`}>
+                {resolution}
+              </span>
+            </div>
+            
+            {/* Separator */}
+            <div className="canvas-controls-sep" />
+            
+            {/* Image actions */}
+            <button 
+              className={`canvas-control-btn ${starredOutputUrls.has(validImages[0]) ? 'active' : ''}`}
+              onClick={() => toggleOutputFavorite(validImages[0])}
+              title={starredOutputUrls.has(validImages[0]) ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Star className="w-4 h-4" />
+            </button>
+            <button 
+              className="canvas-control-btn"
+              onClick={() => {
+                setEditImage({ url: validImages[0] })
+                detectAndSetAspectRatio(validImages[0])
+                setReferences([])
+              }}
+              title="Refine this image"
+            >
+              <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
+            </button>
+            <button 
+              className="canvas-control-btn"
+              onClick={() => downloadOutputImage(validImages[0])}
+              title="Download"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* ERROR */}
         <AnimatePresence>
