@@ -1436,10 +1436,10 @@ export default function App() {
                 }}
                 onFocus={() => {
                   if (introAnimating) cancelIntroAnimation()
+                  if (promptHot) setPromptHot(false) // Stop glow on focus too
                 }}
                 placeholder={introPlayed ? (editImage ? "Describe what you want to change..." : "Describe what you want to create...") : ""}
                 rows={1}
-                disabled={isGenerating}
               />
               <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
             </div>
