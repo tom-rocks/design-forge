@@ -474,13 +474,13 @@ body {
   width: 128px;
   max-height: 75vh;
   pointer-events: auto;
-  background: #e8e4e0;
+  background: #e8e4e0 !important;
   border-radius: var(--radius-lg);
   padding: 0;
   box-shadow: 
     0 4px 20px rgba(0, 0, 0, 0.15),
     0 1px 4px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ccc;
+  border: 3px solid red !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
