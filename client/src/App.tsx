@@ -380,6 +380,28 @@ export default function App() {
   // Replay animation state
   const [promptHot, setPromptHot] = useState(false)
   const [introPlayed, setIntroPlayed] = useState(false)
+  const [introAnimating, setIntroAnimating] = useState(false)
+  
+  // Refs to track intro animation timers for cancellation
+  const introTimersRef = useRef<{ start?: ReturnType<typeof setTimeout>; type?: ReturnType<typeof setInterval>; cool?: ReturnType<typeof setTimeout>; clear?: ReturnType<typeof setTimeout> }>({})
+  
+  // Cancel intro animation immediately
+  const cancelIntroAnimation = useCallback(() => {
+    if (!introAnimating) return
+    
+    // Clear all timers
+    if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
+    if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
+    if (introTimersRef.current.cool) clearTimeout(introTimersRef.current.cool)
+    if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
+    introTimersRef.current = {}
+    
+    // Immediately finish
+    setPromptHot(false)
+    setPrompt('')
+    setIntroPlayed(true)
+    setIntroAnimating(false)
+  }, [introAnimating])
   
   // Intro animation - type out placeholder text on first load
   useEffect(() => {
@@ -388,32 +410,38 @@ export default function App() {
     const introText = "Describe what you want to create..."
     let charIndex = 0
     
+    setIntroAnimating(true)
+    
     // Delay before starting animation
-    const startTimer = setTimeout(() => {
+    introTimersRef.current.start = setTimeout(() => {
       setPromptHot(true)
       
-      const typeInterval = setInterval(() => {
+      introTimersRef.current.type = setInterval(() => {
         if (charIndex < introText.length) {
           setPrompt(introText.slice(0, charIndex + 1))
           charIndex++
         } else {
-          clearInterval(typeInterval)
+          if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
           // Cool down and clear after transition completes
-          setTimeout(() => {
+          introTimersRef.current.cool = setTimeout(() => {
             setPromptHot(false)
             // Wait for full 2s color/glow transition to complete
-            setTimeout(() => {
+            introTimersRef.current.clear = setTimeout(() => {
               setPrompt('')
               setIntroPlayed(true)
+              setIntroAnimating(false)
             }, 2100)
           }, 300)
         }
       }, 45)
-      
-      return () => clearInterval(typeInterval)
     }, 500)
     
-    return () => clearTimeout(startTimer)
+    return () => {
+      if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
+      if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
+      if (introTimersRef.current.cool) clearTimeout(introTimersRef.current.cool)
+      if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
   // Replay a previous generation's settings with visual feedback
@@ -1312,7 +1340,13 @@ export default function App() {
                 ref={promptRef}
                 className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''} ${isGenerating ? 'forging' : ''}`}
                 value={prompt}
-                onChange={e => setPrompt(e.target.value)}
+                onChange={e => {
+                  if (introAnimating) cancelIntroAnimation()
+                  setPrompt(e.target.value)
+                }}
+                onFocus={() => {
+                  if (introAnimating) cancelIntroAnimation()
+                }}
                 placeholder={introPlayed ? "Describe what you want to create..." : ""}
                 rows={1}
                 disabled={isGenerating}
