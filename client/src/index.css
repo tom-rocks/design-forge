@@ -30,6 +30,8 @@
   --accent-hover: #ff7539;
   --accent-active: #e64a19;
   --accent-glow: rgba(255, 87, 34, 0.6);
+  --shimmer-light: rgba(255, 87, 34, 0.12);
+  --shimmer-medium: rgba(255, 109, 0, 0.2);
   
   /* Refine accent - Golden yellow */
   --accent-refine: #f5a623;
@@ -37,6 +39,8 @@
   --accent-refine-hover: #ffbf40;
   --accent-refine-active: #e09500;
   --accent-refine-glow: rgba(245, 166, 35, 0.6);
+  --shimmer-refine-light: rgba(245, 166, 35, 0.12);
+  --shimmer-refine-medium: rgba(255, 191, 64, 0.2);
   
   /* Button surfaces */
   --btn-dark: #2a2928;
@@ -68,6 +72,8 @@
   --accent-active: var(--accent-refine-active);
   --accent-glow: var(--accent-refine-glow);
   --led-orange: var(--led-yellow);
+  --shimmer-light: var(--shimmer-refine-light);
+  --shimmer-medium: var(--shimmer-refine-medium);
 }
 
 /* Scale up UI slightly for non-Retina/low-DPI displays */
@@ -663,9 +669,9 @@ textarea.textarea.floating-prompt-input.forging {
     -45deg,
     transparent 0%,
     transparent 40%,
-    rgba(255, 87, 34, 0.15) 45%,
-    rgba(255, 109, 0, 0.25) 50%,
-    rgba(255, 87, 34, 0.15) 55%,
+    var(--shimmer-light) 45%,
+    var(--shimmer-medium) 50%,
+    var(--shimmer-light) 55%,
     transparent 60%,
     transparent 100%
   );
@@ -1788,9 +1794,9 @@ textarea.textarea.floating-prompt-input.forging {
     -45deg,
     transparent 0%,
     transparent 40%,
-    rgba(255, 87, 34, 0.12) 45%,
-    rgba(255, 109, 0, 0.2) 50%,
-    rgba(255, 87, 34, 0.12) 55%,
+    var(--shimmer-light) 45%,
+    var(--shimmer-medium) 50%,
+    var(--shimmer-light) 55%,
     transparent 60%,
     transparent 100%
   );
