@@ -24,12 +24,19 @@
   --text-dim: #6b6560;
   --text-light: #8a8580;
   
-  /* Accent - Vibrant TE orange */
+  /* Accent - Vibrant TE orange (Forge mode) */
   --accent: #ff5722;
   --accent-bright: #ff6d00;
   --accent-hover: #ff7539;
   --accent-active: #e64a19;
   --accent-glow: rgba(255, 87, 34, 0.6);
+  
+  /* Refine accent - Golden yellow */
+  --accent-refine: #f5a623;
+  --accent-refine-bright: #ffb92e;
+  --accent-refine-hover: #ffbf40;
+  --accent-refine-active: #e09500;
+  --accent-refine-glow: rgba(245, 166, 35, 0.6);
   
   /* Button surfaces */
   --btn-dark: #2a2928;
@@ -40,12 +47,23 @@
   --led-off: #4a4540;
   --led-red: #ff3b30;
   --led-orange: #ff5722;
+  --led-yellow: #f5a623;
   --led-green: #4caf50;
   
   /* Spacing */
   --radius-sm: 4px;
   --radius-md: 5px;
   --radius-lg: 8px;
+}
+
+/* Refine mode - swap accent colors to yellow */
+.refine-mode {
+  --accent: var(--accent-refine);
+  --accent-bright: var(--accent-refine-bright);
+  --accent-hover: var(--accent-refine-hover);
+  --accent-active: var(--accent-refine-active);
+  --accent-glow: var(--accent-refine-glow);
+  --led-orange: var(--led-yellow);
 }
 
 /* Scale up UI slightly for non-Retina/low-DPI displays */

@@ -874,7 +874,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${editImage ? 'refine-mode' : ''}`}>
       {/* WORKS SIDEBAR - Left side works list */}
       <WorksSidebar
         authenticated={authenticated}
@@ -1243,7 +1243,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" />
+            <LCDFireGrid active={isGenerating || !!editImage} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
@@ -1298,7 +1298,7 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
             </button>
-            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" />
+            <LCDFireGrid active={isGenerating || !!editImage} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}

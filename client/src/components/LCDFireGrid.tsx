@@ -9,10 +9,12 @@ interface LCDFireGridProps {
   className?: string
   /** Direction fire spreads when igniting: 'left' = from right toward left, 'right' = from left toward right, 'center' = from center outward */
   spreadDirection?: 'left' | 'right' | 'center' | 'none'
+  /** Color mode: 'forge' = orange fire, 'refine' = yellow/gold */
+  mode?: 'forge' | 'refine'
 }
 
-// Fire color palette
-const FIRE_COLORS = [
+// Fire color palette - orange (forge mode)
+const FIRE_COLORS_FORGE = [
   '#2a2928', // 0 - off
   '#3d1f10', // 1 
   '#5c2510', // 2 
@@ -28,6 +30,23 @@ const FIRE_COLORS = [
   '#ffb850', // 12
 ]
 
+// Fire color palette - yellow/gold (refine mode)
+const FIRE_COLORS_REFINE = [
+  '#2a2928', // 0 - off
+  '#3d2f10', // 1 
+  '#5c4a10', // 2 
+  '#7a6510', // 3 
+  '#998005', // 4 
+  '#b89500', // 5 
+  '#d9a800', // 6 
+  '#e6b000', // 7 
+  '#f5b800', // 8 
+  '#ffc200', // 9 
+  '#ffcc00', // 10
+  '#ffd530', // 11
+  '#ffe060', // 12
+]
+
 export function LCDFireGrid({ 
   active, 
   cols = 14, 
@@ -35,8 +54,10 @@ export function LCDFireGrid({
   dotSize = 4,
   gap = 1,
   className = '',
-  spreadDirection = 'none'
+  spreadDirection = 'none',
+  mode = 'forge'
 }: LCDFireGridProps) {
+  const FIRE_COLORS = mode === 'refine' ? FIRE_COLORS_REFINE : FIRE_COLORS_FORGE
   const [grid, setGrid] = useState<number[]>(() => new Array(cols * rows).fill(0))
   const [ignitionProgress, setIgnitionProgress] = useState(0) // 0 to cols, how many columns are lit
   const frameRef = useRef<number>(0)
