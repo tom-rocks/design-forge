@@ -1597,8 +1597,10 @@ body {
 
 /* Empty state - source picker */
 .canvas-empty {
-  gap: 24px;
-  padding: 32px;
+  gap: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
 }
 
 .canvas-source-tabs {
@@ -1606,6 +1608,11 @@ body {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 8px 0;
+  background: var(--bg);
 }
 
 .canvas-tab {
@@ -1641,6 +1648,7 @@ body {
 .canvas-source-content {
   width: 100%;
   max-width: 560px;
+  min-height: 280px; /* Prevent layout shift when switching tabs */
 }
 
 .canvas-source-panel {
@@ -1648,6 +1656,7 @@ body {
   border-radius: 12px;
   padding: 16px;
   box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.08), inset -1px -1px 2px rgba(255, 255, 255, 0.6);
+  min-height: 250px; /* Consistent height for all panels */
   max-height: 50vh;
   overflow-y: auto;
 }
@@ -1663,7 +1672,7 @@ body {
 /* Drop zone */
 .canvas-dropzone {
   width: 100%;
-  min-height: 200px;
+  min-height: 250px; /* Match panel height for consistency */
   display: flex;
   align-items: center;
   justify-content: center;
