@@ -627,8 +627,8 @@ textarea.textarea.floating-prompt-input.forging {
   width: 100%;
   height: 100%;
   position: relative;
-  /* Dark metallic base */
-  background: linear-gradient(145deg, #3a3836 0%, #2a2826 50%, #1a1816 100%);
+  /* Light grey base */
+  background: linear-gradient(145deg, #d8d6d4 0%, #c8c6c4 50%, #b8b6b4 100%);
 }
 
 /* Glowing edges for sidebar */
@@ -652,20 +652,24 @@ textarea.textarea.floating-prompt-input.forging {
   animation: forge-edge-glow 2s ease-in-out infinite;
 }
 
-/* Heat shimmer for sidebar */
+/* Heat shimmer for sidebar - diagonal */
 .gen-panel-thumb-forging::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
   background: linear-gradient(
-    90deg,
+    -45deg,
     transparent 0%,
-    rgba(255, 87, 34, 0.1) 20%,
-    rgba(255, 109, 0, 0.2) 50%,
-    rgba(255, 87, 34, 0.1) 80%,
+    transparent 40%,
+    rgba(255, 87, 34, 0.15) 45%,
+    rgba(255, 109, 0, 0.25) 50%,
+    rgba(255, 87, 34, 0.15) 55%,
+    transparent 60%,
     transparent 100%
   );
-  animation: forge-heat-wave 2s ease-in-out infinite;
+  animation: forge-heat-wave-diagonal 1.5s ease-in-out infinite;
 }
 
 .gen-panel-more-wait {
@@ -1744,11 +1748,11 @@ textarea.textarea.floating-prompt-input.forging {
   border-radius: 8px;
   position: relative;
   overflow: hidden;
-  /* Base dark surface like cooling metal */
-  background: linear-gradient(145deg, #3a3836 0%, #2a2826 50%, #1a1816 100%);
+  /* Light grey surface */
+  background: linear-gradient(145deg, #d8d6d4 0%, #c8c6c4 50%, #b8b6b4 100%);
   box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 /* Glowing edges - heated metal effect */
@@ -1773,20 +1777,24 @@ textarea.textarea.floating-prompt-input.forging {
   animation: forge-edge-glow 2s ease-in-out infinite;
 }
 
-/* Heat shimmer moving across */
+/* Heat shimmer moving diagonally */
 .canvas-preview-slot::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
   background: linear-gradient(
-    90deg,
+    -45deg,
     transparent 0%,
-    rgba(255, 87, 34, 0.08) 20%,
-    rgba(255, 109, 0, 0.15) 50%,
-    rgba(255, 87, 34, 0.08) 80%,
+    transparent 40%,
+    rgba(255, 87, 34, 0.12) 45%,
+    rgba(255, 109, 0, 0.2) 50%,
+    rgba(255, 87, 34, 0.12) 55%,
+    transparent 60%,
     transparent 100%
   );
-  animation: forge-heat-wave 2.5s ease-in-out infinite;
+  animation: forge-heat-wave-diagonal 2s ease-in-out infinite;
 }
 
 @keyframes forge-edge-glow {
@@ -1800,12 +1808,12 @@ textarea.textarea.floating-prompt-input.forging {
   }
 }
 
-@keyframes forge-heat-wave {
+@keyframes forge-heat-wave-diagonal {
   0% {
-    transform: translateX(-100%);
+    transform: translate(-50%, -50%);
   }
   100% {
-    transform: translateX(100%);
+    transform: translate(50%, 50%);
   }
 }
 
