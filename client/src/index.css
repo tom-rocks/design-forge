@@ -409,30 +409,29 @@ body {
 }
 
 /* Override .textarea color for floating prompt - must be more specific */
-.textarea.floating-prompt-input {
-  color: var(--text-light) !important;
-  transition: color 2s ease-out, text-shadow 2s ease-out !important;
-}
-
-.textarea.floating-prompt-input::placeholder {
+textarea.textarea.floating-prompt-input {
   color: var(--text-light);
-  transition: none;
+  transition: color 2s ease-out, text-shadow 2s ease-out;
 }
 
-.textarea.floating-prompt-input.prompt-hot {
-  color: var(--accent) !important;
+textarea.textarea.floating-prompt-input::placeholder {
+  color: var(--text-light);
+}
+
+textarea.textarea.floating-prompt-input.prompt-hot {
+  color: var(--accent);
   text-shadow: 0 0 8px rgba(230, 74, 25, 0.4);
-  transition: color 0.05s ease-out, text-shadow 0.05s ease-out !important;
+  transition: color 0.05s ease-out, text-shadow 0.05s ease-out;
 }
 
 /* Forging effect - pulsing warm glow */
-.textarea.floating-prompt-input.forging {
+textarea.textarea.floating-prompt-input.forging {
   animation: forge-pulse 2s ease-in-out infinite;
 }
 
 @keyframes forge-pulse {
   0%, 100% {
-    color: var(--text-dim);
+    color: var(--text-light);
     text-shadow: 0 0 4px rgba(255, 87, 34, 0.2);
   }
   50% {
