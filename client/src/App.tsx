@@ -1154,7 +1154,24 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* CANVAS CONTROLS BAR - Always visible when images exist */}
+        {/* ERROR */}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              className="canvas-error"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* FLOATING PROMPT - Sticky at bottom */}
+      <div className="floating-prompt-container">
+        {/* CANVAS CONTROLS BAR - Above prompt, visible when images exist */}
         {validImages.length > 0 && (
           <div className="image-canvas-controls">
             {/* Specs - same as lightbox */}
@@ -1222,24 +1239,7 @@ export default function App() {
             </button>
           </div>
         )}
-
-        {/* ERROR */}
-        <AnimatePresence>
-          {error && (
-            <motion.div 
-              className="canvas-error"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      {/* FLOATING PROMPT - Sticky at bottom */}
-      <div className="floating-prompt-container">
+        
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">

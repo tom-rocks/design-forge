@@ -1872,21 +1872,20 @@ textarea.textarea.floating-prompt-input.forging {
   -webkit-user-drag: none;
 }
 
-/* Canvas controls */
+/* Canvas controls - inside floating prompt container, above prompt */
 .image-canvas-controls {
-  position: fixed;
-  bottom: 200px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 102;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 8px 12px;
+  margin: 0 auto 12px;
+  width: fit-content;
   background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
+  pointer-events: auto;
 }
 
 .canvas-control-btn {
