@@ -464,12 +464,14 @@ export default function App() {
     const currentMode = editImage ? 'edit' : 'create'
     
     // Check if we just switched TO refine mode
-    if (currentMode === 'edit' && lastModeRef.current === 'create' && !prompt.trim()) {
+    if (currentMode === 'edit' && lastModeRef.current === 'create') {
+      // Clear existing prompt and play the refine intro animation
+      setPrompt('')
       playIntroAnimation("Describe what you want to change...", 800)
     }
     
     lastModeRef.current = currentMode
-  }, [editImage, prompt, playIntroAnimation])
+  }, [editImage, playIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
