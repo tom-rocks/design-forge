@@ -75,11 +75,6 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
     setIsDragging(false)
   }, [])
 
-  const resetView = useCallback(() => {
-    setScale(1)
-    setPosition({ x: 0, y: 0 })
-  }, [])
-
   // Double-click/tap to reset to real size and centered
   const handleDoubleClick = useCallback(() => {
     setScale(1)
@@ -117,9 +112,9 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
               <motion.div
                 key={url}
                 className="image-canvas-item"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.4, ease: 'easeOut' }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.08, duration: 0.3, ease: 'easeOut' }}
               >
                 <img src={url} alt={`Output ${i + 1}`} draggable={false} />
               </motion.div>
