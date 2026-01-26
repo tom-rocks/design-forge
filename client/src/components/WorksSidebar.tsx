@@ -176,9 +176,7 @@ export function WorksSidebar({
                       transition={{ duration: 0.15 }}
                       title={`Forging: ${pending.prompt?.slice(0, 50) || ''}...`}
                     >
-                      <div className="gen-panel-thumb-forging">
-                        <Loader2 className="w-8 h-8 animate-spin" />
-                      </div>
+                      <div className="gen-panel-thumb-forging" />
                     </motion.div>
                   ))
                 )}

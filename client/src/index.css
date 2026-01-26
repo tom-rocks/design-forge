@@ -615,26 +615,53 @@ textarea.textarea.floating-prompt-input.forging {
 
 .gen-panel-thumb.forging {
   cursor: default;
-  animation: sidebar-forging-pulse 1.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
 }
 
 .gen-panel-thumb-forging {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #d8d4d0;
-  color: var(--accent);
+  position: relative;
+  /* Dark metallic base */
+  background: linear-gradient(145deg, #3a3836 0%, #2a2826 50%, #1a1816 100%);
 }
 
-@keyframes sidebar-forging-pulse {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
+/* Glowing edges for sidebar */
+.gen-panel-thumb-forging::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    transparent 30%,
+    transparent 70%,
+    var(--accent-bright) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: forge-edge-glow 2s ease-in-out infinite;
+}
+
+/* Heat shimmer for sidebar */
+.gen-panel-thumb-forging::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 87, 34, 0.1) 20%,
+    rgba(255, 109, 0, 0.2) 50%,
+    rgba(255, 87, 34, 0.1) 80%,
+    transparent 100%
+  );
+  animation: forge-heat-wave 2s ease-in-out infinite;
 }
 
 .gen-panel-more-wait {
@@ -1710,8 +1737,72 @@ textarea.textarea.floating-prompt-input.forging {
 
 .canvas-preview-slot {
   aspect-ratio: 1;
-  background: rgba(0, 0, 0, 0.03);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  /* Base dark surface like cooling metal */
+  background: linear-gradient(145deg, #3a3836 0%, #2a2826 50%, #1a1816 100%);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Glowing edges - heated metal effect */
+.canvas-preview-slot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    transparent 30%,
+    transparent 70%,
+    var(--accent-bright) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+  animation: forge-edge-glow 2s ease-in-out infinite;
+}
+
+/* Heat shimmer moving across */
+.canvas-preview-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 87, 34, 0.08) 20%,
+    rgba(255, 109, 0, 0.15) 50%,
+    rgba(255, 87, 34, 0.08) 80%,
+    transparent 100%
+  );
+  animation: forge-heat-wave 2.5s ease-in-out infinite;
+}
+
+@keyframes forge-edge-glow {
+  0%, 100% {
+    opacity: 0.4;
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 0.8;
+    filter: blur(1px);
+  }
+}
+
+@keyframes forge-heat-wave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .canvas-status {
