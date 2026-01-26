@@ -869,14 +869,6 @@ export default function App() {
             >
               <ImageCanvas
                 images={validImages.filter(url => loadedImages.has(url))}
-                onImageClick={(url) => setOutputLightbox({
-                  imageUrl: url,
-                  prompt: result?.prompt || prompt,
-                  mode: editImage ? 'edit' : 'create',
-                  resolution,
-                  aspectRatio,
-                  references: references.map(r => ({ url: r.url, name: r.name })),
-                })}
                 onFavorite={toggleOutputFavorite}
                 onRefine={(url) => {
                   setEditImage({ url })
@@ -885,6 +877,10 @@ export default function App() {
                 }}
                 onDownload={downloadOutputImage}
                 starredUrls={starredOutputUrls}
+                prompt={result?.prompt || prompt}
+                mode={editImage ? 'edit' : 'create'}
+                resolution={resolution}
+                aspectRatio={aspectRatio}
               />
             </motion.div>
           ) : editImage ? (

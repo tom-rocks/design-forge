@@ -4,20 +4,27 @@ import { Search, RotateCcw, Star, Download } from 'lucide-react'
 
 interface ImageCanvasProps {
   images: string[]
-  onImageClick?: (url: string, index: number) => void
   onFavorite?: (url: string) => void
   onRefine?: (url: string) => void
   onDownload?: (url: string) => void
   starredUrls?: Set<string>
+  // Generation info for the info bar
+  prompt?: string
+  mode?: 'create' | 'edit'
+  resolution?: string
+  aspectRatio?: string
 }
 
 export function ImageCanvas({
   images,
-  onImageClick,
   onFavorite,
   onRefine,
   onDownload,
-  starredUrls = new Set()
+  starredUrls = new Set(),
+  prompt,
+  mode,
+  resolution,
+  aspectRatio
 }: ImageCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -26,7 +33,6 @@ export function ImageCanvas({
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const MIN_SCALE = 0.5
   const MAX_SCALE = 4
@@ -36,7 +42,6 @@ export function ImageCanvas({
   useEffect(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
-    setSelectedIndex(null)
   }, [images.length])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -87,21 +92,6 @@ export function ImageCanvas({
     setPosition({ x: 0, y: 0 })
   }, [])
 
-  const handleImageClick = useCallback((url: string, index: number, e: React.MouseEvent) => {
-    // Don't trigger if we were dragging
-    if (Math.abs(e.clientX - (dragStart.x + position.x)) > 5 || 
-        Math.abs(e.clientY - (dragStart.y + position.y)) > 5) {
-      return
-    }
-    
-    if (selectedIndex === index) {
-      // Double click to open lightbox
-      onImageClick?.(url, index)
-    } else {
-      setSelectedIndex(index)
-    }
-  }, [dragStart, position, selectedIndex, onImageClick])
-
   // Grid layout based on image count
   const gridClass = images.length === 1 ? 'single' : 
                     images.length === 2 ? 'double' : 
@@ -131,12 +121,10 @@ export function ImageCanvas({
             {images.map((url, i) => (
               <motion.div
                 key={url}
-                className={`image-canvas-item ${selectedIndex === i ? 'selected' : ''}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.1, duration: 0.3 }}
-                onClick={(e) => handleImageClick(url, i, e)}
-                onDoubleClick={() => onImageClick?.(url, i)}
+                className="image-canvas-item"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.4, ease: 'easeOut' }}
               >
                 <img src={url} alt={`Output ${i + 1}`} draggable={false} />
               </motion.div>
@@ -145,8 +133,15 @@ export function ImageCanvas({
         </div>
       </div>
 
-      {/* Controls bar - zoom and image actions */}
+      {/* Controls bar - info and image actions */}
       <div className="image-canvas-controls">
+        {/* Generation info */}
+        <div className="canvas-info">
+          {mode && <span className="canvas-info-tag">{mode === 'edit' ? 'REFINE' : 'CREATE'}</span>}
+          {resolution && <span className="canvas-info-tag">{resolution}</span>}
+          {aspectRatio && <span className="canvas-info-tag">{aspectRatio}</span>}
+        </div>
+        
         {/* Zoom indicator */}
         <div className="canvas-zoom-indicator">
           <Search className="w-4 h-4" />
@@ -161,14 +156,14 @@ export function ImageCanvas({
           <div className="canvas-controls-sep" />
         )}
         
-        {/* Image actions - for selected or single image */}
+        {/* Image actions */}
         {images.length > 0 && (
           <>
             {onFavorite && (
               <button 
-                className={`canvas-control-btn ${starredUrls.has(images[selectedIndex ?? 0]) ? 'active' : ''}`}
-                onClick={() => onFavorite(images[selectedIndex ?? 0])}
-                title={starredUrls.has(images[selectedIndex ?? 0]) ? 'Remove from favorites' : 'Add to favorites'}
+                className={`canvas-control-btn ${starredUrls.has(images[0]) ? 'active' : ''}`}
+                onClick={() => onFavorite(images[0])}
+                title={starredUrls.has(images[0]) ? 'Remove from favorites' : 'Add to favorites'}
               >
                 <Star className="w-4 h-4" />
               </button>
@@ -176,7 +171,7 @@ export function ImageCanvas({
             {onRefine && (
               <button 
                 className="canvas-control-btn"
-                onClick={() => onRefine(images[selectedIndex ?? 0])}
+                onClick={() => onRefine(images[0])}
                 title="Refine this image"
               >
                 <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
@@ -185,7 +180,7 @@ export function ImageCanvas({
             {onDownload && (
               <button 
                 className="canvas-control-btn"
-                onClick={() => onDownload(images[selectedIndex ?? 0])}
+                onClick={() => onDownload(images[0])}
                 title="Download"
               >
                 <Download className="w-4 h-4" />
