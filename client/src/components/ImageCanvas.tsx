@@ -1,6 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Search, RotateCcw, Star, Download } from 'lucide-react'
+import { Search, RotateCcw, Star, Download, Flame, Hammer, Gem } from 'lucide-react'
+
+// Helper to get aspect ratio icon dimensions (same as Lightbox)
+const getAspectDimensions = (ratio: string | undefined) => {
+  switch (ratio) {
+    case '1:1': return { w: 10, h: 10 }
+    case '3:4': return { w: 9, h: 12 }
+    case '4:3': return { w: 12, h: 9 }
+    case '9:16': return { w: 7, h: 12 }
+    case '16:9': return { w: 12, h: 7 }
+    default: return { w: 10, h: 10 }
+  }
+}
 
 interface ImageCanvasProps {
   images: string[]
@@ -133,14 +145,54 @@ export function ImageCanvas({
         </div>
       </div>
 
-      {/* Controls bar - info and image actions */}
+      {/* Controls bar - specs and actions (same style as lightbox) */}
       <div className="image-canvas-controls">
-        {/* Generation info */}
-        <div className="canvas-info">
-          {mode && <span className="canvas-info-tag">{mode === 'edit' ? 'REFINE' : 'CREATE'}</span>}
-          {resolution && <span className="canvas-info-tag">{resolution}</span>}
-          {aspectRatio && <span className="canvas-info-tag">{aspectRatio}</span>}
+        {/* Specs - same as lightbox */}
+        <div className="lightbox-specs" style={{ margin: 0, padding: '6px 10px' }}>
+          {/* Mode */}
+          {mode && (
+            <>
+              <span className="lightbox-spec" title={mode === 'edit' ? 'Refined' : 'Created'}>
+                {mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+              </span>
+              <span className="lightbox-spec-sep">·</span>
+            </>
+          )}
+          {/* Model */}
+          <span className="lightbox-spec" title="Pro">
+            <Gem className="w-4 h-4" />
+            Pro
+          </span>
+          <span className="lightbox-spec-sep">·</span>
+          {/* Aspect Ratio */}
+          {aspectRatio && (
+            <>
+              <span className="lightbox-spec" title={`Ratio ${aspectRatio}`}>
+                <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
+                  <rect 
+                    x={(14 - getAspectDimensions(aspectRatio).w) / 2} 
+                    y={(14 - getAspectDimensions(aspectRatio).h) / 2} 
+                    width={getAspectDimensions(aspectRatio).w} 
+                    height={getAspectDimensions(aspectRatio).h} 
+                    fill="currentColor" 
+                    rx="1" 
+                  />
+                </svg>
+                {aspectRatio}
+              </span>
+              <span className="lightbox-spec-sep">·</span>
+            </>
+          )}
+          {/* Resolution */}
+          {resolution && (
+            <span className="lightbox-spec" title={`Resolution ${resolution}`}>
+              {resolution}
+            </span>
+          )}
         </div>
+        
+        {/* Separator */}
+        <div className="canvas-controls-sep" />
         
         {/* Zoom indicator */}
         <div className="canvas-zoom-indicator">
