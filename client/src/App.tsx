@@ -1489,15 +1489,16 @@ export default function App() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              <button 
-                className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
-                onClick={() => setAlloyModalOpen(true)}
-                disabled={isGenerating}
-                title="Add style references"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
             </div>
+            {/* + button always on far right of the row */}
+            <button 
+              className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
+              onClick={() => setAlloyModalOpen(true)}
+              disabled={isGenerating}
+              title="Add style references"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

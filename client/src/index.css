@@ -713,16 +713,17 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: 2px dashed var(--border);
-  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.6);
   transition: all 0.15s ease;
 }
 
 .gen-panel-new-forge:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(255, 87, 34, 0.05);
+  background: rgba(255, 87, 34, 0.1);
+  border-style: solid;
 }
 
 .gen-panel-more-wait {
@@ -5593,6 +5594,7 @@ textarea.textarea.floating-prompt-input.forging {
   transition: all 0.15s ease;
   flex-shrink: 0;
   padding: 4px; /* Space for outer decal ring */
+  margin-left: auto; /* Always stick to far right of row */
 }
 
 /* Outer decal ring - printed on metal look */
