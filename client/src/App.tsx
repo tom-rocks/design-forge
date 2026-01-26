@@ -1128,7 +1128,7 @@ export default function App() {
             <div className="floating-prompt-input-wrapper">
               <Textarea
                 ref={promptRef}
-                className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''}`}
+                className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''} ${isGenerating ? 'forging' : ''}`}
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 placeholder={introPlayed ? "Describe what you want to create..." : ""}
