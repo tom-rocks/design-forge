@@ -115,11 +115,11 @@ export default function App() {
   
   // Works sidebar state
   const [generationTrigger, setGenerationTrigger] = useState(0)
-  const [pendingGeneration, setPendingGeneration] = useState<{
+  const [pendingGenerations, setPendingGenerations] = useState<Array<{
     id: string
     prompt: string
     outputCount: number
-  } | null>(null)
+  }>>([])
   
   
   // Track image loading states
@@ -483,65 +483,97 @@ export default function App() {
   }, [])
 
   const handleGenerate = useCallback(async () => {
-    if (!canGenerate || isGenerating) return
+    if (!canGenerate) return
     
-    // Create new abort controller for this generation
-    abortControllerRef.current = new AbortController()
-    const signal = abortControllerRef.current.signal
+    // Create unique ID for this generation
+    const genId = `pending-${Date.now()}`
     
-    // Reset all states immediately
-    setIsGenerating(true)
-    setViewingPastWork(false) // Clear past work view when starting new generation
-    setError(null)
-    setAlloyModalOpen(false) // Close modal if open
-    setResult(null)
-    setLoadedImages(new Set())
-    setFailedImages(new Set())
+    // Create abort controller for this specific generation
+    const abortController = new AbortController()
+    const signal = abortController.signal
     
-    // Show pending placeholder in sidebar
-    setPendingGeneration({
-      id: `pending-${Date.now()}`,
-      prompt: prompt.trim(),
-      outputCount
-    })
-    setPipeFill(0)
-    setOutputHot(false)
+    // Store abort controller (use latest one as "current")
+    abortControllerRef.current = abortController
+    
+    // Capture current values for this generation
+    const genPrompt = prompt.trim()
+    const genReferences = [...references]
+    const genEditImage = editImage
+    const genResolution = resolution
+    const genAspectRatio = aspectRatio
+    const genOutputCount = outputCount
+    const genMode = genEditImage?.url ? 'edit' : 'create'
+    
+    // Add to pending generations
+    setPendingGenerations(prev => [...prev, {
+      id: genId,
+      prompt: genPrompt,
+      outputCount: genOutputCount
+    }])
+    
+    // Only update UI state if this is the first/only generation
+    if (!isGenerating) {
+      setIsGenerating(true)
+      setViewingPastWork(false)
+      setError(null)
+      setAlloyModalOpen(false)
+      setResult(null)
+      setLoadedImages(new Set())
+      setFailedImages(new Set())
+      setPipeFill(0)
+      setOutputHot(false)
+    }
+
+    // Helper to remove this generation from pending
+    const removePending = () => {
+      setPendingGenerations(prev => prev.filter(g => g.id !== genId))
+    }
 
     if (window.location.hostname === 'localhost') {
       await new Promise(resolve => setTimeout(resolve, 3000))
-      if (signal.aborted) return
+      if (signal.aborted) {
+        removePending()
+        return
+      }
       setResult({
         imageUrl: 'https://picsum.photos/512/512',
-        imageUrls: ['https://picsum.photos/512/512?r=1', 'https://picsum.photos/512/512?r=2'],
-        prompt: prompt.trim()
+        imageUrls: [`https://picsum.photos/512/512?r=${genId}-1`, `https://picsum.photos/512/512?r=${genId}-2`],
+        prompt: genPrompt
       })
-      setIsGenerating(false)
-      setViewingPastWork(false)
+      removePending()
+      // Only clear isGenerating if no more pending
+      setPendingGenerations(prev => {
+        if (prev.filter(g => g.id !== genId).length === 0) {
+          setIsGenerating(false)
+          setViewingPastWork(false)
+        }
+        return prev.filter(g => g.id !== genId)
+      })
       return
     }
 
     try {
-      // Debug: log what we're sending
       console.log('[Generate] Sending request:', { 
-        mode, 
-        numImages: outputCount, 
+        genId,
+        mode: genMode, 
+        numImages: genOutputCount, 
         model: 'pro', 
-        aspectRatio,
-        hasEditImage: !!editImage?.url 
+        aspectRatio: genAspectRatio,
+        hasEditImage: !!genEditImage?.url 
       })
       
       const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: genPrompt,
           model: 'pro',
-          resolution,
-          aspectRatio,
-          styleImages: references.map(r => ({ url: r.url, strength: 1 })),
-          mode,
-          numImages: outputCount,
-          ...(mode === 'edit' && editImage?.url ? { editImage: editImage.url } : {}),
+          resolution: genResolution,
+          aspectRatio: genAspectRatio,
+          styleImages: genReferences.map(r => ({ url: r.url, strength: 1 })),
+          mode: genMode,
+          numImages: genOutputCount,
+          ...(genMode === 'edit' && genEditImage?.url ? { editImage: genEditImage.url } : {}),
         }),
         signal,
       })
@@ -567,11 +599,18 @@ export default function App() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             if (currentEvent === 'complete') {
-              setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: prompt.trim() })
-              setIsGenerating(false)
-              setViewingPastWork(false) // Show the new generation
-              setPendingGeneration(null) // Clear pending placeholder
-              setGenerationTrigger(prev => prev + 1) // Refresh works sidebar
+              setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: genPrompt })
+              setViewingPastWork(false)
+              removePending()
+              setGenerationTrigger(prev => prev + 1)
+              // Check if more pending after removing this one
+              setPendingGenerations(prev => {
+                const remaining = prev.filter(g => g.id !== genId)
+                if (remaining.length === 0) {
+                  setIsGenerating(false)
+                }
+                return remaining
+              })
               return
             } else if (currentEvent === 'error') {
               throw new Error(data.error)
@@ -581,28 +620,35 @@ export default function App() {
         }
       }
     } catch (err) {
-      // Don't show error if it was cancelled
       if (err instanceof Error && err.name === 'AbortError') {
+        removePending()
         return
       }
       setError(err instanceof Error ? err.message : 'Error')
-      setPendingGeneration(null)
+      removePending()
     } finally {
-      setIsGenerating(false)
-      abortControllerRef.current = null
+      // Check if this was the last generation
+      setPendingGenerations(prev => {
+        if (prev.length <= 1) {
+          setIsGenerating(false)
+        }
+        return prev
+      })
     }
   }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount])
 
+  // Cancel all pending generations (currently unused, may add cancel button later)
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
       setIsGenerating(false)
-      setPendingGeneration(null)
+      setPendingGenerations([])
       setPipeFill(0)
       setOutputHot(false)
     }
   }, [])
+  void handleCancel // Suppress unused warning
 
   const addReference = (ref: Reference) => {
     setReferences(prev => {
@@ -865,7 +911,7 @@ export default function App() {
         }}
         onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
-        pendingGeneration={pendingGeneration}
+        pendingGenerations={pendingGenerations}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}
@@ -1271,14 +1317,14 @@ export default function App() {
               <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
             </div>
             
-            {/* Forge/Refine button */}
+            {/* Forge/Refine button - always allow queueing more generations */}
             <Button
-              variant={(canGenerate || isGenerating) && introPlayed ? 'accent' : 'dark'}
-              onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
-              disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
+              variant={canGenerate && introPlayed ? 'accent' : 'dark'}
+              onClick={!canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
+              disabled={!canGenerate && prompt.trim() !== ''}
               className="floating-forge-btn"
             >
-              {isGenerating ? 'Cancel' : editImage ? 'Refine' : 'Forge'}
+              {editImage ? 'Refine' : 'Forge'}{isGenerating ? ` +${pendingGenerations.length}` : ''}
             </Button>
           </div>
           
