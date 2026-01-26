@@ -898,7 +898,7 @@ export default function App() {
               </div>
               <p className="canvas-status">Forging...</p>
             </motion.div>
-          ) : validImages.length > 0 && loadedImages.size > 0 ? (
+          ) : validImages.length > 0 ? (
             /* OUTPUT IMAGES - Zoomable Canvas */
             <motion.div 
               key="output"
@@ -910,7 +910,7 @@ export default function App() {
               transition={{ duration: 0.3 }}
             >
               <ImageCanvas
-                images={validImages.filter(url => loadedImages.has(url))}
+                images={validImages}
                 onFavorite={toggleOutputFavorite}
                 onRefine={(url) => {
                   setEditImage({ url })
