@@ -317,53 +317,13 @@ export default function App() {
     img.src = imageUrl
   }, [])
   
-  // Track previous editImage to detect mode transitions
+  // Refs for mode transition debouncing (effect defined later, after functions)
   const wasInRefineRef = useRef(false)
-  const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
   const promptRef2 = useRef(prompt) // Track prompt without triggering effect
   promptRef2.current = prompt
-  
-  // Trigger glow effect and brief flame animation when switching modes
-  // Also reset error state when editImage changes
-  useEffect(() => {
-    if (editImage) {
-      setEditImageError(false) // Reset error when new image is selected
-      setRefineGlow(true)
-      
-      // Only play flame animation when switching from forge to refine, not refine to refine
-      if (!wasInRefineRef.current) {
-        setModeFlameActive(true)
-        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
-        wasInRefineRef.current = true
-        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
-        return () => {
-          clearTimeout(flameTimer)
-          clearTimeout(glowTimer)
-        }
-      } else {
-        // Already in refine mode, just reset glow timer
-        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
-        return () => clearTimeout(glowTimer)
-      }
-    } else {
-      setRefineGlow(false)
-      setEditImageError(false)
-      
-      // Switching from refine to forge - play flame animation and trigger intro
-      if (wasInRefineRef.current) {
-        setModeFlameActive(true)
-        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
-        // Trigger forge intro animation (use ref to avoid dependency)
-        if (!promptRef2.current.trim()) {
-          setShouldPlayForgeIntro(true)
-        }
-        wasInRefineRef.current = false
-        return () => clearTimeout(flameTimer)
-      }
-      
-      wasInRefineRef.current = false
-    }
-  }, [editImage]) // Only depend on editImage, not prompt
+  const modeSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flameOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastModeSwitchRef = useRef<number>(0)
   
   // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
@@ -481,27 +441,86 @@ export default function App() {
     playIntroAnimation("Describe what you want to create...")
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Play intro animation when switching to refine mode
+  // Unified mode switch handler with debouncing for rapid toggling
   useEffect(() => {
-    const currentMode = editImage ? 'edit' : 'create'
+    const isRefine = !!editImage
+    const wasRefine = wasInRefineRef.current
+    const now = Date.now()
+    const timeSinceLastSwitch = now - lastModeSwitchRef.current
     
-    // Check if we just switched TO refine mode
-    if (currentMode === 'edit' && lastModeRef.current === 'create') {
-      // Clear existing prompt and play the refine intro animation
-      setPrompt('')
-      playIntroAnimation("Describe what you want to change...", 800)
+    // Always update error state and track mode
+    if (editImage) {
+      setEditImageError(false)
+    }
+    lastModeRef.current = isRefine ? 'edit' : 'create'
+    
+    // Detect actual mode change
+    if (isRefine !== wasRefine) {
+      lastModeSwitchRef.current = now
+      
+      // Cancel any pending settle actions
+      if (modeSettleTimerRef.current) {
+        clearTimeout(modeSettleTimerRef.current)
+        modeSettleTimerRef.current = null
+      }
+      
+      // Cancel pending flame-off timer - keep flames on during rapid switching
+      if (flameOffTimerRef.current) {
+        clearTimeout(flameOffTimerRef.current)
+        flameOffTimerRef.current = null
+      }
+      
+      // Cancel any pending intro animation
+      cancelIntroAnimation()
+      
+      // Fire up the flames immediately
+      setModeFlameActive(true)
+      
+      // Set glow for refine mode
+      if (isRefine) {
+        setRefineGlow(true)
+      } else {
+        setRefineGlow(false)
+      }
+      
+      // Schedule flame cooldown and intro text after settling
+      // Longer delay = user is rapidly switching, wait for them to settle
+      const settleDelay = timeSinceLastSwitch < 400 ? 800 : 500
+      
+      modeSettleTimerRef.current = setTimeout(() => {
+        // Mode has settled - now play intro animation if appropriate
+        const currentIsRefine = !!editImage
+        
+        if (currentIsRefine && !promptRef2.current.trim()) {
+          // Settled in refine mode
+          setPrompt('')
+          playIntroAnimation("Describe what you want to change...", 200)
+        } else if (!currentIsRefine && !promptRef2.current.trim()) {
+          // Settled in forge mode
+          playIntroAnimation("Describe what you want to create...", 200)
+        }
+        
+        // Turn off glow after settling
+        if (currentIsRefine) {
+          setTimeout(() => setRefineGlow(false), 2000)
+        }
+      }, settleDelay)
+      
+      // Schedule flames to turn off (with longer duration during rapid switching)
+      const flameDuration = timeSinceLastSwitch < 400 ? 2000 : 1500
+      flameOffTimerRef.current = setTimeout(() => {
+        setModeFlameActive(false)
+      }, flameDuration)
+      
+      wasInRefineRef.current = isRefine
     }
     
-    lastModeRef.current = currentMode
-  }, [editImage, playIntroAnimation])
-  
-  // Play intro animation when switching from refine to forge
-  useEffect(() => {
-    if (shouldPlayForgeIntro) {
-      playIntroAnimation("Describe what you want to create...", 300)
-      setShouldPlayForgeIntro(false)
+    return () => {
+      // Cleanup timers on unmount
+      if (modeSettleTimerRef.current) clearTimeout(modeSettleTimerRef.current)
+      if (flameOffTimerRef.current) clearTimeout(flameOffTimerRef.current)
     }
-  }, [shouldPlayForgeIntro, playIntroAnimation])
+  }, [editImage, cancelIntroAnimation, playIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
