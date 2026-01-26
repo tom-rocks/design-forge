@@ -4701,19 +4701,31 @@ body {
 .prompt-alloy-label {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: var(--text-dim);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .prompt-alloy-label .btn-icon {
-  width: 14px;
-  height: 14px;
-  opacity: 0.6;
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.prompt-alloy-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.prompt-alloy-subtitle {
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0.7;
 }
 
 .prompt-alloy-thumbs {

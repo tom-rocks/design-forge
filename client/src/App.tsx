@@ -1088,7 +1088,8 @@ export default function App() {
           <div className="prompt-alloy-row">
             <div className="prompt-alloy-label">
               <span className="btn-icon icon-alloy" />
-              <span>Alloy</span>
+              <span className="prompt-alloy-title">Alloy</span>
+              <span className="prompt-alloy-subtitle">image references</span>
             </div>
             <div className="prompt-alloy-thumbs">
               <AnimatePresence mode="popLayout">
