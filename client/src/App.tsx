@@ -335,7 +335,7 @@ export default function App() {
     const introText = "Describe what you want to create..."
     let charIndex = 0
     
-    // Small delay before starting
+    // Delay before starting animation
     const startTimer = setTimeout(() => {
       setPromptHot(true)
       
@@ -354,10 +354,10 @@ export default function App() {
             }, 500)
           }, 300)
         }
-      }, 25)
+      }, 45)
       
       return () => clearInterval(typeInterval)
-    }, 400)
+    }, 500)
     
     return () => clearTimeout(startTimer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -1124,21 +1124,21 @@ export default function App() {
             {/* Logo on left */}
             <img src="/forge_logo.svg" alt="Design Forge" className="prompt-bar-logo" />
             
-            {/* Prompt input */}
+            {/* Prompt input with LED */}
             <div className="floating-prompt-input-wrapper">
               <Textarea
                 ref={promptRef}
                 className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''}`}
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="Describe what you want to create..."
+                placeholder={introPlayed ? "Describe what you want to create..." : ""}
                 rows={1}
                 disabled={isGenerating}
               />
+              <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
             </div>
             
-            {/* LED indicator + Forge/Refine button */}
-            <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
+            {/* Forge/Refine button */}
             <Button
               variant={canGenerate || isGenerating ? 'accent' : 'dark'}
               onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
@@ -1159,14 +1159,6 @@ export default function App() {
               )}
             </div>
             <div className="prompt-alloy-thumbs">
-              <button 
-                className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
-                onClick={() => setAlloyModalOpen(true)}
-                disabled={isGenerating}
-                title="Add style references"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
               <AnimatePresence mode="popLayout">
                 {references.map((ref) => (
                   <motion.div
@@ -1189,6 +1181,14 @@ export default function App() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+              <button 
+                className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
+                onClick={() => setAlloyModalOpen(true)}
+                disabled={isGenerating}
+                title="Add style references"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

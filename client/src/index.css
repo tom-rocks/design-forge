@@ -381,16 +381,18 @@ body {
   flex: 1;
   display: flex;
   align-items: center;
+  gap: 10px;
   background: var(--bg-input);
   border-radius: var(--radius-md);
   padding: 0 14px;
   align-self: stretch;
 }
 
-/* LED next to forge button */
+/* LED inside input wrapper, next to text */
 .prompt-led {
   flex-shrink: 0;
   align-self: center;
+  margin-right: 2px;
 }
 
 .floating-prompt-input {
@@ -4745,10 +4747,10 @@ body {
 
 .prompt-alloy-thumbs {
   display: flex;
-  flex-direction: row-reverse;
-  flex-wrap: wrap-reverse;
-  justify-content: flex-end;
-  align-content: flex-end;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
   gap: 6px;
   flex: 1;
   min-width: 0;
