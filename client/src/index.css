@@ -584,6 +584,7 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-thumb {
+  position: relative;
   width: 108px;
   height: 108px;
   border-radius: 5px;
