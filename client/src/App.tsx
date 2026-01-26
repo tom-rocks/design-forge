@@ -1075,6 +1075,10 @@ export default function App() {
           
           {/* Alloy row - shows selected references below prompt */}
           <div className="prompt-alloy-row">
+            <div className="prompt-alloy-label">
+              <span className="btn-icon icon-alloy" />
+              <span>Alloy</span>
+            </div>
             <div className="prompt-alloy-thumbs">
               <AnimatePresence mode="popLayout">
                 {references.map((ref) => (
