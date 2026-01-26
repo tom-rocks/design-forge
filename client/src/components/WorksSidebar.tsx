@@ -176,7 +176,7 @@ export function WorksSidebar({
                     title={`Forging: ${pendingGeneration.prompt?.slice(0, 50) || ''}...`}
                   >
                     <div className="gen-panel-thumb-forging">
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-8 h-8 animate-spin" />
                     </div>
                   </motion.div>
                 ))}

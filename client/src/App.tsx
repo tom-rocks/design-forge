@@ -86,6 +86,7 @@ export default function App() {
   void refineGlow // Suppress unused warning - effect still sets this
   void refineExpanded // Suppress unused warning - still set by callbacks
   const [isGenerating, setIsGenerating] = useState(false)
+  const [viewingPastWork, setViewingPastWork] = useState(false) // True when viewing past work during generation
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
@@ -480,6 +481,7 @@ export default function App() {
     
     // Reset all states immediately
     setIsGenerating(true)
+    setViewingPastWork(false) // Clear past work view when starting new generation
     setError(null)
     setAlloyModalOpen(false) // Close modal if open
     setResult(null)
@@ -504,6 +506,7 @@ export default function App() {
         prompt: prompt.trim()
       })
       setIsGenerating(false)
+      setViewingPastWork(false)
       return
     }
 
@@ -556,6 +559,7 @@ export default function App() {
             if (currentEvent === 'complete') {
               setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: prompt.trim() })
               setIsGenerating(false)
+              setViewingPastWork(false) // Show the new generation
               setPendingGeneration(null) // Clear pending placeholder
               setGenerationTrigger(prev => prev + 1) // Refresh works sidebar
               return
@@ -823,6 +827,7 @@ export default function App() {
             prompt: generation.prompt
           })
           setEditImage(null) // Clear refine mode
+          setViewingPastWork(true) // Allow viewing even during generation
           setPrompt(generation.prompt || '')
           
           // Set resolution and aspect ratio
@@ -865,8 +870,8 @@ export default function App() {
         onDrop={handleRefineDrop}
       >
         <AnimatePresence mode="wait">
-          {/* GENERATING STATE - only during actual generation, not when loading past works */}
-          {isGenerating ? (
+          {/* GENERATING STATE - only during actual generation, not when viewing past works */}
+          {isGenerating && !viewingPastWork ? (
             <motion.div 
               key="generating"
               className="canvas-generating"
