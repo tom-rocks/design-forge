@@ -1070,6 +1070,7 @@ export default function App() {
         onCancelPending={handleCancelPending}
         onSelectPending={handleSelectPending}
         selectedPendingId={selectedPendingId}
+        isNewForgeActive={!result && !editImage && !selectedPendingId && !viewingPastWork}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}

@@ -739,17 +739,40 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px dashed rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.6);
-  transition: all 0.15s ease;
+  background: linear-gradient(145deg, #3a3632 0%, #2d2a27 50%, #252320 100%);
+  border: 2px dashed rgba(255, 140, 80, 0.25);
+  color: rgba(255, 180, 140, 0.5);
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .gen-panel-new-forge:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(255, 87, 34, 0.1);
+  background: linear-gradient(145deg, #423e3a 0%, #363330 50%, #2a2825 100%);
   border-style: solid;
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    0 0 12px rgba(255, 87, 34, 0.15);
+}
+
+/* Active state - we're currently on a fresh forge */
+.gen-panel-new-forge.active {
+  border-color: var(--accent);
+  border-style: solid;
+  color: var(--accent);
+  background: linear-gradient(145deg, #4a3a32 0%, #3d2e28 50%, #302420 100%);
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    0 0 16px rgba(255, 87, 34, 0.2),
+    inset 0 0 20px rgba(255, 87, 34, 0.08);
+}
+
+.gen-panel-new-forge.active:hover {
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    0 0 20px rgba(255, 87, 34, 0.3),
+    inset 0 0 25px rgba(255, 87, 34, 0.12);
 }
 
 .gen-panel-more-wait {

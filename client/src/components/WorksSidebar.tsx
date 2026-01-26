@@ -45,6 +45,7 @@ interface WorksSidebarProps {
   selectedPendingId?: string | null // Currently selected pending generation
   onNewForge?: () => void // Start a new forge (clear canvas)
   onDeleteImage?: (generationId: string) => void // Delete a generation
+  isNewForgeActive?: boolean // True when canvas is fresh/empty (we're "in" new forge)
 }
 
 export function WorksSidebar({ 
@@ -57,7 +58,8 @@ export function WorksSidebar({
   onSelectPending,
   selectedPendingId,
   onNewForge,
-  onDeleteImage
+  onDeleteImage,
+  isNewForgeActive = false
 }: WorksSidebarProps) {
   const [hoveredPendingId, setHoveredPendingId] = useState<string | null>(null)
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
@@ -179,11 +181,11 @@ export function WorksSidebar({
                 {/* New Forge button - always at top */}
                 <motion.button
                   key="new-forge"
-                  className="gen-panel-thumb gen-panel-new-forge"
+                  className={`gen-panel-thumb gen-panel-new-forge ${isNewForgeActive ? 'active' : ''}`}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   onClick={onNewForge}
-                  title="Start new forge"
+                  title={isNewForgeActive ? "Ready to forge" : "Start new forge"}
                 >
                   <Plus className="w-6 h-6" />
                 </motion.button>
