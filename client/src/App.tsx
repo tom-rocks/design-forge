@@ -1028,6 +1028,23 @@ export default function App() {
           setReferences([])
           setViewingPastWork(false)
         }}
+        onDeleteImage={async (generationId) => {
+          if (!confirm('Delete this generation?')) return
+          try {
+            const res = await fetch(`${API_URL}/api/generations/${generationId}`, {
+              method: 'DELETE',
+              credentials: 'include',
+            })
+            if (res.ok) {
+              // Trigger refresh of sidebar
+              setGenerationTrigger(prev => prev + 1)
+              // Also remove from gallery if open
+              setGalleryImages(prev => prev.filter(g => g.generationId !== generationId))
+            }
+          } catch (err) {
+            console.error('Failed to delete:', err)
+          }
+        }}
         onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
         pendingGenerations={pendingGenerations}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight, ImageOff, X, Plus } from 'lucide-react'
+import { Loader2, ChevronRight, ImageOff, X, Plus, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -44,6 +44,7 @@ interface WorksSidebarProps {
   onSelectPending?: (pendingId: string) => void // Select pending to show when complete
   selectedPendingId?: string | null // Currently selected pending generation
   onNewForge?: () => void // Start a new forge (clear canvas)
+  onDeleteImage?: (generationId: string) => void // Delete a generation
 }
 
 export function WorksSidebar({ 
@@ -55,9 +56,11 @@ export function WorksSidebar({
   onCancelPending,
   onSelectPending,
   selectedPendingId,
-  onNewForge
+  onNewForge,
+  onDeleteImage
 }: WorksSidebarProps) {
   const [hoveredPendingId, setHoveredPendingId] = useState<string | null>(null)
+  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -237,6 +240,8 @@ export function WorksSidebar({
                       `${API_URL}${img.imageUrl}`,
                       img.generation
                     )}
+                    onMouseEnter={() => setHoveredImageId(img.id)}
+                    onMouseLeave={() => setHoveredImageId(null)}
                     title={img.generation.prompt || 'Click to view'}
                   >
                     {failedImages.has(img.id) ? (
@@ -253,6 +258,19 @@ export function WorksSidebar({
                         loading="lazy"
                         onError={() => handleImageError(img.id)}
                       />
+                    )}
+                    {/* Delete button on hover */}
+                    {hoveredImageId === img.id && onDeleteImage && (
+                      <button
+                        className="gen-panel-delete"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDeleteImage(img.generation.id)
+                        }}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
                   </motion.button>
                 ))}
