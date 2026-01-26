@@ -765,10 +765,6 @@ export default function App() {
       }, 100)
     }
   }, [result, isGenerating, loadedImages.size])
-  // Check if all images have been processed (loaded or failed)
-  const allProcessed = images.length > 0 && (loadedImages.size + failedImages.size) >= images.length
-  const isLoadingImages = images.length > 0 && !allProcessed && !isGenerating
-
   // Preload images when result changes
   useEffect(() => {
     if (!result || images.length === 0) return
@@ -869,8 +865,8 @@ export default function App() {
         onDrop={handleRefineDrop}
       >
         <AnimatePresence mode="wait">
-          {/* GENERATING STATE */}
-          {isGenerating || isLoadingImages ? (
+          {/* GENERATING STATE - only during actual generation, not when loading past works */}
+          {isGenerating ? (
             <motion.div 
               key="generating"
               className="canvas-generating"
