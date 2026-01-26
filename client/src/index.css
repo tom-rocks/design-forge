@@ -586,37 +586,26 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  margin: 10px;
-  padding: 10px 16px;
+  padding: 8px;
   border: none;
-  border-radius: 6px;
-  background-color: #5a5550;
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
+  border-top: 1px solid #d0ccc8;
+  background: transparent;
+  color: #6b6560;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.15s ease;
   flex-shrink: 0;
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .gen-panel-all:hover {
-  background-color: #3a3938;
-  transform: translateY(-1px);
-  box-shadow: 
-    0 4px 8px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #1a1918;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .gen-panel-all:active {
-  transform: translateY(0);
-  box-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.2),
-    inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Hide on smaller screens */
