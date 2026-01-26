@@ -317,23 +317,38 @@ export default function App() {
     img.src = imageUrl
   }, [])
   
-  // Trigger glow effect and brief flame animation when editImage is set
+  // Track previous editImage to detect forge->refine transitions
+  const wasInRefineRef = useRef(false)
+  
+  // Trigger glow effect and brief flame animation when switching FROM forge TO refine
   // Also reset error state when editImage changes
   useEffect(() => {
     if (editImage) {
       setEditImageError(false) // Reset error when new image is selected
       setRefineGlow(true)
-      setRefineFlameActive(true) // Brief flame animation
-      const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
-      const flameTimer = setTimeout(() => setRefineFlameActive(false), 1500) // Flames animate briefly then stop
-      return () => {
-        clearTimeout(glowTimer)
-        clearTimeout(flameTimer)
+      
+      // Only play flame animation when switching from forge to refine, not refine to refine
+      if (!wasInRefineRef.current) {
+        setRefineFlameActive(true)
+        const flameTimer = setTimeout(() => setRefineFlameActive(false), 1500)
+        // Store cleanup for flame timer
+        const cleanup = () => clearTimeout(flameTimer)
+        wasInRefineRef.current = true
+        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
+        return () => {
+          cleanup()
+          clearTimeout(glowTimer)
+        }
+      } else {
+        // Already in refine mode, just reset glow timer
+        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
+        return () => clearTimeout(glowTimer)
       }
     } else {
       setRefineGlow(false)
       setRefineFlameActive(false)
       setEditImageError(false)
+      wasInRefineRef.current = false
     }
   }, [editImage])
   
