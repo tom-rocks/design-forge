@@ -518,9 +518,21 @@ body {
   overflow-x: hidden;
   padding: 10px;
   min-height: 0;
-  /* Fade out images at bottom, but sidebar frame stays solid */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
+  position: relative;
+}
+
+/* Fade overlay at bottom of scroll area - only fades content, not sidebar frame */
+.works-sidebar-scroll::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+  display: block;
+  margin-top: -40px;
 }
 
 .works-sidebar-loading,
