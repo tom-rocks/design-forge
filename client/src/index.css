@@ -4730,7 +4730,10 @@ body {
 
 .prompt-alloy-thumbs {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row-reverse;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  align-content: flex-end;
   gap: 6px;
   flex: 1;
   min-width: 0;

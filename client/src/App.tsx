@@ -1124,9 +1124,19 @@ export default function App() {
             <div className="prompt-alloy-label">
               <span className="btn-icon icon-alloy" />
               <span className="prompt-alloy-title">Alloy</span>
-              <span className="prompt-alloy-subtitle">image references</span>
+              {references.length < 9 && (
+                <span className="prompt-alloy-subtitle">image references</span>
+              )}
             </div>
             <div className="prompt-alloy-thumbs">
+              <button 
+                className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
+                onClick={() => setAlloyModalOpen(true)}
+                disabled={isGenerating}
+                title="Add style references"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
               <AnimatePresence mode="popLayout">
                 {references.map((ref) => (
                   <motion.div
@@ -1150,14 +1160,6 @@ export default function App() {
                 ))}
               </AnimatePresence>
             </div>
-            <button 
-              className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
-              onClick={() => setAlloyModalOpen(true)}
-              disabled={isGenerating}
-              title="Add style references"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>
