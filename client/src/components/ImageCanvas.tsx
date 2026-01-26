@@ -112,6 +112,12 @@ export function ImageCanvas({
     setPosition({ x: 0, y: 0 })
   }, [])
 
+  // Double-click/tap to reset to real size and centered
+  const handleDoubleClick = useCallback(() => {
+    setScale(1)
+    setPosition({ x: 0, y: 0 })
+  }, [])
+
   // Grid layout based on image count
   const gridClass = images.length === 1 ? 'single' : 
                     images.length === 2 ? 'double' : 
@@ -127,6 +133,7 @@ export function ImageCanvas({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
         onMouseLeave={handleMouseLeave}
       >
         <div 
