@@ -8,7 +8,8 @@ const loadedUrls = new Set<string>()
 // Zoom/pan constants
 const MIN_ZOOM = 1
 const MAX_ZOOM = 5
-const ZOOM_STEP = 0.2
+const ZOOM_STEP = 0.15 // For mouse wheel
+const PINCH_SENSITIVITY = 0.01 // For trackpad pinch
 
 // Helper to get aspect ratio icon dimensions
 const getAspectDimensions = (ratio: string | undefined) => {
@@ -68,7 +69,7 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
     setPan({ x: 0, y: 0 })
   }, [data?.imageUrl])
   
-  // Handle scroll to zoom - use native event listener for reliable preventDefault
+  // Handle scroll/pinch to zoom - use native event listener for reliable preventDefault
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -76,24 +77,46 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-      setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)))
+      
+      // Trackpad pinch-to-zoom (ctrlKey is set during pinch gesture)
+      if (e.ctrlKey) {
+        const delta = -e.deltaY * PINCH_SENSITIVITY
+        setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)))
+        return
+      }
+      
+      // Check if zoomed in - use two-finger scroll for panning
+      setZoom(currentZoom => {
+        if (currentZoom > 1) {
+          // Pan with two-finger scroll when zoomed
+          setPan(prev => ({
+            x: prev.x - e.deltaX * 0.5,
+            y: prev.y - e.deltaY * 0.5
+          }))
+          return currentZoom
+        } else {
+          // Mouse wheel zoom when not zoomed (or at 1x)
+          const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
+          return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom + delta))
+        }
+      })
     }
     
     container.addEventListener('wheel', handleWheel, { passive: false })
     return () => container.removeEventListener('wheel', handleWheel)
   }, [data?.imageUrl])
   
-  // Handle middle mouse button pan
+  // Handle mouse pan - left click when zoomed, or middle click anytime
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Middle mouse button (button === 1)
-    if (e.button === 1) {
+    // Middle mouse button (button === 1) always pans
+    // Left click (button === 0) pans when zoomed
+    if (e.button === 1 || (e.button === 0 && zoom > 1)) {
       e.preventDefault()
       setIsPanning(true)
       panStart.current = { x: e.clientX, y: e.clientY }
       panOffset.current = { ...pan }
     }
-  }, [pan])
+  }, [pan, zoom])
   
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning) return
