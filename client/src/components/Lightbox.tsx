@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star, ZoomIn, RotateCw } from 'lucide-react'
+import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star, ZoomIn, RotateCw, Trash2 } from 'lucide-react'
 
 // Track which URLs have been loaded this session (survives component unmount)
 const loadedUrls = new Set<string>()
@@ -45,9 +45,10 @@ interface LightboxProps {
   onUseAlloy?: () => void
   onFavorite?: (url: string) => void
   isFavorited?: boolean
+  onDelete?: () => void
 }
 
-export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseAlloy, onFavorite, isFavorited }: LightboxProps) {
+export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseAlloy, onFavorite, isFavorited, onDelete }: LightboxProps) {
   const imgRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   
@@ -345,6 +346,15 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                     title="Download"
                   >
                     <Download className="w-5 h-5" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button 
+                    className="lightbox-btn lightbox-btn-delete"
+                    onClick={onDelete}
+                    title="Delete"
+                  >
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 )}
               </div>

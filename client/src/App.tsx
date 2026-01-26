@@ -950,7 +950,7 @@ export default function App() {
                     >
                       <div className="canvas-dropzone-inner">
                         <span className="canvas-dropzone-icon">
-                          <span className="btn-icon icon-drop" style={{ width: 48, height: 48 }} />
+                          <span className="btn-icon icon-drop" style={{ width: 56, height: 56 }} />
                         </span>
                         <p className="canvas-dropzone-text">Drop or paste an image to refine</p>
                         <p className="canvas-dropzone-hint">Or just type a prompt below to create</p>

@@ -2108,11 +2108,11 @@ body {
 /* Drop zone */
 .canvas-dropzone {
   width: 100%;
-  min-height: 250px; /* Match panel height for consistency */
+  min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed var(--surface-inset);
+  border: 2px dashed rgba(0, 0, 0, 0.15);
   border-radius: 12px;
   background: var(--surface);
   transition: all 0.2s ease;
@@ -2125,24 +2125,29 @@ body {
 
 .canvas-dropzone-inner {
   text-align: center;
-  padding: 32px;
+  padding: 40px;
 }
 
 .canvas-dropzone-icon {
   display: block;
-  margin-bottom: 16px;
-  opacity: 0.4;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.canvas-dropzone-icon .btn-icon {
+  width: 56px !important;
+  height: 56px !important;
 }
 
 .canvas-dropzone-text {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-dim);
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .canvas-dropzone-hint {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-light);
   margin: 0;
   text-transform: none;

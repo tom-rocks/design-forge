@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Pin, Search, Star } from 'lucide-react'
+import { Loader2, LogIn, Expand, Pin, Search, Star, Download, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { API_URL } from '../config'
 import { Lightbox } from './Lightbox'
@@ -401,6 +401,38 @@ export default function HistoryGrid({
     }
   }
   
+  // Delete a generation
+  const deleteGeneration = async (gen: Generation, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    
+    // Confirm deletion
+    if (!confirm(`Delete this generation?\n\n"${gen.prompt?.slice(0, 50)}..."`)) {
+      return
+    }
+    
+    try {
+      const res = await fetch(`${API_URL}/api/generations/${gen.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      
+      if (res.ok) {
+        // Remove from local state
+        setGenerations(prev => prev.filter(g => g.id !== gen.id))
+        // Update cache
+        setCachedGenerations(generations.filter(g => g.id !== gen.id))
+        // Close lightbox if this was the viewed image
+        if (lightbox?.generation.id === gen.id) {
+          setLightbox(null)
+        }
+      } else {
+        console.error('[History] Failed to delete generation')
+      }
+    } catch (err) {
+      console.error('[History] Error deleting generation:', err)
+    }
+  }
+  
   // Replay generation - restore all settings
   const replayGeneration = (gen: Generation) => {
     if (!onReplay) return
@@ -546,7 +578,7 @@ export default function HistoryGrid({
               >
                 <Star className="w-3 h-3" />
               </button>
-              {/* Expand button on hover */}
+              {/* Right side buttons - Expand, Refine, Download, Delete */}
               <button
                 className="history-item-expand"
                 onClick={(e) => {
@@ -556,6 +588,35 @@ export default function HistoryGrid({
                 title="View full size"
               >
                 <Expand className="w-4 h-4" />
+              </button>
+              {onRefine && (
+                <button
+                  className="history-item-refine"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRefine(`${API_URL}${img.imageUrl}`)
+                  }}
+                  title="Refine this image"
+                >
+                  <span className="btn-icon icon-refinement" style={{ width: 14, height: 14 }} />
+                </button>
+              )}
+              <button
+                className="history-item-download"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  downloadImageFromUrl(`${API_URL}${img.imageUrl}`, gen.prompt)
+                }}
+                title="Download"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
+              <button
+                className="history-item-delete"
+                onClick={(e) => deleteGeneration(gen, e)}
+                title="Delete"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </motion.div>
           )
@@ -598,6 +659,7 @@ export default function HistoryGrid({
           toggleImageStar(lightbox, { stopPropagation: () => {} } as React.MouseEvent)
         } : undefined}
         isFavorited={lightbox ? starredUrls.has(`${API_URL}${lightbox.imageUrl}`) : false}
+        onDelete={lightbox ? () => deleteGeneration(lightbox.generation) : undefined}
       />
     </>
   )
