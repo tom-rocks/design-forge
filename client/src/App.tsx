@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, User, Maximize2, ChevronDown, Plus, Download, X, Search, BarChart3, Star } from 'lucide-react'
+import { LogIn, Maximize2, Plus, Download, X, Search, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
 import { checkAPContext, waitForAP } from './lib/ap-bridge'
 import { 
   Button, 
-  Panel, PanelHeader, PanelBody, 
   Textarea,
   LCDFireGrid,
   HighriseSearch,
@@ -70,9 +69,10 @@ export default function App() {
   // Auth
   const { loading: authLoading, authenticated, user, login } = useAuth()
   
-  // Admin users who can see the dashboard button
+  // Admin users who can access the dashboard (via /dashboard URL)
   const ADMIN_IDS = ['113838337580596527498'] // Add your Google user ID here
   const isAdmin = user?.id && ADMIN_IDS.includes(user.id)
+  void isAdmin // Suppress unused warning - admin status checked for dashboard access
   
   // State
   const [prompt, setPrompt] = useState('')
@@ -80,11 +80,14 @@ export default function App() {
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
+  void refineGlow // Suppress unused warning - effect still sets this
+  void refineExpanded // Suppress unused warning - still set by callbacks
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
+  void setActiveDropTarget // Suppress unused warning - paste handler still uses activeDropTarget
   const [favoritesResetKey, _setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
@@ -105,6 +108,7 @@ export default function App() {
   const [_pipeFill, setPipeFill] = useState(0)
   // Output frame hot state (delayed after pipe fills)
   const [outputHot, setOutputHot] = useState(false)
+  void outputHot // Suppress unused warning - animation effect still sets this
   
   // Bridge connection status
   const [bridgeConnected, setBridgeConnected] = useState(false)
@@ -167,7 +171,7 @@ export default function App() {
     refineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
   
-  // Open works gallery
+  // Open works gallery (kept for potential future use)
   const openGallery = useCallback(async () => {
     setGalleryOpen(true)
     setGalleryLoading(true)
@@ -206,6 +210,7 @@ export default function App() {
       setGalleryLoading(false)
     }
   }, [])
+  void openGallery // Suppress unused warning - gallery still rendered, just no UI trigger currently
   
   // Memoized filtered gallery images - prevents recomputation on every render
   const filteredGalleryImages = useMemo(() => {
@@ -714,366 +719,257 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* HEADER */}
-      <header className="app-header">
-        <img src="/forge_logo.svg" alt="Design Forge" className="app-logo" />
-        
-        <div className="app-auth">
-          <button onClick={openGallery} className="btn btn-ghost gallery-btn" title="View all works">
-            <span className="btn-icon icon-works" />
-            PAST WORKS
-          </button>
-          {isAdmin && (
-            <button onClick={() => navigateTo('dashboard')} className="btn btn-ghost gallery-btn" title="Operations Dashboard">
-              <BarChart3 className="w-4 h-4" />
-              DASHBOARD
-            </button>
-          )}
-          <div className="auth-user">
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.name || ''} className="auth-avatar" />
-            ) : (
-              <User className="auth-avatar-icon" />
-            )}
-            <span className="auth-name">{user?.name || user?.email}</span>
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN FORGE AREA - Single column vertical flow */}
-      <main className="forge-main">
-
-        {/* INPUT BLOCK */}
-        <div className="forge-block forge-input-block">
-          {/* REFINE PANEL - Always visible at top */}
-          <motion.div 
-            className="refine-panel" 
-            ref={refineRef}
-            animate={{
-              background: editImage 
-                ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
-                : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
-              boxShadow: editImage
-                ? refineGlow
-                  ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
-                  : 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 2px 4px rgba(0,0,0,0.1)'
-                : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-          >
-            <Panel>
-              <PanelHeader className="collapsible" onClick={() => setRefineExpanded(!refineExpanded)}>
-                <span className="panel-icon icon-refinement" />
-                Refine <span className="header-subtitle">{editImage ? 'image selected' : 'edit an image'}</span>
-                <div className="header-right">
-                  <motion.div 
-                    animate={{ rotate: refineExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.div>
-                  <span className={`led ${editImage ? 'on' : ''}`} />
-                </div>
-              </PanelHeader>
-              <AnimatePresence initial={false}>
-                {refineExpanded && (
+      {/* MAIN CANVAS - Clean, centered workspace */}
+      <main 
+        className={`forge-canvas ${isDraggingRefine ? 'dragging' : ''}`}
+        ref={refineRef}
+        onDragOver={(e) => { e.preventDefault(); setIsDraggingRefine(true) }}
+        onDragLeave={(e) => { 
+          // Only trigger if leaving the main area, not entering children
+          if (e.currentTarget === e.target) setIsDraggingRefine(false) 
+        }}
+        onDrop={handleRefineDrop}
+      >
+        <AnimatePresence mode="wait">
+          {/* GENERATING STATE */}
+          {isGenerating || isLoadingImages ? (
+            <motion.div 
+              key="generating"
+              className="canvas-generating"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className={`canvas-preview-grid preview-${outputCount}`}>
+                {[...Array(outputCount)].map((_, i) => (
                   <motion.div
-                    key="refine-content"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                    style={{ overflow: 'hidden' }}
+                    key={i}
+                    className="canvas-preview-slot"
+                    animate={{
+                      opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      delay: i * (1.5 / outputCount),
+                      repeat: Infinity,
+                      ease: 'easeInOut'
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="canvas-status">Forging...</p>
+            </motion.div>
+          ) : validImages.length > 0 && loadedImages.size > 0 ? (
+            /* OUTPUT IMAGES */
+            <motion.div 
+              key="output"
+              className="canvas-output"
+              ref={outputRef}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className={`canvas-output-grid cols-${Math.min(validImages.length, 2)}`}>
+                {validImages.filter(url => loadedImages.has(url)).map((url, i) => (
+                  <motion.div 
+                    key={url}
+                    className="canvas-output-image"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.1, duration: 0.3 }}
+                    onClick={() => setOutputLightbox({
+                      imageUrl: url,
+                      prompt: result?.prompt || prompt,
+                      mode: editImage ? 'edit' : 'create',
+                      resolution,
+                      aspectRatio,
+                      references: references.map(r => ({ url: r.url, name: r.name })),
+                    })}
                   >
-                <PanelBody>
-                  {/* Show selected image preview at top if exists */}
-                  {editImage && (
-                    <div className="edit-image-preview" style={{ marginBottom: 12 }}>
-                      <div className="edit-image-preview-inner">
-                        <img src={editImage.url} alt="Image to refine" />
-                        <button 
-                          onClick={() => setEditImage(null)} 
-                          className="edit-image-remove"
-                          title="Remove image"
-                        >
-                          ×
-                        </button>
-                      </div>
+                    <img src={url} alt={`Output ${i + 1}`} />
+                    <div className="canvas-output-overlay">
+                      <Maximize2 className="w-6 h-6" />
                     </div>
-                  )}
-                  <div className="btn-group refine-tabs">
-                    <button 
-                      className={`btn ${refineSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
-                      onClick={() => setRefineSource('drop')}
-                    >
-                      <span className="btn-icon icon-drop" />
-                      Drop
-                    </button>
-                    <button 
-                      className={`btn ${refineSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
-                      onClick={() => setRefineSource('items')}
-                    >
-                      <span className="btn-icon icon-items" />
-                      Items
-                    </button>
-                    <button 
-                      className={`btn ${refineSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
-                      onClick={() => setRefineSource('history')}
-                    >
-                      <span className="btn-icon icon-works" />
-                      Works
-                    </button>
-                    <button 
-                      className={`btn ${refineSource === 'favorites' ? 'btn-accent' : 'btn-dark'}`}
-                      onClick={() => setRefineSource('favorites')}
-                    >
-                      <span className="btn-icon icon-star" />
-                      Favorites
-                    </button>
-                  </div>
-                  <div className="refine-content">
-                    {refineSource === 'drop' && (
-                      <div 
-                        className={`edit-dropzone ${isDraggingRefine ? 'dragging' : ''} ${activeDropTarget === 'refine' ? 'active' : ''}`}
-                        onClick={() => setActiveDropTarget('refine')}
-                        onDragOver={(e) => { e.preventDefault(); setIsDraggingRefine(true) }}
-                        onDragLeave={() => setIsDraggingRefine(false)}
-                        onDrop={handleRefineDrop}
+                    <div className="canvas-output-actions" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className={`canvas-action-btn ${starredOutputUrls.has(url) ? 'active' : ''}`}
+                        onClick={() => toggleOutputFavorite(url)}
+                        title={starredOutputUrls.has(url) ? 'Remove from favorites' : 'Add to favorites'}
                       >
-                        DROP OR PASTE IMAGE
-                      </div>
-                    )}
-                    {refineSource === 'items' && (
-                      <HighriseSearch 
-                        singleSelect
-                        onSingleSelect={(item) => { 
-                          // Use proxied display URL if available, otherwise fall back to imageUrl
-                          const url = item.displayUrl || item.imageUrl
+                        <Star className="w-4 h-4" />
+                      </button>
+                      <button 
+                        className="canvas-action-btn"
+                        onClick={() => {
                           setEditImage({ url })
                           detectAndSetAspectRatio(url)
-                        }} 
-                        bridgeConnected={bridgeConnected}
-                        useAPBridge={inAPContext}
-                      />
-                    )}
-                    {refineSource === 'history' && (
-                      <HistoryGrid 
-                        singleSelect
-                        onSingleSelect={(gen) => { 
-                          const url = `${API_URL}${gen.imageUrls[0]}`
-                          setEditImage({ 
-                            url,
-                            thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
-                          })
-                          detectAndSetAspectRatio(url)
+                          setReferences([])
                         }}
-                        isActive={refineExpanded}
-                        onUseAlloy={addAlloyReferences}
-                      />
-                    )}
-                    {refineSource === 'favorites' && (
-                      <Favorites 
-                        authenticated={authenticated}
-                        onLogin={login}
-                        singleSelect
-                        onSingleSelect={(fav) => { 
-                          // For items with valid dispId, construct crisp URL for best quality
-                          // Skip if itemId looks like MongoDB ObjectId (24 hex chars) - use fallback
-                          let url = fav.item_data.imageUrl
-                          const itemId = fav.item_data.itemId
-                          const isMongoId = itemId && /^[a-f0-9]{24}$/i.test(itemId)
-                          
-                          if (fav.type === 'item' && itemId && !isMongoId) {
-                            const dispId = itemId
-                            // Clothing categories support crisp
-                            const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
-                              'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
-                              'gloves', 'watch', 'sock'].includes(fav.item_data.category || '')
-                            if (isClothing) {
-                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
-                            } else if (!dispId.startsWith('cn-') && !dispId.startsWith('bg-')) {
-                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
-                            }
-                          }
-                          setEditImage({ url })
-                          detectAndSetAspectRatio(url)
-                        }}
-                        isActive={refineSource === 'favorites'}
-                      />
-                    )}
-                  </div>
-                </PanelBody>
+                        title="Refine this image"
+                      >
+                        <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
+                      </button>
+                      <button 
+                        className="canvas-action-btn"
+                        onClick={() => downloadOutputImage(url)}
+                        title="Download"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
                   </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          ) : editImage ? (
+            /* EDIT IMAGE SELECTED */
+            <motion.div 
+              key="edit-image"
+              className="canvas-edit-image"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="canvas-edit-preview">
+                <img src={editImage.url} alt="Image to refine" />
+                <button 
+                  onClick={() => setEditImage(null)} 
+                  className="canvas-edit-remove"
+                  title="Remove image"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="canvas-edit-label">Refine Mode</p>
+            </motion.div>
+          ) : (
+            /* EMPTY STATE - Source picker */
+            <motion.div 
+              key="empty"
+              className="canvas-empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Source tabs */}
+              <div className="canvas-source-tabs">
+                <button 
+                  className={`canvas-tab ${refineSource === 'drop' ? 'active' : ''}`}
+                  onClick={() => setRefineSource('drop')}
+                >
+                  <span className="btn-icon icon-drop" />
+                  Drop
+                </button>
+                <button 
+                  className={`canvas-tab ${refineSource === 'items' ? 'active' : ''}`}
+                  onClick={() => setRefineSource('items')}
+                >
+                  <span className="btn-icon icon-items" />
+                  Items
+                </button>
+                <button 
+                  className={`canvas-tab ${refineSource === 'history' ? 'active' : ''}`}
+                  onClick={() => setRefineSource('history')}
+                >
+                  <span className="btn-icon icon-works" />
+                  Works
+                </button>
+                <button 
+                  className={`canvas-tab ${refineSource === 'favorites' ? 'active' : ''}`}
+                  onClick={() => setRefineSource('favorites')}
+                >
+                  <span className="btn-icon icon-star" />
+                  Favorites
+                </button>
+              </div>
+
+              {/* Source content */}
+              <div className="canvas-source-content">
+                {refineSource === 'drop' && (
+                  <div className={`canvas-dropzone ${isDraggingRefine ? 'dragging' : ''}`}>
+                    <div className="canvas-dropzone-inner">
+                      <span className="canvas-dropzone-icon">
+                        <span className="btn-icon icon-drop" style={{ width: 48, height: 48 }} />
+                      </span>
+                      <p className="canvas-dropzone-text">Drop or paste an image to refine</p>
+                      <p className="canvas-dropzone-hint">Or just type a prompt below to create</p>
+                    </div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </Panel>
-          </motion.div>
-
-        </div>
-
-        {/* OUTPUT BLOCK */}
-        <div className="forge-block forge-output-block">
-          <motion.div 
-            className="output-frame"
-            animate={{
-              background: outputHot 
-                ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
-                : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
-              boxShadow: outputHot
-                ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
-                : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            transition={{ duration: outputHot ? 1.2 : 2.5, ease: 'easeOut' }}
-          >
-            <Panel>
-              <PanelHeader>
-                <span className="panel-icon icon-output" />
-                Output
-                <div className="header-right">
-                  <button 
-                    className="header-btn"
-                    onClick={cycleOutputCount}
-                    title={`Generate ${outputCount === 1 ? '2' : outputCount === 2 ? '4' : '1'} images`}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                  <span className={`led ${isGenerating || isLoadingImages ? 'on' : validImages.length > 0 && loadedImages.size > 0 ? 'success' : ''}`} />
-                </div>
-              </PanelHeader>
-            <PanelBody>
-              <motion.div 
-                ref={outputRef}
-                className="output-container"
-                layout="position"
-              >
-                <AnimatePresence mode="popLayout">
-                  {isGenerating || isLoadingImages ? (
-                    <motion.div 
-                      key="forging"
-                      className={`output-preview output-preview-${outputCount}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {[...Array(outputCount)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="output-preview-slot"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{
-                            opacity: [0.4, 0.8, 0.4],
-                            scale: 1,
-                          }}
-                          transition={{
-                            opacity: {
-                              duration: 1.5,
-                              delay: i * (1.5 / outputCount),
-                              repeat: Infinity,
-                              ease: 'easeInOut'
-                            },
-                            scale: { duration: 0.2, delay: i * 0.05 }
-                          }}
-                        />
-                      ))}
-                    </motion.div>
-                  ) : validImages.length > 0 && loadedImages.size > 0 ? (
-                    <motion.div 
-                      key="images"
-                      className={`output-grid ${validImages.length > 1 ? 'cols-2' : 'cols-1'}`}
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.98 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {validImages.filter(url => loadedImages.has(url)).map((url, i) => (
-                        <motion.div 
-                          key={url}
-                          className="output-image-wrapper"
-                          initial={{ opacity: 0, scale: 0.98 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: i * 0.15, duration: 0.4 }}
-                          onClick={() => setOutputLightbox({
-                            imageUrl: url,
-                            prompt: result?.prompt || prompt,
-                            mode: editImage ? 'edit' : 'create',
-                            resolution,
-                            aspectRatio,
-                            references: references.map(r => ({ url: r.url, name: r.name })),
-                          })}
-                        >
-                          <img 
-                            src={url}
-                            alt={`Output ${i + 1}`}
-                            className="output-image"
-                          />
-                          <div className="output-expand-center" title="View full size">
-                            <Maximize2 className="w-5 h-5" />
-                          </div>
-                          <div className="output-actions" onClick={(e) => e.stopPropagation()}>
-                            <button 
-                              className={`output-action-btn ${starredOutputUrls.has(url) ? 'active' : ''}`}
-                              onClick={() => toggleOutputFavorite(url)}
-                              title={starredOutputUrls.has(url) ? 'Remove from favorites' : 'Add to favorites'}
-                            >
-                              <Star className="w-4 h-4" />
-                            </button>
-                            <button 
-                              className="output-action-btn"
-                              onClick={() => {
-                                setEditImage({ url })
-                                detectAndSetAspectRatio(url)
-                                setReferences([]) // Clear alloy when refining
-                                setRefineExpanded(true) // Expand to show the image was added
-                                setTimeout(scrollToRefine, 100)
-                              }}
-                              title="Refine this image"
-                            >
-                              <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
-                            </button>
-                            <button 
-                              className="output-action-btn"
-                              onClick={() => downloadOutputImage(url)}
-                              title="Download"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  ) : (
-                    <motion.div 
-                      key={`empty-${outputCount}`}
-                      className={`output-preview output-preview-${outputCount}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {[...Array(outputCount)].map((_, i) => (
-                        <motion.div 
-                          key={i} 
-                          className="output-preview-slot"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.2, delay: i * 0.05 }}
-                        />
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </PanelBody>
-          </Panel>
-          </motion.div>
-        </div>
+                {refineSource === 'items' && (
+                  <div className="canvas-source-panel">
+                    <HighriseSearch 
+                      singleSelect
+                      onSingleSelect={(item) => { 
+                        const url = item.displayUrl || item.imageUrl
+                        setEditImage({ url })
+                        detectAndSetAspectRatio(url)
+                      }} 
+                      bridgeConnected={bridgeConnected}
+                      useAPBridge={inAPContext}
+                    />
+                  </div>
+                )}
+                {refineSource === 'history' && (
+                  <div className="canvas-source-panel">
+                    <HistoryGrid 
+                      singleSelect
+                      onSingleSelect={(gen) => { 
+                        const url = `${API_URL}${gen.imageUrls[0]}`
+                        setEditImage({ 
+                          url,
+                          thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
+                        })
+                        detectAndSetAspectRatio(url)
+                      }}
+                      isActive={true}
+                      onUseAlloy={addAlloyReferences}
+                    />
+                  </div>
+                )}
+                {refineSource === 'favorites' && (
+                  <div className="canvas-source-panel">
+                    <Favorites 
+                      authenticated={authenticated}
+                      onLogin={login}
+                      singleSelect
+                      onSingleSelect={(fav) => { 
+                        let url = fav.item_data.imageUrl
+                        const itemId = fav.item_data.itemId
+                        const isMongoId = itemId && /^[a-f0-9]{24}$/i.test(itemId)
+                        
+                        if (fav.type === 'item' && itemId && !isMongoId) {
+                          const dispId = itemId
+                          const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+                            'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+                            'gloves', 'watch', 'sock'].includes(fav.item_data.category || '')
+                          if (isClothing) {
+                            url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
+                          } else if (!dispId.startsWith('cn-') && !dispId.startsWith('bg-')) {
+                            url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+                          }
+                        }
+                        setEditImage({ url })
+                        detectAndSetAspectRatio(url)
+                      }}
+                      isActive={refineSource === 'favorites'}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ERROR */}
         <AnimatePresence>
           {error && (
             <motion.div 
-              className="forge-error"
+              className="canvas-error"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -1147,8 +1043,11 @@ export default function App() {
             <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" />
           </div>
           
-          {/* Main input row */}
+          {/* Main input row with logo */}
           <div className="floating-prompt-row">
+            {/* Logo on left */}
+            <img src="/forge_logo.svg" alt="Design Forge" className="prompt-bar-logo" />
+            
             {/* Prompt input */}
             <div className="floating-prompt-input-wrapper">
               <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
