@@ -410,13 +410,14 @@ body {
 
 /* Override .textarea color for floating prompt - must be more specific */
 .textarea.floating-prompt-input {
-  color: var(--text-dim);
-  transition: color 0.5s ease-out, text-shadow 0.5s ease-out;
+  color: var(--text-dim) !important;
+  transition: color 2s ease-out, text-shadow 2s ease-out !important;
 }
 
 .textarea.floating-prompt-input.prompt-hot {
-  color: var(--accent);
+  color: var(--accent) !important;
   text-shadow: 0 0 8px rgba(230, 74, 25, 0.4);
+  transition: color 0.05s ease-out, text-shadow 0.05s ease-out !important;
 }
 
 /* Forging effect - pulsing warm glow */
