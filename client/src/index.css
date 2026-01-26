@@ -1820,27 +1820,20 @@ textarea.textarea.floating-prompt-input.forging {
 
 .image-canvas-item {
   position: relative;
-  border-radius: 12px;
+  border-radius: 2px;
   overflow: hidden;
   cursor: pointer;
   background: var(--surface);
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .image-canvas-item:hover {
-  transform: scale(1.02);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.2),
-    0 0 0 2px var(--accent-muted);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .image-canvas-item.selected {
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.25),
-    0 0 0 3px var(--accent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .image-canvas-item img {
