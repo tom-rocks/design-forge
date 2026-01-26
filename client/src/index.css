@@ -1652,7 +1652,7 @@ textarea.textarea.floating-prompt-input.forging {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  padding-bottom: 200px; /* Space for floating prompt */
+  padding-bottom: 280px; /* Extra space to shift visual center up above prompt */
   min-height: 0;
   overflow-y: auto;
 }
@@ -1824,6 +1824,7 @@ textarea.textarea.floating-prompt-input.forging {
   min-width: 100%;
   min-height: 100%;
   padding: 40px;
+  padding-bottom: 120px; /* Shift content up to account for prompt overlay */
   transition: transform 0.05s linear;
 }
 
