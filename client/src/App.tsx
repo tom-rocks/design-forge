@@ -935,77 +935,107 @@ export default function App() {
 
               {/* Source content */}
               <div className="canvas-source-content">
-                {refineSource === 'drop' && (
-                  <div className={`canvas-dropzone ${isDraggingRefine ? 'dragging' : ''}`}>
-                    <div className="canvas-dropzone-inner">
-                      <span className="canvas-dropzone-icon">
-                        <span className="btn-icon icon-drop" style={{ width: 48, height: 48 }} />
-                      </span>
-                      <p className="canvas-dropzone-text">Drop or paste an image to refine</p>
-                      <p className="canvas-dropzone-hint">Or just type a prompt below to create</p>
-                    </div>
-                  </div>
-                )}
-                {refineSource === 'items' && (
-                  <div className="canvas-source-panel">
-                    <HighriseSearch 
-                      singleSelect
-                      onSingleSelect={(item) => { 
-                        const url = item.displayUrl || item.imageUrl
-                        setEditImage({ url })
-                        detectAndSetAspectRatio(url)
-                      }} 
-                      bridgeConnected={bridgeConnected}
-                      useAPBridge={inAPContext}
-                    />
-                  </div>
-                )}
-                {refineSource === 'history' && (
-                  <div className="canvas-source-panel">
-                    <HistoryGrid 
-                      singleSelect
-                      onSingleSelect={(gen) => { 
-                        const url = `${API_URL}${gen.imageUrls[0]}`
-                        setEditImage({ 
-                          url,
-                          thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
-                        })
-                        detectAndSetAspectRatio(url)
-                      }}
-                      isActive={true}
-                      onUseAlloy={addAlloyReferences}
-                    />
-                  </div>
-                )}
-                {refineSource === 'favorites' && (
-                  <div className="canvas-source-panel">
-                    <Favorites 
-                      authenticated={authenticated}
-                      onLogin={login}
-                      singleSelect
-                      onSingleSelect={(fav) => { 
-                        let url = fav.item_data.imageUrl
-                        const itemId = fav.item_data.itemId
-                        const isMongoId = itemId && /^[a-f0-9]{24}$/i.test(itemId)
-                        
-                        if (fav.type === 'item' && itemId && !isMongoId) {
-                          const dispId = itemId
-                          const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
-                            'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
-                            'gloves', 'watch', 'sock'].includes(fav.item_data.category || '')
-                          if (isClothing) {
-                            url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
-                          } else if (!dispId.startsWith('cn-') && !dispId.startsWith('bg-')) {
-                            url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+                <AnimatePresence mode="wait">
+                  {refineSource === 'drop' && (
+                    <motion.div
+                      key="drop"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className={`canvas-dropzone ${isDraggingRefine ? 'dragging' : ''}`}
+                    >
+                      <div className="canvas-dropzone-inner">
+                        <span className="canvas-dropzone-icon">
+                          <span className="btn-icon icon-drop" style={{ width: 48, height: 48 }} />
+                        </span>
+                        <p className="canvas-dropzone-text">Drop or paste an image to refine</p>
+                        <p className="canvas-dropzone-hint">Or just type a prompt below to create</p>
+                      </div>
+                    </motion.div>
+                  )}
+                  {refineSource === 'items' && (
+                    <motion.div
+                      key="items"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="canvas-source-panel"
+                    >
+                      <HighriseSearch 
+                        singleSelect
+                        onSingleSelect={(item) => { 
+                          const url = item.displayUrl || item.imageUrl
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                        }} 
+                        bridgeConnected={bridgeConnected}
+                        useAPBridge={inAPContext}
+                      />
+                    </motion.div>
+                  )}
+                  {refineSource === 'history' && (
+                    <motion.div
+                      key="history"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="canvas-source-panel"
+                    >
+                      <HistoryGrid 
+                        singleSelect
+                        onSingleSelect={(gen) => { 
+                          const url = `${API_URL}${gen.imageUrls[0]}`
+                          setEditImage({ 
+                            url,
+                            thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
+                          })
+                          detectAndSetAspectRatio(url)
+                        }}
+                        isActive={true}
+                        onUseAlloy={addAlloyReferences}
+                      />
+                    </motion.div>
+                  )}
+                  {refineSource === 'favorites' && (
+                    <motion.div
+                      key="favorites"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="canvas-source-panel"
+                    >
+                      <Favorites 
+                        authenticated={authenticated}
+                        onLogin={login}
+                        singleSelect
+                        onSingleSelect={(fav) => { 
+                          let url = fav.item_data.imageUrl
+                          const itemId = fav.item_data.itemId
+                          const isMongoId = itemId && /^[a-f0-9]{24}$/i.test(itemId)
+                          
+                          if (fav.type === 'item' && itemId && !isMongoId) {
+                            const dispId = itemId
+                            const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+                              'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+                              'gloves', 'watch', 'sock'].includes(fav.item_data.category || '')
+                            if (isClothing) {
+                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
+                            } else if (!dispId.startsWith('cn-') && !dispId.startsWith('bg-')) {
+                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+                            }
                           }
-                        }
-                        setEditImage({ url })
-                        detectAndSetAspectRatio(url)
-                      }}
-                      isActive={refineSource === 'favorites'}
-                    />
-                  </div>
-                )}
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                        }}
+                        isActive={refineSource === 'favorites'}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}
