@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search, ImageOff } from 'lucide-react'
+import { LogIn, Plus, X, Search, ImageOff, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -229,6 +229,31 @@ export default function App() {
   const handleGalleryImageLoad = useCallback((id: string) => {
     setGalleryLoadedImages(prev => new Set(prev).add(id))
   }, [])
+  
+  // Delete gallery image
+  const deleteGalleryImage = useCallback(async (img: GalleryImage, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    if (!confirm(`Delete this generation?\n\n"${img.prompt?.slice(0, 50)}..."`)) {
+      return
+    }
+    
+    try {
+      const res = await fetch(`${API_URL}/api/generations/${img.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      
+      if (res.ok) {
+        setGalleryImages(prev => prev.filter(g => g.id !== img.id))
+        if (galleryExpanded?.id === img.id) {
+          setGalleryExpanded(null)
+        }
+      }
+    } catch (err) {
+      console.error('[Gallery] Error deleting:', err)
+    }
+  }, [galleryExpanded])
   
   // Available aspect ratios and their decimal values
   const ASPECT_RATIOS = [
@@ -1363,6 +1388,13 @@ export default function App() {
                             className={galleryLoadedImages.has(img.id) ? 'loaded' : ''}
                             onLoad={() => handleGalleryImageLoad(img.id)}
                           />
+                          <button
+                            className="gallery-item-delete"
+                            onClick={(e) => deleteGalleryImage(img, e)}
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       ))}
                     </div>
