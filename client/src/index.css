@@ -4835,8 +4835,8 @@ body {
 .prompt-alloy-add::after {
   content: '';
   position: absolute;
-  inset: 4px;
-  border-radius: calc(var(--radius-sm) - 2px);
+  inset: 6px;
+  border-radius: calc(var(--radius-sm) - 3px);
   background: linear-gradient(180deg, 
     rgba(255, 255, 255, 0.4) 0%, 
     var(--surface-inset) 15%, 
@@ -4876,7 +4876,7 @@ body {
 }
 
 .prompt-alloy-add.has-refs::after {
-  inset: 3px;
+  inset: 5px;
 }
 
 /* When alloy row has items, make it part of the main row */
