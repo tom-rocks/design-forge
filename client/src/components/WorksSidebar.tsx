@@ -28,18 +28,26 @@ interface DisplayImage {
   imageIndex: number
 }
 
+interface PendingGeneration {
+  id: string
+  prompt: string
+  outputCount: number
+}
+
 interface WorksSidebarProps {
   authenticated: boolean
   onSelectImage?: (imageUrl: string, generation: Generation) => void
   onOpenWorksModal?: () => void
   newGenerationTrigger?: number // Increment to trigger refresh
+  pendingGeneration?: PendingGeneration | null // Shows at top while forging
 }
 
 export function WorksSidebar({ 
   authenticated, 
   onSelectImage,
   onOpenWorksModal,
-  newGenerationTrigger 
+  newGenerationTrigger,
+  pendingGeneration
 }: WorksSidebarProps) {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -145,17 +153,35 @@ export function WorksSidebar({
           ref={scrollRef}
           onScroll={handleScroll}
         >
-          {loading ? (
+          {loading && !pendingGeneration ? (
             <div className="gen-panel-wait">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
-          ) : displayImages.length === 0 ? (
+          ) : displayImages.length === 0 && !pendingGeneration ? (
             <div className="gen-panel-none">
               No works yet
             </div>
           ) : (
             <div className="gen-panel-items">
               <AnimatePresence mode="popLayout">
+                {/* Pending generation placeholders - show while forging */}
+                {pendingGeneration && [...Array(pendingGeneration.outputCount)].map((_, i) => (
+                  <motion.div
+                    key={`pending-${pendingGeneration.id}-${i}`}
+                    className="gen-panel-thumb forging"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.15 }}
+                    title={`Forging: ${pendingGeneration.prompt?.slice(0, 50) || ''}...`}
+                  >
+                    <div className="gen-panel-thumb-forging">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  </motion.div>
+                ))}
+                
+                {/* Existing generations */}
                 {displayImages.map((img) => (
                   <motion.button
                     key={img.id}
@@ -168,7 +194,7 @@ export function WorksSidebar({
                       `${API_URL}${img.imageUrl}`,
                       img.generation
                     )}
-                    title={img.generation.prompt || 'Click to refine'}
+                    title={img.generation.prompt || 'Click to view'}
                   >
                     {failedImages.has(img.id) ? (
                       <div className="gen-panel-thumb-err">

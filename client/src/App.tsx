@@ -104,6 +104,11 @@ export default function App() {
   
   // Works sidebar state
   const [generationTrigger, setGenerationTrigger] = useState(0)
+  const [pendingGeneration, setPendingGeneration] = useState<{
+    id: string
+    prompt: string
+    outputCount: number
+  } | null>(null)
   
   
   // Track image loading states
@@ -480,6 +485,13 @@ export default function App() {
     setResult(null)
     setLoadedImages(new Set())
     setFailedImages(new Set())
+    
+    // Show pending placeholder in sidebar
+    setPendingGeneration({
+      id: `pending-${Date.now()}`,
+      prompt: prompt.trim(),
+      outputCount
+    })
     setPipeFill(0)
     setOutputHot(false)
 
@@ -544,6 +556,7 @@ export default function App() {
             if (currentEvent === 'complete') {
               setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: prompt.trim() })
               setIsGenerating(false)
+              setPendingGeneration(null) // Clear pending placeholder
               setGenerationTrigger(prev => prev + 1) // Refresh works sidebar
               return
             } else if (currentEvent === 'error') {
@@ -559,6 +572,7 @@ export default function App() {
         return
       }
       setError(err instanceof Error ? err.message : 'Error')
+      setPendingGeneration(null)
     } finally {
       setIsGenerating(false)
       abortControllerRef.current = null
@@ -570,6 +584,7 @@ export default function App() {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
       setIsGenerating(false)
+      setPendingGeneration(null)
       setPipeFill(0)
       setOutputHot(false)
     }
@@ -839,6 +854,7 @@ export default function App() {
         }}
         onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
+        pendingGeneration={pendingGeneration}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}
