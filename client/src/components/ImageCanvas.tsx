@@ -3,9 +3,10 @@ import { motion } from 'framer-motion'
 
 interface ImageCanvasProps {
   images: string[]
+  onZoomChange?: (zoomPercent: number) => void
 }
 
-export function ImageCanvas({ images }: ImageCanvasProps) {
+export function ImageCanvas({ images, onZoomChange }: ImageCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   
@@ -21,7 +22,13 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
   useEffect(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
-  }, [images.length])
+    onZoomChange?.(100)
+  }, [images.length, onZoomChange])
+  
+  // Report zoom changes
+  useEffect(() => {
+    onZoomChange?.(Math.round(scale * 100))
+  }, [scale, onZoomChange])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault()

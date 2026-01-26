@@ -49,6 +49,10 @@ interface GenerationResult {
   imageUrl: string
   imageUrls?: string[]
   prompt: string
+  // Settings used for this generation (for display in floating bar)
+  mode?: 'create' | 'edit'
+  aspectRatio?: string
+  resolution?: string
 }
 
 /* ============================================
@@ -593,7 +597,10 @@ export default function App() {
       setResult({
         imageUrl: 'https://picsum.photos/512/512',
         imageUrls: [`https://picsum.photos/512/512?r=${genId}-1`, `https://picsum.photos/512/512?r=${genId}-2`],
-        prompt: genPrompt
+        prompt: genPrompt,
+        mode: genMode,
+        aspectRatio: genAspectRatio,
+        resolution: genResolution
       })
       removePending()
       // Only clear isGenerating if no more pending
@@ -654,7 +661,14 @@ export default function App() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             if (currentEvent === 'complete') {
-              setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: genPrompt })
+              setResult({ 
+                imageUrl: data.imageUrl, 
+                imageUrls: data.imageUrls, 
+                prompt: genPrompt,
+                mode: genMode,
+                aspectRatio: genAspectRatio,
+                resolution: genResolution
+              })
               setViewingPastWork(false)
               removePending()
               setGenerationTrigger(prev => prev + 1)
@@ -896,6 +910,9 @@ export default function App() {
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
   
+  // Track zoom level from ImageCanvas
+  const [canvasZoom, setCanvasZoom] = useState(100)
+  
   // Scroll to output when first image loads
   useEffect(() => {
     if (result && !isGenerating && loadedImages.size > 0) {
@@ -959,11 +976,15 @@ export default function App() {
           setResult({
             imageUrl: imageUrl,
             imageUrls: generation.imageUrls.map(url => `${API_URL}${url}`),
-            prompt: generation.prompt
+            prompt: generation.prompt,
+            mode: generation.mode || 'create',
+            aspectRatio: generation.aspect_ratio || '1:1',
+            resolution: generation.resolution || '1024'
           })
           setEditImage(null) // Clear refine mode
           setViewingPastWork(true) // Allow viewing even during generation
           setPrompt(generation.prompt || '')
+          setCanvasZoom(100) // Reset zoom when loading new image
           
           // Set resolution and aspect ratio
           if (generation.resolution) setResolution(generation.resolution)
@@ -1048,7 +1069,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.3 }}
             >
-              <ImageCanvas images={validImages} />
+              <ImageCanvas images={validImages} onZoomChange={setCanvasZoom} />
             </motion.div>
           ) : editImage ? (
             /* EDIT IMAGE SELECTED */
@@ -1251,13 +1272,13 @@ export default function App() {
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
         {/* CANVAS CONTROLS BAR - Above prompt, visible when images exist */}
-        {validImages.length > 0 && (
+        {validImages.length > 0 && result && (
           <div className="image-canvas-controls">
-            {/* Specs - same as lightbox */}
+            {/* Specs - shows what was used for this generation, not current UI state */}
             <div className="lightbox-specs" style={{ margin: 0, padding: '6px 10px' }}>
               {/* Mode */}
-              <span className="lightbox-spec" title={editImage ? 'Refined' : 'Created'}>
-                {editImage ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+              <span className="lightbox-spec" title={result.mode === 'edit' ? 'Refined' : 'Created'}>
+                {result.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
               </span>
               <span className="lightbox-spec-sep">·</span>
               {/* Model */}
@@ -1267,23 +1288,28 @@ export default function App() {
               </span>
               <span className="lightbox-spec-sep">·</span>
               {/* Aspect Ratio */}
-              <span className="lightbox-spec" title={`Ratio ${aspectRatio}`}>
+              <span className="lightbox-spec" title={`Ratio ${result.aspectRatio || '1:1'}`}>
                 <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
                   <rect 
-                    x={(14 - getAspectDimensions(aspectRatio).w) / 2} 
-                    y={(14 - getAspectDimensions(aspectRatio).h) / 2} 
-                    width={getAspectDimensions(aspectRatio).w} 
-                    height={getAspectDimensions(aspectRatio).h} 
+                    x={(14 - getAspectDimensions(result.aspectRatio || '1:1').w) / 2} 
+                    y={(14 - getAspectDimensions(result.aspectRatio || '1:1').h) / 2} 
+                    width={getAspectDimensions(result.aspectRatio || '1:1').w} 
+                    height={getAspectDimensions(result.aspectRatio || '1:1').h} 
                     fill="currentColor" 
                     rx="1" 
                   />
                 </svg>
-                {aspectRatio}
+                {result.aspectRatio || '1:1'}
               </span>
               <span className="lightbox-spec-sep">·</span>
               {/* Resolution */}
-              <span className="lightbox-spec" title={`Resolution ${resolution}`}>
-                {resolution}
+              <span className="lightbox-spec" title={`Resolution ${result.resolution || '1024'}`}>
+                {result.resolution || '1K'}
+              </span>
+              <span className="lightbox-spec-sep">·</span>
+              {/* Zoom */}
+              <span className="lightbox-spec" title={`Zoom ${canvasZoom}%`}>
+                {canvasZoom}%
               </span>
             </div>
             
