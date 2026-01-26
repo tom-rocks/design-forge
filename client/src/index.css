@@ -30,6 +30,8 @@
   --accent-hover: #ff7539;
   --accent-active: #e64a19;
   --accent-glow: rgba(255, 87, 34, 0.6);
+  --accent-text: #ff5722; /* Same as accent for forge mode - good contrast */
+  --accent-text-glow: rgba(255, 87, 34, 0.6);
   --shimmer-light: rgba(255, 87, 34, 0.12);
   --shimmer-medium: rgba(255, 109, 0, 0.2);
   
@@ -39,6 +41,8 @@
   --accent-refine-hover: #ffbf40;
   --accent-refine-active: #e09500;
   --accent-refine-glow: rgba(245, 166, 35, 0.6);
+  --accent-refine-text: #c47f00; /* Darker amber for better contrast on light bg */
+  --accent-refine-text-glow: rgba(196, 127, 0, 0.5);
   --shimmer-refine-light: rgba(245, 166, 35, 0.12);
   --shimmer-refine-medium: rgba(255, 191, 64, 0.2);
   
@@ -71,6 +75,8 @@
   --accent-hover: var(--accent-refine-hover);
   --accent-active: var(--accent-refine-active);
   --accent-glow: var(--accent-refine-glow);
+  --accent-text: var(--accent-refine-text);
+  --accent-text-glow: var(--accent-refine-text-glow);
   --led-orange: var(--led-yellow);
   --shimmer-light: var(--shimmer-refine-light);
   --shimmer-medium: var(--shimmer-refine-medium);
@@ -443,8 +449,8 @@ textarea.textarea.floating-prompt-input::placeholder {
 }
 
 textarea.textarea.floating-prompt-input.prompt-hot {
-  color: var(--accent);
-  text-shadow: 0 0 8px var(--accent-glow);
+  color: var(--accent-text);
+  text-shadow: 0 0 8px var(--accent-text-glow);
   transition: color 0.05s ease-out, text-shadow 0.05s ease-out;
 }
 
@@ -1308,8 +1314,8 @@ textarea.textarea.floating-prompt-input.forging {
 
 /* Hot prompt effect during replay */
 .textarea.prompt-hot {
-  color: var(--accent);
-  text-shadow: 0 0 8px var(--accent-glow);
+  color: var(--accent-text);
+  text-shadow: 0 0 8px var(--accent-text-glow);
   transition: color 0.8s ease-out, text-shadow 0.8s ease-out;
 }
 
