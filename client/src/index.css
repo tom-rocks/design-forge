@@ -410,8 +410,13 @@ body {
 
 /* Override .textarea color for floating prompt - must be more specific */
 .textarea.floating-prompt-input {
-  color: var(--text-dim) !important;
+  color: var(--text-light) !important;
   transition: color 2s ease-out, text-shadow 2s ease-out !important;
+}
+
+.textarea.floating-prompt-input::placeholder {
+  color: var(--text-light);
+  transition: none;
 }
 
 .textarea.floating-prompt-input.prompt-hot {

@@ -354,13 +354,14 @@ export default function App() {
           charIndex++
         } else {
           clearInterval(typeInterval)
-          // Cool down and clear after a moment
+          // Cool down and clear after transition completes
           setTimeout(() => {
             setPromptHot(false)
+            // Wait for full 2s color/glow transition to complete
             setTimeout(() => {
               setPrompt('')
               setIntroPlayed(true)
-            }, 500)
+            }, 2100)
           }, 300)
         }
       }, 45)
