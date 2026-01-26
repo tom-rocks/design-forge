@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search, ImageOff, Trash2, Star, Download, Flame, Hammer, Gem } from 'lucide-react'
+import { LogIn, Plus, X, Search, ImageOff, Trash2, Star, Download, Flame, Hammer, Gem, RotateCcw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -49,10 +49,12 @@ interface GenerationResult {
   imageUrl: string
   imageUrls?: string[]
   prompt: string
-  // Settings used for this generation (for display in floating bar)
+  // Settings used for this generation (for display in floating bar and replay)
   mode?: 'create' | 'edit'
   aspectRatio?: string
   resolution?: string
+  model?: string
+  styleImages?: { url: string; name?: string }[]
 }
 
 /* ============================================
@@ -740,9 +742,13 @@ export default function App() {
     }
   }, [selectedPendingId])
   
-  // Select a pending generation (shows in canvas when complete)
+  // Select a pending generation - navigate to it (shows generating view)
   const handleSelectPending = useCallback((pendingId: string) => {
     setSelectedPendingId(pendingId)
+    // Clear current result to show the generating view for this pending item
+    setResult(null)
+    setViewingPastWork(false)
+    setEditImage(null)
   }, [])
 
   const addReference = (ref: Reference) => {
@@ -974,42 +980,39 @@ export default function App() {
       <WorksSidebar
         authenticated={authenticated}
         onSelectImage={(imageUrl, generation) => {
-          // Show in canvas as if just generated
+          // Show in canvas and auto-switch to refine mode
           setResult({
             imageUrl: imageUrl,
             imageUrls: generation.imageUrls.map(url => `${API_URL}${url}`),
             prompt: generation.prompt,
             mode: generation.mode || 'create',
             aspectRatio: generation.aspect_ratio || '1:1',
-            resolution: generation.resolution || '1024'
+            resolution: generation.resolution || '1024',
+            model: generation.model,
+            styleImages: generation.settings?.styleImages
           })
-          setEditImage(null) // Clear refine mode
-          setViewingPastWork(true) // Allow viewing even during generation
-          setPrompt(generation.prompt || '')
-          setCanvasZoom(100) // Reset zoom when loading new image
           
-          // Set resolution and aspect ratio
-          if (generation.resolution) setResolution(generation.resolution)
-          if (generation.aspect_ratio) setAspectRatio(generation.aspect_ratio)
+          // Auto-switch to refine mode with this image
+          setEditImage({ url: imageUrl })
+          detectAndSetAspectRatio(imageUrl)
+          setViewingPastWork(true)
           
-          // Load alloy references from settings
-          if (generation.settings?.styleImages?.length) {
-            const refs = generation.settings.styleImages.map((img, i) => ({
-              id: `sidebar-ref-${generation.id}-${i}-${Date.now()}`,
-              url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/') 
-                ? img.url 
-                : `${API_URL}${img.url}`,
-              name: img.name || `Ref ${i + 1}`,
-              type: 'generation' as const,
-            }))
-            setReferences(refs)
-          } else {
-            setReferences([])
-          }
+          // Clear prompt and references - user will describe what to change
+          setPrompt('')
+          setReferences([])
+          setCanvasZoom(100)
           
           // Reset image loading state
           setLoadedImages(new Set())
           setFailedImages(new Set())
+        }}
+        onNewForge={() => {
+          // Start fresh - clear everything for a new creation
+          setEditImage(null)
+          setResult(null)
+          setPrompt('')
+          setReferences([])
+          setViewingPastWork(false)
         }}
         onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
@@ -1329,13 +1332,20 @@ export default function App() {
             <button 
               className="canvas-control-btn"
               onClick={() => {
-                setEditImage({ url: validImages[0] })
-                detectAndSetAspectRatio(validImages[0])
-                setReferences([])
+                if (result) {
+                  handleReplay({
+                    prompt: result.prompt,
+                    mode: result.mode || 'create',
+                    model: result.model,
+                    resolution: result.resolution,
+                    aspectRatio: result.aspectRatio,
+                    references: result.styleImages,
+                  })
+                }
               }}
-              title="Refine this image"
+              title="Replay with same settings"
             >
-              <span className="btn-icon icon-refinement" style={{ width: 16, height: 16 }} />
+              <RotateCcw className="w-4 h-4" />
             </button>
             <button 
               className="canvas-control-btn"
@@ -1421,6 +1431,7 @@ export default function App() {
                 value={prompt}
                 onChange={e => {
                   if (introAnimating) cancelIntroAnimation()
+                  if (promptHot) setPromptHot(false) // Stop glow when user types
                   setPrompt(e.target.value)
                 }}
                 onFocus={() => {

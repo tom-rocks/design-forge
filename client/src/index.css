@@ -708,6 +708,23 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* New Forge button */
+.gen-panel-new-forge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px dashed var(--border);
+  color: var(--text-dim);
+  transition: all 0.15s ease;
+}
+
+.gen-panel-new-forge:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 87, 34, 0.05);
+}
+
 .gen-panel-more-wait {
   display: flex;
   align-items: center;

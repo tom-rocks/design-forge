@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight, ImageOff, X } from 'lucide-react'
+import { Loader2, ChevronRight, ImageOff, X, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -43,6 +43,7 @@ interface WorksSidebarProps {
   onCancelPending?: (pendingId: string) => void // Cancel a specific pending generation
   onSelectPending?: (pendingId: string) => void // Select pending to show when complete
   selectedPendingId?: string | null // Currently selected pending generation
+  onNewForge?: () => void // Start a new forge (clear canvas)
 }
 
 export function WorksSidebar({ 
@@ -53,7 +54,8 @@ export function WorksSidebar({
   pendingGenerations = [],
   onCancelPending,
   onSelectPending,
-  selectedPendingId
+  selectedPendingId,
+  onNewForge
 }: WorksSidebarProps) {
   const [hoveredPendingId, setHoveredPendingId] = useState<string | null>(null)
   const [generations, setGenerations] = useState<Generation[]>([])
@@ -171,6 +173,18 @@ export function WorksSidebar({
           ) : (
             <div className="gen-panel-items">
               <AnimatePresence mode="popLayout">
+                {/* New Forge button - always at top */}
+                <motion.button
+                  key="new-forge"
+                  className="gen-panel-thumb gen-panel-new-forge"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={onNewForge}
+                  title="Start new forge"
+                >
+                  <Plus className="w-6 h-6" />
+                </motion.button>
+                
                 {/* Pending generation placeholders - show all while forging */}
                 {pendingGenerations.flatMap(pending => 
                   [...Array(pending.outputCount)].map((_, i) => {
