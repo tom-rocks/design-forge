@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search, ImageOff, Trash2, Star, Download, RotateCcw, Flame, Hammer, Gem } from 'lucide-react'
+import { LogIn, Plus, X, Search, ImageOff, Trash2, Star, Download, Flame, Hammer, Gem } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
