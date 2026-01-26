@@ -320,6 +320,8 @@ export default function App() {
   // Track previous editImage to detect mode transitions
   const wasInRefineRef = useRef(false)
   const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
+  const promptRef2 = useRef(prompt) // Track prompt without triggering effect
+  promptRef2.current = prompt
   
   // Trigger glow effect and brief flame animation when switching modes
   // Also reset error state when editImage changes
@@ -351,8 +353,8 @@ export default function App() {
       if (wasInRefineRef.current) {
         setModeFlameActive(true)
         const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
-        // Trigger forge intro animation
-        if (!prompt.trim()) {
+        // Trigger forge intro animation (use ref to avoid dependency)
+        if (!promptRef2.current.trim()) {
           setShouldPlayForgeIntro(true)
         }
         wasInRefineRef.current = false
@@ -361,7 +363,7 @@ export default function App() {
       
       wasInRefineRef.current = false
     }
-  }, [editImage, prompt])
+  }, [editImage]) // Only depend on editImage, not prompt
   
   // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
