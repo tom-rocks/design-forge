@@ -1875,7 +1875,7 @@ textarea.textarea.floating-prompt-input.forging {
 /* Canvas controls */
 .image-canvas-controls {
   position: fixed;
-  top: 20px;
+  bottom: 200px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 102;
