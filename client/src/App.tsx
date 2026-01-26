@@ -1061,7 +1061,6 @@ export default function App() {
             
             {/* Prompt input */}
             <div className="floating-prompt-input-wrapper">
-              <span className={`led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
               <Textarea
                 ref={promptRef}
                 className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''}`}
@@ -1073,7 +1072,8 @@ export default function App() {
               />
             </div>
             
-            {/* Forge/Refine button */}
+            {/* LED indicator + Forge/Refine button */}
+            <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
             <Button
               variant={canGenerate || isGenerating ? 'accent' : 'dark'}
               onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
