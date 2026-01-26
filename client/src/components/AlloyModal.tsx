@@ -238,7 +238,7 @@ export function AlloyModal({
                   </button>
                 )}
               </div>
-              {references.length > 0 ? (
+              {references.length > 0 && (
                 <div className="thumb-grid">
                   <AnimatePresence mode="popLayout">
                     {references.map((ref) => (
@@ -250,10 +250,6 @@ export function AlloyModal({
                       />
                     ))}
                   </AnimatePresence>
-                </div>
-              ) : (
-                <div className="alloy-modal-footer-empty">
-                  Select images above to use as style references
                 </div>
               )}
             </div>
