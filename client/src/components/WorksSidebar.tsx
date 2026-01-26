@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight, ImageOff } from 'lucide-react'
+import { Loader2, ChevronRight, ImageOff, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -40,6 +40,9 @@ interface WorksSidebarProps {
   onOpenWorksModal?: () => void
   newGenerationTrigger?: number // Increment to trigger refresh
   pendingGenerations?: PendingGeneration[] // Shows at top while forging
+  onCancelPending?: (pendingId: string) => void // Cancel a specific pending generation
+  onSelectPending?: (pendingId: string) => void // Select pending to show when complete
+  selectedPendingId?: string | null // Currently selected pending generation
 }
 
 export function WorksSidebar({ 
@@ -47,8 +50,12 @@ export function WorksSidebar({
   onSelectImage,
   onOpenWorksModal,
   newGenerationTrigger,
-  pendingGenerations = []
+  pendingGenerations = [],
+  onCancelPending,
+  onSelectPending,
+  selectedPendingId
 }: WorksSidebarProps) {
+  const [hoveredPendingId, setHoveredPendingId] = useState<string | null>(null)
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -166,19 +173,41 @@ export function WorksSidebar({
               <AnimatePresence mode="popLayout">
                 {/* Pending generation placeholders - show all while forging */}
                 {pendingGenerations.flatMap(pending => 
-                  [...Array(pending.outputCount)].map((_, i) => (
-                    <motion.div
-                      key={`pending-${pending.id}-${i}`}
-                      className="gen-panel-thumb forging"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.15 }}
-                      title={`Forging: ${pending.prompt?.slice(0, 50) || ''}...`}
-                    >
-                      <div className="gen-panel-thumb-forging" />
-                    </motion.div>
-                  ))
+                  [...Array(pending.outputCount)].map((_, i) => {
+                    const isFirst = i === 0 // Only show cancel on first image of each generation
+                    const isHovered = hoveredPendingId === pending.id
+                    const isSelected = selectedPendingId === pending.id
+                    
+                    return (
+                      <motion.button
+                        key={`pending-${pending.id}-${i}`}
+                        className={`gen-panel-thumb forging ${isSelected ? 'selected' : ''}`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.15 }}
+                        title={`Forging: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`}
+                        onClick={() => onSelectPending?.(pending.id)}
+                        onMouseEnter={() => setHoveredPendingId(pending.id)}
+                        onMouseLeave={() => setHoveredPendingId(null)}
+                      >
+                        <div className="gen-panel-thumb-forging" />
+                        {/* Cancel button - only on first image of each generation, on hover */}
+                        {isFirst && (isHovered || isSelected) && (
+                          <button
+                            className="gen-panel-cancel"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onCancelPending?.(pending.id)
+                            }}
+                            title="Cancel generation"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </motion.button>
+                    )
+                  })
                 )}
                 
                 {/* Existing generations */}

@@ -168,8 +168,11 @@ export default function App() {
   const [gallerySearch, setGallerySearch] = useState('')
   const [galleryLoadedImages, setGalleryLoadedImages] = useState<Set<string>>(new Set())
   
-  // Abort controller for cancelling generation
-  const abortControllerRef = useRef<AbortController | null>(null)
+  // Abort controllers for cancelling generations (keyed by generation ID)
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
+  
+  // Track which pending generation is selected (shows in canvas when complete)
+  const [selectedPendingId, setSelectedPendingId] = useState<string | null>(null)
   
   // Ref for prompt textarea
   const promptRef = useRef<HTMLTextAreaElement>(null)
@@ -530,8 +533,8 @@ export default function App() {
     const abortController = new AbortController()
     const signal = abortController.signal
     
-    // Store abort controller (use latest one as "current")
-    abortControllerRef.current = abortController
+    // Store abort controller keyed by generation ID
+    abortControllersRef.current.set(genId, abortController)
     
     // Capture current values for this generation
     const genPrompt = prompt.trim()
@@ -562,9 +565,10 @@ export default function App() {
       setOutputHot(false)
     }
 
-    // Helper to remove this generation from pending
+    // Helper to remove this generation from pending and clean up abort controller
     const removePending = () => {
       setPendingGenerations(prev => prev.filter(g => g.id !== genId))
+      abortControllersRef.current.delete(genId)
     }
 
     if (window.location.hostname === 'localhost') {
@@ -675,18 +679,42 @@ export default function App() {
     }
   }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount])
 
-  // Cancel all pending generations (currently unused, may add cancel button later)
-  const handleCancel = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
-      setIsGenerating(false)
-      setPendingGenerations([])
-      setPipeFill(0)
-      setOutputHot(false)
-    }
+  // Cancel all pending generations
+  const handleCancelAll = useCallback(() => {
+    abortControllersRef.current.forEach(controller => controller.abort())
+    abortControllersRef.current.clear()
+    setIsGenerating(false)
+    setPendingGenerations([])
+    setSelectedPendingId(null)
+    setPipeFill(0)
+    setOutputHot(false)
   }, [])
-  void handleCancel // Suppress unused warning
+  void handleCancelAll // Suppress unused warning
+  
+  // Cancel a specific pending generation
+  const handleCancelPending = useCallback((pendingId: string) => {
+    const controller = abortControllersRef.current.get(pendingId)
+    if (controller) {
+      controller.abort()
+      abortControllersRef.current.delete(pendingId)
+    }
+    setPendingGenerations(prev => {
+      const remaining = prev.filter(g => g.id !== pendingId)
+      if (remaining.length === 0) {
+        setIsGenerating(false)
+        setSelectedPendingId(null)
+      }
+      return remaining
+    })
+    if (selectedPendingId === pendingId) {
+      setSelectedPendingId(null)
+    }
+  }, [selectedPendingId])
+  
+  // Select a pending generation (shows in canvas when complete)
+  const handleSelectPending = useCallback((pendingId: string) => {
+    setSelectedPendingId(pendingId)
+  }, [])
 
   const addReference = (ref: Reference) => {
     setReferences(prev => {
@@ -950,6 +978,9 @@ export default function App() {
         onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
         pendingGenerations={pendingGenerations}
+        onCancelPending={handleCancelPending}
+        onSelectPending={handleSelectPending}
+        selectedPendingId={selectedPendingId}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}

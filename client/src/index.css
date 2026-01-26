@@ -678,6 +678,36 @@ textarea.textarea.floating-prompt-input.forging {
   animation: forge-heat-wave-diagonal 1.5s ease-in-out infinite;
 }
 
+/* Cancel button on pending generations */
+.gen-panel-cancel {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0.8;
+  transition: opacity 0.15s, background 0.15s, transform 0.15s;
+}
+
+.gen-panel-cancel:hover {
+  opacity: 1;
+  background: var(--accent);
+  transform: scale(1.1);
+}
+
+.gen-panel-thumb.forging.selected {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .gen-panel-more-wait {
   display: flex;
   align-items: center;

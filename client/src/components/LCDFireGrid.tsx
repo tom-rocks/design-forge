@@ -60,6 +60,8 @@ export function LCDFireGrid({
   const FIRE_COLORS = mode === 'refine' ? FIRE_COLORS_REFINE : FIRE_COLORS_FORGE
   const [grid, setGrid] = useState<number[]>(() => new Array(cols * rows).fill(0))
   const [ignitionProgress, setIgnitionProgress] = useState(0) // 0 to cols, how many columns are lit
+  const [extinctionProgress, setExtinctionProgress] = useState(0) // 0 to cols, how many columns are extinguished
+  const [isExtinguishing, setIsExtinguishing] = useState(false)
   const frameRef = useRef<number>(0)
   const lastFrameRef = useRef<number>(0)
   const wasActiveRef = useRef(false)
@@ -69,6 +71,8 @@ export function LCDFireGrid({
     if (active && !wasActiveRef.current && spreadDirection !== 'none') {
       // Just became active - start ignition spread
       setIgnitionProgress(0)
+      setExtinctionProgress(0)
+      setIsExtinguishing(false)
       const ignitionDuration = spreadDirection === 'center' ? 1400 : 1000 // ms to fully ignite
       const startTime = Date.now()
       // For center spread, max progress is half the columns (distance from center to edge)
@@ -89,16 +93,62 @@ export function LCDFireGrid({
     } else if (active && spreadDirection === 'none') {
       // No spread animation, light all at once
       setIgnitionProgress(cols)
-    } else if (!active) {
-      // Reset ignition when turning off
-      setIgnitionProgress(cols) // Keep full while cooling down
+      setExtinctionProgress(0)
+      setIsExtinguishing(false)
+    } else if (!active && wasActiveRef.current && spreadDirection !== 'none') {
+      // Just became inactive - start extinction wave (reverse direction)
+      setIsExtinguishing(true)
+      setExtinctionProgress(0)
+      const extinctionDuration = spreadDirection === 'center' ? 1000 : 800 // ms to fully extinguish
+      const startTime = Date.now()
+      const maxProgress = spreadDirection === 'center' ? Math.ceil(cols / 2) : cols
+      
+      const extinguish = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(1, elapsed / extinctionDuration)
+        // Ease in for natural fade
+        const eased = progress * progress
+        setExtinctionProgress(Math.floor(eased * maxProgress))
+        
+        if (progress < 1) {
+          requestAnimationFrame(extinguish)
+        } else {
+          setIsExtinguishing(false)
+        }
+      }
+      requestAnimationFrame(extinguish)
+    } else if (!active && spreadDirection === 'none') {
+      // No spread animation, cool all at once
+      setIgnitionProgress(cols)
     }
     wasActiveRef.current = active
   }, [active, cols, spreadDirection])
   
   // Check if a column is currently ignited based on spread direction
   const isColumnIgnited = (x: number): boolean => {
-    if (!active || spreadDirection === 'none') return active
+    if (spreadDirection === 'none') return active
+    
+    // During extinction, check if column should be extinguished
+    if (isExtinguishing || !active) {
+      // Extinction happens in REVERSE direction
+      if (spreadDirection === 'right') {
+        // Fire came from left, extinguishes from left to right (same direction, wave going back)
+        if (x < extinctionProgress) return false
+      } else if (spreadDirection === 'left') {
+        // Fire came from right, extinguishes from right to left (same direction, wave going back)
+        if (x >= (cols - extinctionProgress)) return false
+      } else {
+        // Center spread - extinguishes from edges back to center
+        const center = Math.floor(cols / 2)
+        const distanceFromCenter = Math.abs(x - center)
+        const distanceFromEdge = (Math.ceil(cols / 2)) - distanceFromCenter
+        if (distanceFromEdge < extinctionProgress) return false
+      }
+    }
+    
+    if (!active && !isExtinguishing) return false
+    
+    // During ignition
     if (spreadDirection === 'right') {
       // Fire spreads from left (0) to right (cols-1)
       return x < ignitionProgress
@@ -192,7 +242,7 @@ export function LCDFireGrid({
     
     frameRef.current = requestAnimationFrame(simulate)
     return () => cancelAnimationFrame(frameRef.current)
-  }, [active, cols, rows, ignitionProgress, spreadDirection])
+  }, [active, cols, rows, ignitionProgress, extinctionProgress, isExtinguishing, spreadDirection])
   
   const gridStyle = useMemo(() => ({
     display: 'grid',
