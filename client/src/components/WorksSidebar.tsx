@@ -11,6 +11,13 @@ interface Generation {
   imageUrls: string[]
   created_at: string
   mode: 'create' | 'edit'
+  model?: string
+  resolution?: string
+  aspect_ratio?: string
+  settings?: {
+    styleImages?: { url: string; name?: string }[]
+    [key: string]: any
+  }
 }
 
 interface DisplayImage {

@@ -805,11 +805,37 @@ export default function App() {
       <WorksSidebar
         authenticated={authenticated}
         onSelectImage={(imageUrl, generation) => {
-          setEditImage({ 
-            url: imageUrl,
-            thumbnail: generation.thumbnailUrl ? `${API_URL}${generation.thumbnailUrl}` : undefined
+          // Show in canvas as if just generated
+          setResult({
+            imageUrl: imageUrl,
+            imageUrls: generation.imageUrls.map(url => `${API_URL}${url}`),
+            prompt: generation.prompt
           })
-          detectAndSetAspectRatio(imageUrl)
+          setEditImage(null) // Clear refine mode
+          setPrompt(generation.prompt || '')
+          
+          // Set resolution and aspect ratio
+          if (generation.resolution) setResolution(generation.resolution)
+          if (generation.aspect_ratio) setAspectRatio(generation.aspect_ratio)
+          
+          // Load alloy references from settings
+          if (generation.settings?.styleImages?.length) {
+            const refs = generation.settings.styleImages.map((img, i) => ({
+              id: `sidebar-ref-${generation.id}-${i}-${Date.now()}`,
+              url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/') 
+                ? img.url 
+                : `${API_URL}${img.url}`,
+              name: img.name || `Ref ${i + 1}`,
+              type: 'generation' as const,
+            }))
+            setReferences(refs)
+          } else {
+            setReferences([])
+          }
+          
+          // Reset image loading state
+          setLoadedImages(new Set())
+          setFailedImages(new Set())
         }}
         onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
