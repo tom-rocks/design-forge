@@ -149,7 +149,8 @@ export default function App() {
     url: string
     thumbUrl: string
     prompt: string
-    id: string
+    id: string // Composite: {generationId}-{imageIndex}
+    generationId: string // Actual generation UUID for API calls
     mode: 'create' | 'edit'
     model?: string
     resolution?: string
@@ -216,6 +217,7 @@ export default function App() {
               thumbUrl: i === 0 && thumbBase ? thumbBase : fullUrl,
               prompt: gen.prompt,
               id: `${gen.id}-${i}`,
+              generationId: gen.id, // Store actual UUID for API calls
               mode: gen.mode || 'create',
               model: gen.model,
               resolution: gen.resolution,
@@ -255,14 +257,15 @@ export default function App() {
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/generations/${img.id}`, {
+      const res = await fetch(`${API_URL}/api/generations/${img.generationId}`, {
         method: 'DELETE',
         credentials: 'include',
       })
       
       if (res.ok) {
-        setGalleryImages(prev => prev.filter(g => g.id !== img.id))
-        if (galleryExpanded?.id === img.id) {
+        // Remove ALL images from this generation (not just the one clicked)
+        setGalleryImages(prev => prev.filter(g => g.generationId !== img.generationId))
+        if (galleryExpanded?.generationId === img.generationId) {
           setGalleryExpanded(null)
         }
       }
