@@ -101,8 +101,8 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
       }
       buffer = Buffer.from(await response.arrayBuffer());
     }
-    // Handle our own generation URLs (relative paths like /api/generations/{id}/image/{idx})
-    else if (url.startsWith('/api/generations/')) {
+    // Handle our own generation URLs (relative or full paths like /api/generations/{id}/image/{idx})
+    else if (url.includes('/api/generations/')) {
       const match = url.match(/\/api\/generations\/([^/]+)\/image\/(\d+)/);
       if (!match) {
         console.log(`[Gemini Files] Could not parse generation URL: ${url}`);

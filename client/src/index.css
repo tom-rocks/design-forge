@@ -434,7 +434,7 @@ textarea.textarea.floating-prompt-input::placeholder {
 
 textarea.textarea.floating-prompt-input.prompt-hot {
   color: var(--accent);
-  text-shadow: 0 0 8px rgba(230, 74, 25, 0.4);
+  text-shadow: 0 0 8px var(--accent-glow);
   transition: color 0.05s ease-out, text-shadow 0.05s ease-out;
 }
 
@@ -446,11 +446,11 @@ textarea.textarea.floating-prompt-input.forging {
 @keyframes forge-pulse {
   0%, 100% {
     color: var(--text-light);
-    text-shadow: 0 0 4px rgba(255, 87, 34, 0.2);
+    text-shadow: 0 0 4px var(--accent-glow);
   }
   50% {
     color: var(--accent);
-    text-shadow: 0 0 12px rgba(255, 87, 34, 0.5), 0 0 24px rgba(255, 87, 34, 0.2);
+    text-shadow: 0 0 12px var(--accent-glow), 0 0 24px var(--accent-glow);
   }
 }
 
@@ -1171,7 +1171,7 @@ textarea.textarea.floating-prompt-input.forging {
 /* Hot prompt effect during replay */
 .textarea.prompt-hot {
   color: var(--accent);
-  text-shadow: 0 0 8px rgba(230, 74, 25, 0.4);
+  text-shadow: 0 0 8px var(--accent-glow);
   transition: color 0.8s ease-out, text-shadow 0.8s ease-out;
 }
 
