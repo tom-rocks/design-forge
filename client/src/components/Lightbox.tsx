@@ -332,7 +332,7 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                 )}
                 {onFavorite && (
                   <button 
-                    className={`lightbox-btn ${isFavorited ? 'active' : ''}`}
+                    className={`lightbox-btn lightbox-btn-fav ${isFavorited ? 'active' : ''}`}
                     onClick={() => onFavorite(data.imageUrl)}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                   >

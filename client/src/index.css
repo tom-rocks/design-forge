@@ -50,6 +50,10 @@
   --led-yellow: #f5a623;
   --led-green: #4caf50;
   
+  /* Favorite yellow - always yellow regardless of mode */
+  --favorite: #f5a623;
+  --favorite-hover: #ffbf40;
+  
   /* Spacing */
   --radius-sm: 4px;
   --radius-md: 5px;
@@ -2026,6 +2030,16 @@ textarea.textarea.floating-prompt-input.forging {
   background: var(--accent-hover);
 }
 
+/* Favorite button always uses yellow when active */
+.canvas-control-btn-fav.active {
+  background: var(--favorite);
+  color: white;
+}
+
+.canvas-control-btn-fav.active:hover {
+  background: var(--favorite-hover);
+}
+
 .canvas-controls-sep {
   width: 1px;
   height: 20px;
@@ -3722,6 +3736,16 @@ textarea.textarea.floating-prompt-input.forging {
 
 .lightbox-btn.active:hover {
   background: var(--accent-hover);
+}
+
+/* Favorite button always uses yellow when active */
+.lightbox-btn-fav.active {
+  background: var(--favorite);
+  color: white;
+}
+
+.lightbox-btn-fav.active:hover {
+  background: var(--favorite-hover);
 }
 
 .lightbox-btn-delete:hover {

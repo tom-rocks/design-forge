@@ -1213,7 +1213,7 @@ export default function App() {
             
             {/* Image actions */}
             <button 
-              className={`canvas-control-btn ${starredOutputUrls.has(validImages[0]) ? 'active' : ''}`}
+              className={`canvas-control-btn canvas-control-btn-fav ${starredOutputUrls.has(validImages[0]) ? 'active' : ''}`}
               onClick={() => toggleOutputFavorite(validImages[0])}
               title={starredOutputUrls.has(validImages[0]) ? 'Remove from favorites' : 'Add to favorites'}
             >
