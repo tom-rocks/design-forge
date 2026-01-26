@@ -108,7 +108,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
-  void setActiveDropTarget // Suppress unused warning - paste handler still uses activeDropTarget
   const [favoritesResetKey, _setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
@@ -1161,14 +1160,17 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className={`canvas-dropzone ${isDraggingRefine ? 'dragging' : ''}`}
+                      className={`canvas-dropzone ${isDraggingRefine ? 'dragging' : ''} ${activeDropTarget === 'refine' ? 'active' : ''}`}
+                      onClick={() => setActiveDropTarget(activeDropTarget === 'refine' ? null : 'refine')}
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && setActiveDropTarget(activeDropTarget === 'refine' ? null : 'refine')}
                     >
                       <div className="canvas-dropzone-inner">
                         <span className="canvas-dropzone-icon">
                           <span className="btn-icon icon-drop" style={{ width: 56, height: 56 }} />
                         </span>
                         <p className="canvas-dropzone-text">Drop or paste an image to refine</p>
-                        <p className="canvas-dropzone-hint">Or just type a prompt below to create</p>
+                        <p className="canvas-dropzone-hint">{activeDropTarget === 'refine' ? 'Ready to paste - press ⌘V' : 'Click to select, then paste'}</p>
                       </div>
                     </motion.div>
                   )}

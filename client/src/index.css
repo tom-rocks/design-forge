@@ -2313,6 +2313,23 @@ textarea.textarea.floating-prompt-input.forging {
   background: rgba(255, 87, 34, 0.05);
 }
 
+.canvas-dropzone.active {
+  border-color: var(--accent);
+  border-style: solid;
+  background: rgba(255, 87, 34, 0.08);
+  box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.15);
+}
+
+.canvas-dropzone:hover {
+  border-color: var(--text-dim);
+  cursor: pointer;
+}
+
+.canvas-dropzone:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .canvas-dropzone-inner {
   text-align: center;
   padding: 40px;
@@ -5512,8 +5529,8 @@ textarea.textarea.floating-prompt-input.forging {
 
 .prompt-alloy-thumbs {
   display: flex;
-  flex-direction: row-reverse;
-  flex-wrap: wrap-reverse;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: flex-start;
   align-items: center;
   gap: 6px;
