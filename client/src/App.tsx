@@ -13,6 +13,7 @@ import {
   Favorites,
   Lightbox,
   AlloyModal,
+  WorksSidebar,
   type ReplayConfig,
   type LightboxData
 } from './components'
@@ -98,6 +99,9 @@ export default function App() {
   
   // Alloy modal state
   const [alloyModalOpen, setAlloyModalOpen] = useState(false)
+  
+  // Works sidebar state
+  const [generationTrigger, setGenerationTrigger] = useState(0)
   
   
   // Track image loading states
@@ -509,6 +513,7 @@ export default function App() {
             if (currentEvent === 'complete') {
               setResult({ imageUrl: data.imageUrl, imageUrls: data.imageUrls, prompt: prompt.trim() })
               setIsGenerating(false)
+              setGenerationTrigger(prev => prev + 1) // Refresh works sidebar
               return
             } else if (currentEvent === 'error') {
               throw new Error(data.error)
@@ -765,6 +770,20 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* WORKS SIDEBAR - Left side works list */}
+      <WorksSidebar
+        authenticated={authenticated}
+        onSelectImage={(imageUrl, generation) => {
+          setEditImage({ 
+            url: imageUrl,
+            thumbnail: generation.thumbnailUrl ? `${API_URL}${generation.thumbnailUrl}` : undefined
+          })
+          detectAndSetAspectRatio(imageUrl)
+        }}
+        onOpenWorksModal={() => setRefineSource('history')}
+        newGenerationTrigger={generationTrigger}
+      />
+
       {/* MAIN CANVAS - Clean, centered workspace */}
       <main 
         className={`forge-canvas ${isDraggingRefine ? 'dragging' : ''}`}
