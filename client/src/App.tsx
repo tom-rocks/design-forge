@@ -1062,14 +1062,14 @@ export default function App() {
               />
             </div>
             
-            {/* Forge button */}
+            {/* Forge/Refine button */}
             <Button
               variant={canGenerate || isGenerating ? 'accent' : 'dark'}
               onClick={isGenerating ? handleCancel : !canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
               disabled={!isGenerating && !canGenerate && prompt.trim() !== ''}
               className="floating-forge-btn"
             >
-              {isGenerating ? 'Cancel' : 'Forge'}
+              {isGenerating ? 'Cancel' : editImage ? 'Refine' : 'Forge'}
             </Button>
           </div>
           
