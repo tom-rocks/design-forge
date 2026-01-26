@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { Wifi, WifiOff, LogIn, User, Trash2, Maximize2, ChevronDown, Plus, Download, X, Search, BarChart3, Star } from 'lucide-react'
+import { LogIn, User, Trash2, Maximize2, ChevronDown, Plus, Download, X, Search, BarChart3, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -9,12 +9,12 @@ import {
   Panel, PanelHeader, PanelBody, 
   Textarea,
   Thumb,
-  MoltenPipe,
   LCDFireGrid,
   HighriseSearch,
   HistoryGrid,
   Favorites,
   Lightbox,
+  AlloyModal,
   type ReplayConfig,
   type LightboxData
 } from './components'
@@ -84,19 +84,18 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
-  const [refSource, setRefSource] = useState<RefSource>('drop')
-  const [refSourceCollapsed, setRefSourceCollapsed] = useState(false)
   const [favoritesResetKey, setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   
   // Forge specs state
-  const [alloyExpanded, setAlloyExpanded] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [resolution, setResolution] = useState<string>('2K')
   const [outputCount, setOutputCount] = useState<1 | 2 | 4>(1)
+  
+  // Alloy modal state
+  const [alloyModalOpen, setAlloyModalOpen] = useState(false)
   
   
   // Track image loading states
@@ -153,9 +152,6 @@ export default function App() {
   
   // Ref for refine panel (scroll target when selecting image to refine)
   const refineRef = useRef<HTMLDivElement>(null)
-  
-  // Ref for crucible/alloy block (scroll target when generating)
-  const crucibleRef = useRef<HTMLDivElement>(null)
 
   // Mode is derived from whether there's an edit image
   const mode: Mode = editImage ? 'edit' : 'create'
@@ -170,11 +166,6 @@ export default function App() {
   // Scroll to refine panel
   const scrollToRefine = useCallback(() => {
     refineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [])
-  
-  // Scroll to alloy/crucible block
-  const scrollToAlloy = useCallback(() => {
-    crucibleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
   
   // Open works gallery
@@ -334,9 +325,8 @@ export default function App() {
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
-    // Collapse alloy panel and tabs - references will show in the "Active" section
-    setAlloyExpanded(false)
-    setRefSourceCollapsed(true)
+    // Close alloy modal if open
+    setAlloyModalOpen(false)
     setRefineExpanded(false)
     
     // Clear existing references first
@@ -412,15 +402,12 @@ export default function App() {
     // Reset all states immediately
     setIsGenerating(true)
     setError(null)
-    setRefSourceCollapsed(true) // Collapse tabs to focus on output
+    setAlloyModalOpen(false) // Close modal if open
     setResult(null)
     setLoadedImages(new Set())
     setFailedImages(new Set())
     setPipeFill(0)
     setOutputHot(false)
-    
-    // Scroll to show the alloy block (generation progress area)
-    setTimeout(scrollToAlloy, 100)
 
     if (window.location.hostname === 'localhost') {
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -501,7 +488,7 @@ export default function App() {
       setIsGenerating(false)
       abortControllerRef.current = null
     }
-  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount, scrollToAlloy])
+  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount])
 
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
@@ -525,16 +512,8 @@ export default function App() {
   }
   
   // Bulk add references from alloy (used by lightbox "Use Alloy" button)
-  // Adds refs one at a time with animation, scrolls to alloy block
+  // Adds refs one at a time with animation
   const addAlloyReferences = useCallback((refs: Reference[]) => {
-    // Expand alloy panel if collapsed
-    setAlloyExpanded(true)
-    
-    // Scroll to alloy block
-    setTimeout(() => {
-      crucibleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
-    
     // Add refs one at a time with delay for smooth animation
     refs.forEach((ref, i) => {
       setTimeout(() => {
@@ -617,44 +596,6 @@ export default function App() {
     }
   }, [starredOutputUrls, prompt])
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-  
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    
-    const data = e.dataTransfer.getData('application/x-reference')
-    if (data) {
-      try {
-        addReference(JSON.parse(data))
-        return
-      } catch {}
-    }
-    
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const url = ev.target?.result as string
-        addReference({
-          id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url,
-          name: file.name,
-          type: 'file'
-        })
-      }
-      reader.readAsDataURL(file)
-    })
-  }, [references])
-  
   // Handle drop on refinement dropzone
   const handleRefineDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -969,265 +910,6 @@ export default function App() {
             </Panel>
           </motion.div>
 
-          {/* CRUCIBLE - References panel with hot border when forging */}
-          <motion.div 
-            ref={crucibleRef}
-            className="crucible-frame"
-            animate={{
-              background: pipeFill > 0 
-                ? 'linear-gradient(135deg, #e64a19 0%, #ff5722 50%, #ff6d00 100%)'
-                : 'linear-gradient(135deg, #b0aca8 0%, #c8c4c0 50%, #d0ccc8 100%)',
-              boxShadow: pipeFill > 0
-                ? 'inset 2px 2px 4px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,200,100,0.4), 0 0 20px rgba(255,87,34,0.5), 0 0 40px rgba(255,87,34,0.3)'
-                : 'inset 2px 2px 4px rgba(0,0,0,0.15), inset -1px -1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            transition={{ duration: pipeFill > 0 ? 1.2 : 2.5, ease: 'easeOut' }}
-          >
-            {/* LCD Status Display */}
-            <div className="lcd-screen">
-              <LCDFireGrid active={isGenerating} cols={70} rows={3} dotSize={4} gap={1} spreadDirection="center" />
-              <div className="lcd-refs">
-                {[...Array(14)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`lcd-ref-dot ${i < references.length ? 'filled' : ''}`}
-                  />
-                ))}
-              </div>
-              <div className="lcd-bridge">
-                <WifiOff className={`lcd-bridge-icon ${!bridgeConnected ? 'active' : ''}`} />
-                <Wifi className={`lcd-bridge-icon ${bridgeConnected ? 'active' : ''}`} />
-              </div>
-              <div className="lcd-labels">
-                <span className={`lcd-label ${!isGenerating ? 'active' : ''}`}>IDLE</span>
-                <span className={`lcd-label ${isGenerating ? 'active' : ''}`}>FORGING</span>
-              </div>
-            </div>
-            <Panel>
-              <PanelHeader className="collapsible" onClick={() => setAlloyExpanded(!alloyExpanded)}>
-                <span className="panel-icon icon-alloy" />
-                Alloy <span className="header-subtitle">image references</span>
-                <div className="header-right">
-                  <motion.div 
-                    animate={{ rotate: alloyExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.div>
-                  <span className={`led ${references.length > 0 ? 'on' : ''}`} />
-                </div>
-              </PanelHeader>
-              <AnimatePresence initial={false}>
-                {alloyExpanded && (
-                  <motion.div
-                    key="alloy-content"
-                    className="alloy-content"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                    style={{ overflow: 'hidden' }}
-                  >
-              <PanelBody>
-                {/* Reference source tabs */}
-                <div className="btn-group ref-tabs">
-                  <button 
-                    className={`btn ${refSource === 'drop' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => {
-                      setRefSource('drop')
-                      setRefSourceCollapsed(false)
-                    }}
-                  >
-                    <span className="btn-icon icon-drop" />
-                    Drop
-                  </button>
-                  <button 
-                    className={`btn ${refSource === 'items' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => {
-                      setRefSource('items')
-                      setRefSourceCollapsed(false)
-                    }}
-                  >
-                    <span className="btn-icon icon-items" />
-                    Items
-                  </button>
-                  <button 
-                    className={`btn ${refSource === 'history' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => {
-                      setRefSource('history')
-                      setRefSourceCollapsed(false)
-                    }}
-                  >
-                    <span className="btn-icon icon-works" />
-                    Works
-                  </button>
-                  <button 
-                    className={`btn ${refSource === 'favorites' && !refSourceCollapsed ? 'btn-accent' : 'btn-dark'}`}
-                    onClick={() => {
-                      if (refSource === 'favorites' && !refSourceCollapsed) {
-                        // Already on Favorites - trigger reset (back to root)
-                        setFavoritesResetKey(k => k + 1)
-                      } else {
-                        setRefSource('favorites')
-                        setRefSourceCollapsed(false)
-                      }
-                    }}
-                  >
-                    <span className="btn-icon icon-star" />
-                    Favorites
-                  </button>
-                </div>
-
-                {/* Reference content - all tabs stay mounted for smooth transitions */}
-                <AnimatePresence initial={false}>
-                  {!refSourceCollapsed && (
-                    <motion.div
-                      key="ref-content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      {/* Tab content with layout animation for smooth height changes */}
-                      <motion.div layout transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}>
-                        <AnimatePresence mode="wait" initial={false}>
-                          {refSource === 'drop' && (
-                            <motion.div
-                              key="drop"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.12 }}
-                            >
-                            <div 
-                              className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
-                              onClick={() => setActiveDropTarget('refs')}
-                              onDragOver={handleDragOver}
-                              onDragLeave={handleDragLeave}
-                              onDrop={handleDrop}
-                            >
-                              <span className="dropzone-text">
-                                DROP OR PASTE IMAGES
-                              </span>
-                            </div>
-                          </motion.div>
-                        )}
-                          {refSource === 'items' && (
-                            <motion.div
-                              key="items"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.12 }}
-                            >
-                            <HighriseSearch
-                              references={references}
-                              onAddReference={addReference}
-                              onRemoveReference={removeReference}
-                              maxRefs={14}
-                              disabled={isGenerating}
-                              bridgeConnected={bridgeConnected}
-                              useAPBridge={inAPContext}
-                            />
-                          </motion.div>
-                        )}
-                          {refSource === 'history' && (
-                            <motion.div
-                              key="history"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.12 }}
-                            >
-                              <HistoryGrid
-                              authenticated={authenticated}
-                              onLogin={login}
-                              references={references}
-                              onAddReference={addReference}
-                              onRemoveReference={removeReference}
-                              maxRefs={14}
-                              disabled={isGenerating}
-                              isActive={refSource === 'history'}
-                              onReplay={handleReplay}
-                              onRefine={(url) => {
-                                setEditImage({ url })
-                                detectAndSetAspectRatio(url)
-                                setReferences([]) // Clear alloy when refining
-                                setRefineExpanded(true) // Expand to show the image was added
-                                setTimeout(scrollToRefine, 100)
-                              }}
-                              onUseAlloy={addAlloyReferences}
-                            />
-                          </motion.div>
-                        )}
-                          {refSource === 'favorites' && (
-                            <motion.div
-                              key="favorites"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.12 }}
-                            >
-                              <Favorites
-                                authenticated={authenticated}
-                                onLogin={login}
-                                references={references}
-                                onAddReference={addReference}
-                                onRemoveReference={removeReference}
-                                maxRefs={14}
-                                disabled={isGenerating}
-                                isActive={refSource === 'favorites'}
-                                resetKey={favoritesResetKey}
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-              </PanelBody>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              {/* Always visible: Selected references - outside collapsible area */}
-              {references.length > 0 && (
-                <div className="active-refs">
-                  <div className="active-refs-header">
-                    <span className="led on" />
-                    <span>Active ({references.length}/14)</span>
-                    <button 
-                      className="active-refs-clear"
-                      onClick={() => setReferences([])}
-                      title="Clear all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <div className="thumb-grid">
-                    <AnimatePresence mode="popLayout">
-                      {references.map((ref) => (
-                        <Thumb
-                          key={ref.id}
-                          src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`}
-                          alt={ref.name}
-                          onRemove={() => removeReference(ref.id)}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              )}
-            </Panel>
-          </motion.div>
-
-        </div>
-
-        {/* PIPE - Connects crucible to output */}
-        <div className="forge-pipe-wrapper">
-          <MoltenPipe fill={pipeFill} />
         </div>
 
         {/* OUTPUT BLOCK */}
@@ -1492,8 +1174,71 @@ export default function App() {
               {isGenerating ? 'Cancel' : 'Forge'}
             </Button>
           </div>
+          
+          {/* Alloy row - shows selected references below prompt */}
+          <div className="prompt-alloy-row">
+            <div className="prompt-alloy-thumbs">
+              <AnimatePresence mode="popLayout">
+                {references.map((ref) => (
+                  <motion.div
+                    key={ref.id}
+                    className="prompt-alloy-thumb"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => removeReference(ref.id)}
+                    title={ref.name || 'Click to remove'}
+                  >
+                    <img 
+                      src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`} 
+                      alt={ref.name || ''} 
+                    />
+                    <div className="prompt-alloy-thumb-remove">
+                      <X className="w-4 h-4" />
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+            <button 
+              className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
+              onClick={() => setAlloyModalOpen(true)}
+              disabled={isGenerating}
+              title="Add style references"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Alloy Modal */}
+      <AlloyModal
+        isOpen={alloyModalOpen}
+        onClose={() => setAlloyModalOpen(false)}
+        references={references}
+        onAddReference={addReference}
+        onRemoveReference={removeReference}
+        onClearAll={() => setReferences([])}
+        maxRefs={14}
+        disabled={isGenerating}
+        bridgeConnected={bridgeConnected}
+        inAPContext={inAPContext}
+        authenticated={authenticated}
+        onLogin={login}
+        onReplay={handleReplay}
+        onRefine={(url) => {
+          setEditImage({ url })
+          detectAndSetAspectRatio(url)
+          setReferences([]) // Clear alloy when refining
+          setRefineExpanded(true)
+          setAlloyModalOpen(false)
+          setTimeout(scrollToRefine, 100)
+        }}
+        onUseAlloy={addAlloyReferences}
+        favoritesResetKey={favoritesResetKey}
+      />
 
       {/* Output Lightbox */}
       <Lightbox
