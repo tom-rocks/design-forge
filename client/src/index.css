@@ -4913,8 +4913,8 @@ body {
 
 .prompt-alloy-thumbs {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: row-reverse;
+  flex-wrap: wrap-reverse;
   justify-content: flex-start;
   align-items: center;
   gap: 6px;
@@ -4975,7 +4975,6 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-left: auto;
   flex-shrink: 0;
   padding: 4px; /* Space for outer decal ring */
 }
