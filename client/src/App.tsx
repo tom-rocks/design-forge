@@ -781,7 +781,7 @@ export default function App() {
           })
           detectAndSetAspectRatio(imageUrl)
         }}
-        onOpenWorksModal={() => setRefineSource('history')}
+        onOpenWorksModal={openGallery}
         newGenerationTrigger={generationTrigger}
       />
 

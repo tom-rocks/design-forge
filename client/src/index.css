@@ -476,6 +476,7 @@ body {
   pointer-events: auto;
   background: var(--surface);
   border-radius: var(--radius-lg);
+  padding: 0;
   box-shadow: 
     0 4px 20px rgba(0, 0, 0, 0.15),
     0 1px 4px rgba(0, 0, 0, 0.1),
@@ -486,28 +487,31 @@ body {
   flex-direction: column;
 }
 
+/* Header styled like LCD bar in prompt */
 .works-sidebar-header {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 8px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-inset);
+  padding: 10px 8px;
+  background: linear-gradient(180deg, #1a1a18 0%, #252522 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 }
 
 .works-sidebar-header .btn-icon {
   width: 14px;
   height: 14px;
-  opacity: 0.6;
+  filter: brightness(0) invert(0.5);
 }
 
 .works-sidebar-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  color: #7a9a6a; /* LCD green like prompt bar */
+  text-shadow: 0 0 8px rgba(122, 154, 106, 0.5);
 }
 
 .works-sidebar-scroll {
@@ -571,22 +575,22 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 10px 8px;
+  padding: 12px 8px;
   border: none;
   border-top: 1px solid var(--border);
-  background: var(--surface-inset);
+  background: var(--bg-input);
   color: var(--text-dim);
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .works-sidebar-more:hover {
   background: var(--surface);
-  color: var(--text);
+  color: var(--accent);
 }
 
 /* Hide on smaller screens */
