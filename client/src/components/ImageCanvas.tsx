@@ -48,7 +48,6 @@ export function ImageCanvas({
 
   const MIN_SCALE = 0.5
   const MAX_SCALE = 4
-  const ZOOM_STEP = 0.25
 
   // Reset view when images change
   useEffect(() => {
@@ -59,15 +58,24 @@ export function ImageCanvas({
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault()
     
-    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta))
+    // Mac trackpad pinch-to-zoom sends ctrlKey + wheel events
+    // Use proportional zoom based on actual delta for smooth trackpad experience
+    const isPinch = e.ctrlKey
     
-    if (newScale !== scale && containerRef.current) {
+    // For pinch gestures, use smaller multiplier for finer control
+    // For regular scroll wheel, use larger steps
+    const sensitivity = isPinch ? 0.01 : 0.002
+    const delta = -e.deltaY * sensitivity
+    
+    // Calculate new scale with smooth proportional change
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)))
+    
+    if (Math.abs(newScale - scale) > 0.001 && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const mouseX = e.clientX - rect.left
       const mouseY = e.clientY - rect.top
       
-      // Zoom towards mouse position
+      // Zoom towards mouse/pinch position
       const scaleRatio = newScale / scale
       const newX = mouseX - (mouseX - position.x) * scaleRatio
       const newY = mouseY - (mouseY - position.y) * scaleRatio
