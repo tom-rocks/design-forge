@@ -98,7 +98,7 @@ export default function App() {
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
   const [editImageError, setEditImageError] = useState(false)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
-  const [refineFlameActive, setRefineFlameActive] = useState(false) // Brief flame animation when entering refine mode
+  const [modeFlameActive, setModeFlameActive] = useState(false) // Brief flame animation when switching modes
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   void refineGlow // Suppress unused warning - effect still sets this
   void refineExpanded // Suppress unused warning - still set by callbacks
@@ -317,10 +317,11 @@ export default function App() {
     img.src = imageUrl
   }, [])
   
-  // Track previous editImage to detect forge->refine transitions
+  // Track previous editImage to detect mode transitions
   const wasInRefineRef = useRef(false)
+  const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
   
-  // Trigger glow effect and brief flame animation when switching FROM forge TO refine
+  // Trigger glow effect and brief flame animation when switching modes
   // Also reset error state when editImage changes
   useEffect(() => {
     if (editImage) {
@@ -329,14 +330,12 @@ export default function App() {
       
       // Only play flame animation when switching from forge to refine, not refine to refine
       if (!wasInRefineRef.current) {
-        setRefineFlameActive(true)
-        const flameTimer = setTimeout(() => setRefineFlameActive(false), 1500)
-        // Store cleanup for flame timer
-        const cleanup = () => clearTimeout(flameTimer)
+        setModeFlameActive(true)
+        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
         wasInRefineRef.current = true
         const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
         return () => {
-          cleanup()
+          clearTimeout(flameTimer)
           clearTimeout(glowTimer)
         }
       } else {
@@ -346,11 +345,23 @@ export default function App() {
       }
     } else {
       setRefineGlow(false)
-      setRefineFlameActive(false)
       setEditImageError(false)
+      
+      // Switching from refine to forge - play flame animation and trigger intro
+      if (wasInRefineRef.current) {
+        setModeFlameActive(true)
+        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
+        // Trigger forge intro animation
+        if (!prompt.trim()) {
+          setShouldPlayForgeIntro(true)
+        }
+        wasInRefineRef.current = false
+        return () => clearTimeout(flameTimer)
+      }
+      
       wasInRefineRef.current = false
     }
-  }, [editImage])
+  }, [editImage, prompt])
   
   // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
@@ -488,6 +499,14 @@ export default function App() {
     
     lastModeRef.current = currentMode
   }, [editImage, playIntroAnimation])
+  
+  // Play intro animation when switching from refine to forge
+  useEffect(() => {
+    if (shouldPlayForgeIntro) {
+      playIntroAnimation("Describe what you want to create...", 300)
+      setShouldPlayForgeIntro(false)
+    }
+  }, [shouldPlayForgeIntro, playIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
@@ -1394,7 +1413,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={isGenerating || refineFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
@@ -1449,7 +1468,7 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
             </button>
-            <LCDFireGrid active={isGenerating || refineFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}
