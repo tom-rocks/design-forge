@@ -128,15 +128,16 @@ export function LCDFireGrid({
   const isColumnIgnited = (x: number): boolean => {
     if (spreadDirection === 'none') return active
     
-    // During extinction, check if column should be extinguished
+    // During extinction, wave continues OUT the opposite side (wave passes through)
     if (isExtinguishing || !active) {
-      // Extinction happens in REVERSE direction
       if (spreadDirection === 'right') {
-        // Fire came from left, extinguishes from left to right (same direction, wave going back)
-        if (x < extinctionProgress) return false
-      } else if (spreadDirection === 'left') {
-        // Fire came from right, extinguishes from right to left (same direction, wave going back)
+        // Fire came from left to right, extinction continues right to left (opposite) 
+        // So it extinguishes from the RIGHT side first
         if (x >= (cols - extinctionProgress)) return false
+      } else if (spreadDirection === 'left') {
+        // Fire came from right to left, extinction continues left to right (opposite)
+        // So it extinguishes from the LEFT side first
+        if (x < extinctionProgress) return false
       } else {
         // Center spread - extinguishes from edges back to center
         const center = Math.floor(cols / 2)
