@@ -467,7 +467,7 @@ body {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 90;
+  z-index: 101;
   pointer-events: none;
 }
 
