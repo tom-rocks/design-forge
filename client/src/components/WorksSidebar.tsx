@@ -274,6 +274,10 @@ export function WorksSidebar({
                           className="gen-panel-delete"
                           onClick={(e) => {
                             e.stopPropagation()
+                            if (!confirm('Delete this generation?')) return
+                            // Optimistically remove from local state for smooth animation
+                            setGenerations(prev => prev.filter(g => g.id !== img.generation.id))
+                            // Then trigger actual delete
                             onDeleteImage(img.generation.id)
                           }}
                           title="Delete"

@@ -1064,15 +1064,13 @@ export default function App() {
           setViewingPastWork(false)
         }}
         onDeleteImage={async (generationId) => {
-          if (!confirm('Delete this generation?')) return
+          // Sidebar handles optimistic removal - just do the API call
           try {
             const res = await fetch(`${API_URL}/api/generations/${generationId}`, {
               method: 'DELETE',
               credentials: 'include',
             })
             if (res.ok) {
-              // Trigger refresh of sidebar
-              setGenerationTrigger(prev => prev + 1)
               // Also remove from gallery if open
               setGalleryImages(prev => prev.filter(g => g.generationId !== generationId))
             }
