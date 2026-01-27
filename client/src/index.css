@@ -243,6 +243,8 @@ body {
     inset 0 -1px 0 rgba(0, 0, 0, 0.1),
     0 2px 0 #807c78,
     0 2px 4px rgba(0, 0, 0, 0.15);
+  /* Slow fade when cooling off to dark */
+  transition: background 0.6s ease-out, box-shadow 0.6s ease-out, color 0.6s ease-out;
 }
 
 .btn-dark:hover {
@@ -277,6 +279,8 @@ body {
     inset 0 -1px 0 rgba(0, 0, 0, 0.15),
     0 2px 0 var(--accent-active),
     0 2px 6px var(--accent-glow);
+  /* Fast light up when becoming accent */
+  transition: background 0.1s ease, box-shadow 0.1s ease, color 0.1s ease;
 }
 
 .btn-accent:hover {
@@ -484,8 +488,7 @@ textarea.textarea.floating-prompt-input.forging {
   font-weight: 700;
   font-size: 14px;
   letter-spacing: 0.5px;
-  /* Slow fade when cooling off from accent to dark */
-  transition: background 0.6s ease-out, box-shadow 0.6s ease-out, color 0.6s ease-out !important;
+}
 }
 
 /* Add padding to main content so it doesn't hide behind floating prompt */
