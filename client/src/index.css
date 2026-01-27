@@ -932,17 +932,6 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
-/* Mode button cooling animation */
-@keyframes mode-cool-off {
-  0% { color: var(--led-orange); text-shadow: 0 0 8px rgba(255, 140, 0, 0.7); }
-  100% { color: #3a3835; text-shadow: none; }
-}
-
-@keyframes mode-cool-off-refine {
-  0% { color: var(--led-yellow); text-shadow: 0 0 8px rgba(255, 200, 0, 0.7); }
-  100% { color: #3a3835; text-shadow: none; }
-}
-
 /* Mode indicators - clickable */
 .lcd-interactive button.lcd-mode {
   background: none;
@@ -951,47 +940,50 @@ textarea.textarea.floating-prompt-input.forging {
   cursor: pointer;
   padding: 4px 6px;
   margin: -4px -2px;
-  color: #3a3835;
-  text-shadow: none;
-}
-
-.lcd-interactive button.lcd-mode:hover:not(.lit) {
-  color: #6a6560;
 }
 
 .lcd-interactive button.lcd-mode:active {
   transform: scale(0.95);
 }
 
-/* Lit states - instant on */
-.lcd-interactive button.lcd-mode.lit.forge {
+/* Forge button */
+.lcd-interactive button.lcd-mode.forge {
+  color: #3a3835;
+  text-shadow: none;
+  transition: color 0.6s ease-out, text-shadow 0.6s ease-out;
+}
+
+.lcd-interactive button.lcd-mode.forge.lit {
   color: var(--led-orange);
   text-shadow: 0 0 8px rgba(255, 140, 0, 0.7);
-  animation: none;
 }
 
-.lcd-interactive button.lcd-mode.lit.forge:hover {
+.lcd-interactive button.lcd-mode.forge:hover:not(.lit) {
+  color: #6a6560;
+}
+
+.lcd-interactive button.lcd-mode.forge.lit:hover {
   filter: brightness(1.15);
 }
 
-.lcd-interactive button.lcd-mode.lit.refine {
+/* Refine button */
+.lcd-interactive button.lcd-mode.refine {
+  color: #3a3835;
+  text-shadow: none;
+  transition: color 0.6s ease-out, text-shadow 0.6s ease-out;
+}
+
+.lcd-interactive button.lcd-mode.refine.lit {
   color: var(--led-yellow);
   text-shadow: 0 0 8px rgba(255, 200, 0, 0.7);
-  animation: none;
 }
 
-.lcd-interactive button.lcd-mode.lit.refine:hover {
+.lcd-interactive button.lcd-mode.refine:hover:not(.lit) {
+  color: #6a6560;
+}
+
+.lcd-interactive button.lcd-mode.refine.lit:hover {
   filter: brightness(1.15);
-}
-
-/* When NOT lit, play cool-off animation (only for forge button) */
-.lcd-interactive button.lcd-mode.forge:not(.lit) {
-  animation: mode-cool-off 0.6s ease-out forwards;
-}
-
-/* When NOT lit, play cool-off animation (only for refine button) */
-.lcd-interactive button.lcd-mode.refine:not(.lit) {
-  animation: mode-cool-off-refine 0.6s ease-out forwards;
 }
 
 /* Specs panel header */
