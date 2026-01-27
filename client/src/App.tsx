@@ -1460,14 +1460,29 @@ export default function App() {
               </button>
             ))}
             <span className="lcd-spec-sep">│</span>
-            <span className={`lcd-spec-item lcd-mode ${!editImage ? 'lit forge' : ''}`}>
+            <button 
+              className={`lcd-spec-item lcd-mode ${!editImage ? 'lit forge' : ''}`}
+              onClick={() => {
+                if (editImage) {
+                  setEditImage(null)
+                  setResult(null)
+                }
+              }}
+            >
               <Flame className="w-3 h-3" />
               Forging
-            </span>
-            <span className={`lcd-spec-item lcd-mode ${editImage ? 'lit refine' : ''}`}>
+            </button>
+            <button 
+              className={`lcd-spec-item lcd-mode ${editImage ? 'lit refine' : ''}`}
+              onClick={() => {
+                if (!editImage) {
+                  scrollToRefine()
+                }
+              }}
+            >
               <Hammer className="w-3 h-3" />
               Refining
-            </span>
+            </button>
             <LCDFireGrid active={isGenerating || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           

@@ -931,20 +931,42 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
-/* Mode indicators */
-.lcd-mode {
+/* Mode indicators - clickable */
+button.lcd-mode {
+  background: none;
+  border: none;
   text-transform: uppercase;
-  transition: color 0.2s ease, text-shadow 0.2s ease;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin: -4px -2px;
+  transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.1s ease;
 }
 
-.lcd-mode.lit.forge {
+button.lcd-mode:hover:not(.lit) {
+  color: #8a8580;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+button.lcd-mode:active {
+  transform: scale(0.95);
+}
+
+button.lcd-mode.lit.forge {
   color: var(--led-orange);
   text-shadow: 0 0 8px rgba(255, 140, 0, 0.7);
 }
 
-.lcd-mode.lit.refine {
+button.lcd-mode.lit.forge:hover {
+  filter: brightness(1.15);
+}
+
+button.lcd-mode.lit.refine {
   color: var(--led-yellow);
   text-shadow: 0 0 8px rgba(255, 200, 0, 0.7);
+}
+
+button.lcd-mode.lit.refine:hover {
+  filter: brightness(1.15);
 }
 
 /* Specs panel header */
