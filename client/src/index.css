@@ -545,22 +545,18 @@ textarea.textarea.floating-prompt-input.forging {
 
 .gen-panel-list {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   padding: 10px;
-  padding-right: 6px; /* Leave space for scrollbar */
   background-color: #e8e4e0;
-  /* Custom scrollbar - always visible but subtle */
+  /* Reserve space for scrollbar so it doesn't overlay content */
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
-}
-
-.gen-panel-list:hover {
-  scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 .gen-panel-list::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .gen-panel-list::-webkit-scrollbar-track {
@@ -568,12 +564,8 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 2px;
-}
-
-.gen-panel-list:hover::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
 }
 
 .gen-panel-list::-webkit-scrollbar-thumb:hover {
