@@ -14,41 +14,54 @@ interface LCDRippleGridProps {
   mode?: 'forge' | 'refine'
 }
 
-// Ripple colors - brighter, more visible glow
+// Ripple colors - using the same LED palette as fire, arranged as a wave
+// Ramp up to peak brightness then back down
 const RIPPLE_COLORS_FORGE = [
-  '#2a2928', // 0 - off/base
-  '#3d2820', // 1 
-  '#5a3525', // 2 
-  '#7a4530', // 3 
-  '#9a5535', // 4 
-  '#ba6540', // 5 
-  '#da7545', // 6 - peak approaching
-  '#ff8550', // 7 - peak (bright!)
-  '#da7545', // 8 
-  '#ba6540', // 9 
-  '#9a5535', // 10
-  '#7a4530', // 11
-  '#5a3525', // 12
-  '#3d2820', // 13
-  '#2a2928', // 14 - back to off
+  '#2a2928', // 0 - off
+  '#3d1f10', // 1 
+  '#5c2510', // 2 
+  '#7a2d0a', // 3 
+  '#993505', // 4 
+  '#b84000', // 5 
+  '#d94a00', // 6 
+  '#e64a19', // 7 
+  '#f55d00', // 8 
+  '#ff7200', // 9 
+  '#ff8800', // 10 - peak
+  '#ff7200', // 11
+  '#f55d00', // 12
+  '#e64a19', // 13
+  '#d94a00', // 14
+  '#b84000', // 15
+  '#993505', // 16
+  '#7a2d0a', // 17
+  '#5c2510', // 18
+  '#3d1f10', // 19
+  '#2a2928', // 20 - back to off
 ]
 
 const RIPPLE_COLORS_REFINE = [
-  '#2a2928', // 0 - off/base
-  '#352f20', // 1 
-  '#4a4318', // 2 
-  '#5f5710', // 3 
-  '#746b08', // 4 
-  '#8a8000', // 5 
-  '#a09500', // 6 - peak approaching
-  '#c0b000', // 7 - peak (bright!)
-  '#a09500', // 8 
-  '#8a8000', // 9 
-  '#746b08', // 10
-  '#5f5710', // 11
-  '#4a4318', // 12
-  '#352f20', // 13
-  '#2a2928', // 14 - back to off
+  '#2a2928', // 0 - off
+  '#3d2f10', // 1 
+  '#5c4a10', // 2 
+  '#7a6510', // 3 
+  '#998005', // 4 
+  '#b89500', // 5 
+  '#d9a800', // 6 
+  '#e6b000', // 7 
+  '#f5b800', // 8 
+  '#ffc200', // 9 
+  '#ffcc00', // 10 - peak
+  '#ffc200', // 11
+  '#f5b800', // 12
+  '#e6b000', // 13
+  '#d9a800', // 14
+  '#b89500', // 15
+  '#998005', // 16
+  '#7a6510', // 17
+  '#5c4a10', // 18
+  '#3d2f10', // 19
+  '#2a2928', // 20 - back to off
 ]
 
 export function LCDRippleGrid({ 
