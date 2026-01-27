@@ -446,7 +446,7 @@ export default function App() {
     setIntroAnimating(false)
   }, [introAnimating])
   
-  // Play intro animation with custom text
+  // Play intro animation with custom text - smooth left-to-right reveal
   const playIntroAnimation = useCallback((text: string, delay = 500) => {
     // Cancel any existing animation
     if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
@@ -455,30 +455,23 @@ export default function App() {
     if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
     introTimersRef.current = {}
     
-    let charIndex = 0
     setIntroAnimating(true)
     
     introTimersRef.current.start = setTimeout(() => {
+      // Set full text and start reveal animation via CSS class
+      setPrompt(text)
       setPromptHot(true)
       
-      introTimersRef.current.type = setInterval(() => {
-        if (charIndex < text.length) {
-          setPrompt(text.slice(0, charIndex + 1))
-          charIndex++
-        } else {
-          if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
-          // Cool down and clear after transition completes
-          introTimersRef.current.cool = setTimeout(() => {
-            setPromptHot(false)
-            // Wait for full 2s color/glow transition to complete
-            introTimersRef.current.clear = setTimeout(() => {
-              setPrompt('')
-              setIntroPlayed(true)
-              setIntroAnimating(false)
-            }, 2100)
-          }, 300)
-        }
-      }, 45)
+      // After reveal animation completes (~800ms), start cooldown
+      introTimersRef.current.cool = setTimeout(() => {
+        setPromptHot(false)
+        // Wait for color/glow transition to complete
+        introTimersRef.current.clear = setTimeout(() => {
+          setPrompt('')
+          setIntroPlayed(true)
+          setIntroAnimating(false)
+        }, 2100)
+      }, 1000) // Hold after reveal completes
     }, delay)
   }, [])
   
