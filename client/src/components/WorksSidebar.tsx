@@ -230,52 +230,60 @@ export function WorksSidebar({
                 )}
                 
                 {/* Existing generations */}
-                {displayImages.map((img) => (
-                  <motion.button
-                    key={img.id}
-                    className={`gen-panel-thumb ${failedImages.has(img.id) ? 'failed' : ''}`}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={() => onSelectImage?.(
-                      `${API_URL}${img.imageUrl}`,
-                      img.generation
-                    )}
-                    onMouseEnter={() => setHoveredImageId(img.id)}
-                    onMouseLeave={() => setHoveredImageId(null)}
-                    title={img.generation.prompt || 'Click to view'}
-                  >
-                    {failedImages.has(img.id) ? (
-                      <div className="gen-panel-thumb-err">
-                        <ImageOff className="w-5 h-5" />
-                      </div>
-                    ) : (
-                      <img 
-                        src={img.thumbnailUrl 
-                          ? `${API_URL}${img.thumbnailUrl}` 
-                          : `${API_URL}${img.imageUrl}`
+                {displayImages.map((img) => {
+                  const isFailed = failedImages.has(img.id)
+                  return (
+                    <motion.button
+                      key={img.id}
+                      className={`gen-panel-thumb ${isFailed ? 'failed' : ''}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                      onClick={() => {
+                        // Don't select broken images
+                        if (!isFailed) {
+                          onSelectImage?.(
+                            `${API_URL}${img.imageUrl}`,
+                            img.generation
+                          )
                         }
-                        alt=""
-                        loading="lazy"
-                        onError={() => handleImageError(img.id)}
-                      />
-                    )}
-                    {/* Delete button on hover */}
-                    {hoveredImageId === img.id && onDeleteImage && (
-                      <button
-                        className="gen-panel-delete"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDeleteImage(img.generation.id)
-                        }}
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </motion.button>
-                ))}
+                      }}
+                      onMouseEnter={() => setHoveredImageId(img.id)}
+                      onMouseLeave={() => setHoveredImageId(null)}
+                      title={isFailed ? 'Image unavailable - click trash to remove' : (img.generation.prompt || 'Click to view')}
+                    >
+                      {isFailed ? (
+                        <div className="gen-panel-thumb-err">
+                          <ImageOff className="w-5 h-5" />
+                        </div>
+                      ) : (
+                        <img 
+                          src={img.thumbnailUrl 
+                            ? `${API_URL}${img.thumbnailUrl}` 
+                            : `${API_URL}${img.imageUrl}`
+                          }
+                          alt=""
+                          loading="lazy"
+                          onError={() => handleImageError(img.id)}
+                        />
+                      )}
+                      {/* Delete button - always show for failed images, hover for normal */}
+                      {(isFailed || hoveredImageId === img.id) && onDeleteImage && (
+                        <button
+                          className="gen-panel-delete"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDeleteImage(img.generation.id)
+                          }}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </motion.button>
+                  )
+                })}
               </AnimatePresence>
               
               {loadingMore && (

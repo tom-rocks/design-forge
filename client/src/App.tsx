@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search, ImageOff, Trash2, Star, Download, Flame, Hammer, Gem, RotateCcw } from 'lucide-react'
+import { LogIn, Plus, X, Search, Trash2, Star, Download, Flame, Hammer, Gem, RotateCcw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -96,7 +96,6 @@ export default function App() {
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<Reference[]>([])
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
-  const [editImageError, setEditImageError] = useState(false)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
   const [modeFlameActive, setModeFlameActive] = useState(false) // Brief flame animation when switching modes
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
@@ -324,10 +323,8 @@ export default function App() {
   promptRef2.current = prompt
   
   // Trigger glow effect and brief flame animation when switching modes
-  // Also reset error state when editImage changes
   useEffect(() => {
     if (editImage) {
-      setEditImageError(false) // Reset error when new image is selected
       setRefineGlow(true)
       
       // Only play flame animation when switching from forge to refine, not refine to refine
@@ -347,7 +344,6 @@ export default function App() {
       }
     } else {
       setRefineGlow(false)
-      setEditImageError(false)
       
       // Switching from refine to forge - play flame animation and trigger intro
       if (wasInRefineRef.current) {
@@ -1157,19 +1153,15 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
             >
-              <div className={`canvas-edit-preview ${editImageError ? 'error' : ''}`}>
-                {editImageError ? (
-                  <div className="canvas-edit-error">
-                    <ImageOff className="w-12 h-12" />
-                    <span>Image unavailable</span>
-                  </div>
-                ) : (
-                  <img 
-                    src={editImage.url} 
-                    alt="Image to refine" 
-                    onError={() => setEditImageError(true)}
-                  />
-                )}
+              <div className="canvas-edit-preview">
+                <img 
+                  src={editImage.url} 
+                  alt="Image to refine" 
+                  onError={() => {
+                    // Auto-deselect broken images - switches back to forge mode
+                    setEditImage(null)
+                  }}
+                />
                 <button 
                   onClick={() => setEditImage(null)} 
                   className="canvas-edit-remove"
@@ -1178,7 +1170,7 @@ export default function App() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="canvas-edit-label">{editImageError ? 'Image not found' : 'Refine Mode'}</p>
+              <p className="canvas-edit-label">Refine Mode</p>
             </motion.div>
           ) : (
             /* EMPTY STATE - Source picker */
