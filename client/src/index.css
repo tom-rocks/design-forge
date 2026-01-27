@@ -452,6 +452,7 @@ textarea.textarea.floating-prompt-input.prompt-hot {
   color: var(--accent-text);
   text-shadow: 0 0 8px var(--accent-text-glow);
   transition: color 0.05s ease-out, text-shadow 0.05s ease-out;
+  clip-path: inset(0 0 0 0);
   animation: text-reveal 0.8s ease-out forwards;
 }
 

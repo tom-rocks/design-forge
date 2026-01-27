@@ -458,9 +458,12 @@ export default function App() {
     setIntroAnimating(true)
     
     introTimersRef.current.start = setTimeout(() => {
-      // Set full text and start reveal animation via CSS class
-      setPrompt(text)
+      // Apply hot class first (starts clipped), then set text
       setPromptHot(true)
+      // Small delay to ensure clip-path is applied before text appears
+      requestAnimationFrame(() => {
+        setPrompt(text)
+      })
       
       // After reveal animation completes (~800ms), start cooldown
       introTimersRef.current.cool = setTimeout(() => {
