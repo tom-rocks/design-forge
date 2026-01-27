@@ -882,10 +882,6 @@ textarea.textarea.floating-prompt-input.forging {
   transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.1s ease;
 }
 
-/* Mode buttons get slower transition for cool-off effect */
-.lcd-interactive button.lcd-spec-item.lcd-mode {
-  transition: color 0.5s ease-out, text-shadow 0.5s ease-out, transform 0.1s ease, filter 0.3s ease;
-}
 
 .lcd-interactive button.lcd-spec-item:hover:not(:disabled):not(.lit) {
   color: #b0ada8;
@@ -937,41 +933,42 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 /* Mode indicators - clickable */
-button.lcd-mode {
+.lcd-interactive button.lcd-mode {
   background: none;
   border: none;
   text-transform: uppercase;
   cursor: pointer;
   padding: 4px 6px;
   margin: -4px -2px;
-  /* Smooth transitions for all state changes */
-  transition: color 0.5s ease-out, text-shadow 0.5s ease-out, transform 0.1s ease, filter 0.3s ease;
+  color: #3a3835;
+  text-shadow: none;
+  /* Smooth fade when cooling off */
+  transition: color 0.6s ease-out, text-shadow 0.6s ease-out, filter 0.3s ease !important;
 }
 
-button.lcd-mode:hover:not(.lit) {
-  color: #8a8580;
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+.lcd-interactive button.lcd-mode:hover:not(.lit) {
+  color: #6a6560;
 }
 
-button.lcd-mode:active {
+.lcd-interactive button.lcd-mode:active {
   transform: scale(0.95);
 }
 
-button.lcd-mode.lit.forge {
+.lcd-interactive button.lcd-mode.lit.forge {
   color: var(--led-orange);
   text-shadow: 0 0 8px rgba(255, 140, 0, 0.7);
 }
 
-button.lcd-mode.lit.forge:hover {
+.lcd-interactive button.lcd-mode.lit.forge:hover {
   filter: brightness(1.15);
 }
 
-button.lcd-mode.lit.refine {
+.lcd-interactive button.lcd-mode.lit.refine {
   color: var(--led-yellow);
   text-shadow: 0 0 8px rgba(255, 200, 0, 0.7);
 }
 
-button.lcd-mode.lit.refine:hover {
+.lcd-interactive button.lcd-mode.lit.refine:hover {
   filter: brightness(1.15);
 }
 
