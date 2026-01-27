@@ -394,19 +394,15 @@ body {
   margin-left: auto; /* Push content before it to the left */
 }
 
-/* Ripple grids overlay the fire grids */
+/* Ripple grids - same positioning as fire grids (conditionally rendered) */
 .lcd-ripple-left {
-  position: absolute;
-  left: 10px;
-  top: 6px;
-  pointer-events: none;
+  flex-shrink: 0;
+  margin-right: auto;
 }
 
 .lcd-ripple-right {
-  position: absolute;
-  right: 10px;
-  top: 6px;
-  pointer-events: none;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .lcd-floating {

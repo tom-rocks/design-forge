@@ -167,10 +167,6 @@ export function LCDRippleGrid({
             height: dotSize,
             borderRadius: 1,
             backgroundColor: color,
-            boxShadow: color !== 'transparent' && color !== '#2a2928' 
-              ? `0 0 ${dotSize * 2}px ${color}` 
-              : undefined,
-            transition: 'background-color 80ms linear, box-shadow 80ms linear',
           }}
         />
       ))}
