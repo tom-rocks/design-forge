@@ -4,9 +4,10 @@ import { motion } from 'framer-motion'
 interface ImageCanvasProps {
   images: string[]
   onZoomChange?: (zoomPercent: number) => void
+  onImageError?: () => void
 }
 
-export function ImageCanvas({ images, onZoomChange }: ImageCanvasProps) {
+export function ImageCanvas({ images, onZoomChange, onImageError }: ImageCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   
@@ -123,7 +124,7 @@ export function ImageCanvas({ images, onZoomChange }: ImageCanvasProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.08, duration: 0.3, ease: 'easeOut' }}
               >
-                <img src={url} alt={`Output ${i + 1}`} draggable={false} />
+                <img src={url} alt={`Output ${i + 1}`} draggable={false} onError={onImageError} />
               </motion.div>
             ))}
           </div>

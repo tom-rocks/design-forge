@@ -1135,33 +1135,20 @@ export default function App() {
               <ImageCanvas images={validImages} onZoomChange={setCanvasZoom} />
             </motion.div>
           ) : editImage ? (
-            /* EDIT IMAGE SELECTED */
+            /* EDIT IMAGE SELECTED - displays like output using ImageCanvas */
             <motion.div 
               key="edit-image"
-              className="canvas-edit-image"
-              initial={{ opacity: 0, scale: 0.95 }}
+              className="canvas-output"
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="canvas-edit-preview">
-                <img 
-                  src={editImage.url} 
-                  alt="Image to refine" 
-                  onError={() => {
-                    // Auto-deselect broken images - switches back to forge mode
-                    setEditImage(null)
-                  }}
-                />
-                <button 
-                  onClick={() => setEditImage(null)} 
-                  className="canvas-edit-remove"
-                  title="Remove image"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="canvas-edit-label">Refine Mode</p>
+              <ImageCanvas 
+                images={[editImage.url]} 
+                onZoomChange={setCanvasZoom}
+                onImageError={() => setEditImage(null)}
+              />
             </motion.div>
           ) : (
             /* EMPTY STATE - Source picker */
