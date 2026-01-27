@@ -8,6 +8,7 @@ import {
   Button, 
   Textarea,
   LCDFireGrid,
+  LCDRippleGrid,
   HighriseSearch,
   HistoryGrid,
   Favorites,
@@ -98,7 +99,7 @@ export default function App() {
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
   const [editImageError, setEditImageError] = useState(false)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
-  const [modeFlameActive, setModeFlameActive] = useState(false) // Brief flame animation when switching modes
+  const [modeRippleActive, setModeRippleActive] = useState(false) // Ripple animation when switching modes
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   void refineGlow // Suppress unused warning - effect still sets this
   void refineExpanded // Suppress unused warning - still set by callbacks
@@ -474,7 +475,7 @@ export default function App() {
       cancelIntroAnimation()
       
       // Fire up the flames immediately
-      setModeFlameActive(true)
+      setModeRippleActive(true)
       
       // Set glow for refine mode
       if (isRefine) {
@@ -509,7 +510,7 @@ export default function App() {
       // Schedule flames to turn off (with longer duration during rapid switching)
       const flameDuration = timeSinceLastSwitch < 400 ? 2000 : 1500
       flameOffTimerRef.current = setTimeout(() => {
-        setModeFlameActive(false)
+        setModeRippleActive(false)
       }, flameDuration)
       
       wasInRefineRef.current = isRefine
@@ -1428,7 +1429,8 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDRippleGrid active={modeRippleActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-left" direction="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
@@ -1483,7 +1485,8 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
             </button>
-            <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDRippleGrid active={modeRippleActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-right" direction="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}

@@ -394,6 +394,21 @@ body {
   margin-left: auto; /* Push content before it to the left */
 }
 
+/* Ripple grids overlay the fire grids */
+.lcd-ripple-left {
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  pointer-events: none;
+}
+
+.lcd-ripple-right {
+  position: absolute;
+  right: 10px;
+  top: 6px;
+  pointer-events: none;
+}
+
 .lcd-floating {
   padding: 6px 10px;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -2684,6 +2699,7 @@ textarea.textarea.floating-prompt-input.forging {
 
 /* LCD Screen - TE style display, recessed into material */
 .lcd-screen {
+  position: relative;
   background: #1a1918;
   border-radius: 4px;
   padding: 6px 10px;
