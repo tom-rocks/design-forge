@@ -879,7 +879,12 @@ textarea.textarea.floating-prompt-input.forging {
   padding: 4px 6px;
   margin: -4px -2px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.1s ease;
+}
+
+/* Mode buttons get slower transition for cool-off effect */
+.lcd-interactive button.lcd-spec-item.lcd-mode {
+  transition: color 0.5s ease-out, text-shadow 0.5s ease-out, transform 0.1s ease, filter 0.3s ease;
 }
 
 .lcd-interactive button.lcd-spec-item:hover:not(:disabled):not(.lit) {
