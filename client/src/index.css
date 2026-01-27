@@ -449,22 +449,17 @@ textarea.textarea.floating-prompt-input::placeholder {
 }
 
 textarea.textarea.floating-prompt-input.prompt-hot {
-  background: linear-gradient(90deg, var(--accent-text) 0%, var(--accent-text) 50%, transparent 50%, transparent 100%);
-  background-size: 200% 100%;
-  background-position: 100% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: text-reveal 0.8s ease-out forwards;
-  filter: drop-shadow(0 0 8px var(--accent-text-glow));
+  color: var(--accent-text);
+  text-shadow: 0 0 8px var(--accent-text-glow);
+  animation: text-reveal-opacity 0.8s ease-out forwards;
 }
 
-@keyframes text-reveal {
+@keyframes text-reveal-opacity {
   0% {
-    background-position: 100% 0;
+    opacity: 0;
   }
   100% {
-    background-position: 0% 0;
+    opacity: 1;
   }
 }
 
