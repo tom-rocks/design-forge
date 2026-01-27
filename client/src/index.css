@@ -931,6 +931,22 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
+/* Mode indicators */
+.lcd-mode {
+  text-transform: uppercase;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.lcd-mode.lit.forge {
+  color: var(--led-orange);
+  text-shadow: 0 0 8px rgba(255, 140, 0, 0.7);
+}
+
+.lcd-mode.lit.refine {
+  color: var(--led-yellow);
+  text-shadow: 0 0 8px rgba(255, 200, 0, 0.7);
+}
+
 /* Specs panel header */
 .panel-header.collapsible {
   cursor: pointer;

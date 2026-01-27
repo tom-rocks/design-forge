@@ -114,6 +114,7 @@ export default function App() {
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [resolution, setResolution] = useState<string>('2K')
   const [outputCount, setOutputCount] = useState<1 | 2 | 4>(1)
+  void setOutputCount // Output count UI removed, keeping state for generation logic
   
   // Alloy modal state
   const [alloyModalOpen, setAlloyModalOpen] = useState(false)
@@ -826,14 +827,6 @@ export default function App() {
     })
   }, [])
 
-  const cycleOutputCount = () => {
-    setOutputCount(prev => prev === 1 ? 2 : prev === 2 ? 4 : 1)
-    // Clear any existing output to show preview grid
-    setResult(null)
-    setLoadedImages(new Set())
-    setFailedImages(new Set())
-  }
-
   const downloadOutputImage = useCallback((url: string) => {
     const link = document.createElement('a')
     link.href = url
@@ -1467,18 +1460,14 @@ export default function App() {
               </button>
             ))}
             <span className="lcd-spec-sep">│</span>
-            <button 
-              className="lcd-spec-item lcd-output-count"
-              onClick={cycleOutputCount}
-              disabled={isGenerating}
-            >
-              <span className="lcd-grid-icon">
-                <span className={`lcd-grid-cell ${outputCount >= 1 ? 'lit' : ''}`} />
-                <span className={`lcd-grid-cell ${outputCount >= 2 ? 'lit' : ''}`} />
-                <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
-                <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
-              </span>
-            </button>
+            <span className={`lcd-spec-item lcd-mode ${!editImage ? 'lit forge' : ''}`}>
+              <Flame className="w-3 h-3" />
+              Forging
+            </span>
+            <span className={`lcd-spec-item lcd-mode ${editImage ? 'lit refine' : ''}`}>
+              <Hammer className="w-3 h-3" />
+              Refining
+            </span>
             <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
