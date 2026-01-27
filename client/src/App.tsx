@@ -509,7 +509,7 @@ export default function App() {
       cancelIntroAnimation()
       // Clear existing prompt and play the refine intro animation
       setPrompt('')
-      playIntroAnimation("Describe what you want to change...", 800)
+      playIntroAnimation("Describe what you want to change...", 300)
     }
     
     lastModeRef.current = currentMode
