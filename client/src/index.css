@@ -953,8 +953,8 @@ button.lcd-mode:active {
 }
 
 button.lcd-mode.lit {
-  /* Fast light up when becoming active */
-  transition: color 0.1s ease, text-shadow 0.1s ease, transform 0.1s ease, filter 0.15s ease;
+  /* Instant light up when becoming active */
+  transition: color 0s, text-shadow 0s, transform 0.1s ease, filter 0.15s ease;
 }
 
 button.lcd-mode.lit.forge {
