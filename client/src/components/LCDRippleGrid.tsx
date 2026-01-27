@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 
 interface LCDRippleGridProps {
-  active: boolean
+  /** Increment this to trigger a new ripple */
+  trigger: number
   cols?: number
   rows?: number
   dotSize?: number
@@ -13,45 +14,45 @@ interface LCDRippleGridProps {
   mode?: 'forge' | 'refine'
 }
 
-// Ripple colors - subtle glow that passes through
+// Ripple colors - brighter, more visible glow
 const RIPPLE_COLORS_FORGE = [
   '#2a2928', // 0 - off/base
-  '#352a25', // 1 
-  '#453028', // 2 
-  '#55382a', // 3 
-  '#65402c', // 4 
-  '#75482e', // 5 - peak approaching
-  '#8a5535', // 6 
-  '#a0653f', // 7 - peak
-  '#8a5535', // 8 
-  '#75482e', // 9 
-  '#65402c', // 10
-  '#55382a', // 11
-  '#453028', // 12
-  '#352a25', // 13
+  '#3d2820', // 1 
+  '#5a3525', // 2 
+  '#7a4530', // 3 
+  '#9a5535', // 4 
+  '#ba6540', // 5 
+  '#da7545', // 6 - peak approaching
+  '#ff8550', // 7 - peak (bright!)
+  '#da7545', // 8 
+  '#ba6540', // 9 
+  '#9a5535', // 10
+  '#7a4530', // 11
+  '#5a3525', // 12
+  '#3d2820', // 13
   '#2a2928', // 14 - back to off
 ]
 
 const RIPPLE_COLORS_REFINE = [
   '#2a2928', // 0 - off/base
-  '#2d2c25', // 1 
-  '#353320', // 2 
-  '#3d3a1a', // 3 
-  '#454115', // 4 
-  '#504a12', // 5 - peak approaching
-  '#605510', // 6 
-  '#70620e', // 7 - peak
-  '#605510', // 8 
-  '#504a12', // 9 
-  '#454115', // 10
-  '#3d3a1a', // 11
-  '#353320', // 12
-  '#2d2c25', // 13
+  '#352f20', // 1 
+  '#4a4318', // 2 
+  '#5f5710', // 3 
+  '#746b08', // 4 
+  '#8a8000', // 5 
+  '#a09500', // 6 - peak approaching
+  '#c0b000', // 7 - peak (bright!)
+  '#a09500', // 8 
+  '#8a8000', // 9 
+  '#746b08', // 10
+  '#5f5710', // 11
+  '#4a4318', // 12
+  '#352f20', // 13
   '#2a2928', // 14 - back to off
 ]
 
 export function LCDRippleGrid({ 
-  active, 
+  trigger, 
   cols = 14, 
   rows = 3, 
   dotSize = 4,
@@ -61,22 +62,29 @@ export function LCDRippleGrid({
   mode = 'forge'
 }: LCDRippleGridProps) {
   const RIPPLE_COLORS = mode === 'refine' ? RIPPLE_COLORS_REFINE : RIPPLE_COLORS_FORGE
-  const WAVE_WIDTH = RIPPLE_COLORS.length // Width of the wave in columns
+  const WAVE_WIDTH = RIPPLE_COLORS.length
   
-  const [wavePosition, setWavePosition] = useState(-WAVE_WIDTH) // Start off-screen
+  const [wavePosition, setWavePosition] = useState(-WAVE_WIDTH)
   const [isAnimating, setIsAnimating] = useState(false)
   const animationRef = useRef<number>(0)
-  const wasActiveRef = useRef(false)
+  const lastTriggerRef = useRef(0)
   
-  // Trigger ripple when active becomes true
+  // Trigger ripple when trigger value changes
   useEffect(() => {
-    if (active && !wasActiveRef.current) {
+    if (trigger > 0 && trigger !== lastTriggerRef.current) {
+      lastTriggerRef.current = trigger
+      
+      // Cancel any existing animation
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+      
       setIsAnimating(true)
       const startPos = direction === 'right' ? -WAVE_WIDTH : cols + WAVE_WIDTH
       const endPos = direction === 'right' ? cols + WAVE_WIDTH : -WAVE_WIDTH
       setWavePosition(startPos)
       
-      const duration = 800 // ms for wave to cross
+      const duration = 1200 // Slower - 1.2 seconds for wave to cross
       const startTime = Date.now()
       
       const animate = () => {
@@ -99,28 +107,24 @@ export function LCDRippleGrid({
       
       animationRef.current = requestAnimationFrame(animate)
     }
-    wasActiveRef.current = active
     
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [active, cols, direction, WAVE_WIDTH])
+  }, [trigger, cols, direction, WAVE_WIDTH])
   
   // Calculate color for each cell based on wave position
   const getColorIndex = (x: number): number => {
     if (!isAnimating) return 0
     
-    // Distance from wave center
     const distanceFromWave = x - wavePosition
-    
-    // Map distance to color index (center of wave is peak brightness)
     const halfWidth = WAVE_WIDTH / 2
     const normalizedDist = distanceFromWave + halfWidth
     
     if (normalizedDist < 0 || normalizedDist >= WAVE_WIDTH) {
-      return 0 // Outside wave
+      return 0
     }
     
     return Math.floor(normalizedDist)
@@ -131,7 +135,7 @@ export function LCDRippleGrid({
     gridTemplateColumns: `repeat(${cols}, ${dotSize}px)`,
     gridTemplateRows: `repeat(${rows}, ${dotSize}px)`,
     gap: `${gap}px`,
-    background: '#1a1918',
+    background: 'transparent', // Transparent so fire shows through when not rippling
     padding: `${gap}px`,
     transform: 'translateZ(0)',
     willChange: 'contents',
@@ -143,10 +147,11 @@ export function LCDRippleGrid({
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const colorIdx = getColorIndex(x)
-        // Slight vertical variation - dimmer at top
-        const verticalFade = 1 - (y * 0.15)
-        const adjustedIdx = Math.round(colorIdx * verticalFade)
-        result.push(RIPPLE_COLORS[Math.max(0, Math.min(adjustedIdx, RIPPLE_COLORS.length - 1))])
+        // Slight vertical variation - brighter in middle row
+        const verticalBoost = y === 1 ? 1.1 : 1
+        const adjustedIdx = Math.round(colorIdx * verticalBoost)
+        const color = RIPPLE_COLORS[Math.max(0, Math.min(adjustedIdx, RIPPLE_COLORS.length - 1))]
+        result.push(colorIdx > 0 ? color : 'transparent') // Transparent when not lit
       }
     }
     return result
@@ -162,7 +167,10 @@ export function LCDRippleGrid({
             height: dotSize,
             borderRadius: 1,
             backgroundColor: color,
-            transition: 'background-color 50ms linear',
+            boxShadow: color !== 'transparent' && color !== '#2a2928' 
+              ? `0 0 ${dotSize * 2}px ${color}` 
+              : undefined,
+            transition: 'background-color 80ms linear, box-shadow 80ms linear',
           }}
         />
       ))}

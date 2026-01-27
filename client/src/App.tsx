@@ -99,7 +99,7 @@ export default function App() {
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
   const [editImageError, setEditImageError] = useState(false)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
-  const [modeRippleActive, setModeRippleActive] = useState(false) // Ripple animation when switching modes
+  const [modeRippleTrigger, setModeRippleTrigger] = useState(0) // Increment to trigger ripple animation
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   void refineGlow // Suppress unused warning - effect still sets this
   void refineExpanded // Suppress unused warning - still set by callbacks
@@ -323,7 +323,6 @@ export default function App() {
   const promptRef2 = useRef(prompt) // Track prompt without triggering effect
   promptRef2.current = prompt
   const modeSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const flameOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastModeSwitchRef = useRef<number>(0)
   
   // Check bridge status (either via server WebSocket or AP iframe context)
@@ -465,17 +464,11 @@ export default function App() {
         modeSettleTimerRef.current = null
       }
       
-      // Cancel pending flame-off timer - keep flames on during rapid switching
-      if (flameOffTimerRef.current) {
-        clearTimeout(flameOffTimerRef.current)
-        flameOffTimerRef.current = null
-      }
-      
       // Cancel any pending intro animation
       cancelIntroAnimation()
       
-      // Fire up the flames immediately
-      setModeRippleActive(true)
+      // Trigger ripple animation
+      setModeRippleTrigger(prev => prev + 1)
       
       // Set glow for refine mode
       if (isRefine) {
@@ -507,19 +500,12 @@ export default function App() {
         }
       }, settleDelay)
       
-      // Schedule flames to turn off (with longer duration during rapid switching)
-      const flameDuration = timeSinceLastSwitch < 400 ? 2000 : 1500
-      flameOffTimerRef.current = setTimeout(() => {
-        setModeRippleActive(false)
-      }, flameDuration)
-      
       wasInRefineRef.current = isRefine
     }
     
     return () => {
       // Cleanup timers on unmount
       if (modeSettleTimerRef.current) clearTimeout(modeSettleTimerRef.current)
-      if (flameOffTimerRef.current) clearTimeout(flameOffTimerRef.current)
     }
   }, [editImage, cancelIntroAnimation, playIntroAnimation])
   
@@ -1430,7 +1416,7 @@ export default function App() {
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
             <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
-            <LCDRippleGrid active={modeRippleActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-left" direction="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDRippleGrid trigger={modeRippleTrigger} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-left" direction="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
@@ -1485,7 +1471,7 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
             </button>
-            <LCDRippleGrid active={modeRippleActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-right" direction="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDRippleGrid trigger={modeRippleTrigger} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-right" direction="right" mode={editImage ? 'refine' : 'forge'} />
             <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
