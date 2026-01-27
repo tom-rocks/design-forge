@@ -1502,7 +1502,7 @@ export default function App() {
                   if (introAnimating) cancelIntroAnimation()
                   if (promptHot) setPromptHot(false)
                 }}
-                placeholder={introPlayed ? (editImage ? "Describe what you want to change..." : "Describe what you want to create...") : ""}
+                placeholder={introPlayed && !introAnimating ? (editImage ? "Describe what you want to change..." : "Describe what you want to create...") : ""}
                 rows={1}
               />
               <span className={`led prompt-led ${!prompt.trim() && !isGenerating ? 'blink' : prompt.trim() ? 'on' : ''}`} />
