@@ -8,7 +8,6 @@ import {
   Button, 
   Textarea,
   LCDFireGrid,
-  LCDRippleGrid,
   HighriseSearch,
   HistoryGrid,
   Favorites,
@@ -99,7 +98,7 @@ export default function App() {
   const [editImage, setEditImage] = useState<{ url: string; thumbnail?: string } | null>(null)
   const [editImageError, setEditImageError] = useState(false)
   const [refineGlow, setRefineGlow] = useState(false) // Temporary glow when image added
-  const [modeRippleTrigger, setModeRippleTrigger] = useState(0) // Increment to trigger ripple animation
+  const [modeFlameActive, setModeFlameActive] = useState(false) // Brief flame animation when switching modes
   const [refineExpanded, setRefineExpanded] = useState(false) // Whether refine picker is open
   void refineGlow // Suppress unused warning - effect still sets this
   void refineExpanded // Suppress unused warning - still set by callbacks
@@ -318,14 +317,53 @@ export default function App() {
     img.src = imageUrl
   }, [])
   
-  // Refs for mode transition debouncing (effect defined later, after functions)
+  // Track previous editImage to detect mode transitions
   const wasInRefineRef = useRef(false)
+  const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
   const promptRef2 = useRef(prompt) // Track prompt without triggering effect
   promptRef2.current = prompt
-  const editImageRef = useRef(editImage) // Track editImage for settle timeout
-  editImageRef.current = editImage
-  const modeSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const lastModeSwitchRef = useRef<number>(0)
+  
+  // Trigger glow effect and brief flame animation when switching modes
+  // Also reset error state when editImage changes
+  useEffect(() => {
+    if (editImage) {
+      setEditImageError(false) // Reset error when new image is selected
+      setRefineGlow(true)
+      
+      // Only play flame animation when switching from forge to refine, not refine to refine
+      if (!wasInRefineRef.current) {
+        setModeFlameActive(true)
+        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
+        wasInRefineRef.current = true
+        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
+        return () => {
+          clearTimeout(flameTimer)
+          clearTimeout(glowTimer)
+        }
+      } else {
+        // Already in refine mode, just reset glow timer
+        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
+        return () => clearTimeout(glowTimer)
+      }
+    } else {
+      setRefineGlow(false)
+      setEditImageError(false)
+      
+      // Switching from refine to forge - play flame animation and trigger intro
+      if (wasInRefineRef.current) {
+        setModeFlameActive(true)
+        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
+        // Trigger forge intro animation (use ref to avoid dependency)
+        if (!promptRef2.current.trim()) {
+          setShouldPlayForgeIntro(true)
+        }
+        wasInRefineRef.current = false
+        return () => clearTimeout(flameTimer)
+      }
+      
+      wasInRefineRef.current = false
+    }
+  }, [editImage]) // Only depend on editImage, not prompt
   
   // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
@@ -408,7 +446,7 @@ export default function App() {
     setIntroAnimating(false)
   }, [introAnimating])
   
-  // Play intro animation with custom text - smooth fade in
+  // Play intro animation with custom text
   const playIntroAnimation = useCallback((text: string, delay = 500) => {
     // Cancel any existing animation
     if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
@@ -417,23 +455,30 @@ export default function App() {
     if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
     introTimersRef.current = {}
     
+    let charIndex = 0
     setIntroAnimating(true)
     
     introTimersRef.current.start = setTimeout(() => {
-      // Set full text immediately and activate glow
-      setPrompt(text)
       setPromptHot(true)
       
-      // Hold for a moment, then cool down
-      introTimersRef.current.cool = setTimeout(() => {
-        setPromptHot(false)
-        // Wait for full 2s color/glow transition to complete
-        introTimersRef.current.clear = setTimeout(() => {
-          setPrompt('')
-          setIntroPlayed(true)
-          setIntroAnimating(false)
-        }, 2100)
-      }, 800) // Hold the glow for 800ms before fading
+      introTimersRef.current.type = setInterval(() => {
+        if (charIndex < text.length) {
+          setPrompt(text.slice(0, charIndex + 1))
+          charIndex++
+        } else {
+          if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
+          // Cool down and clear after transition completes
+          introTimersRef.current.cool = setTimeout(() => {
+            setPromptHot(false)
+            // Wait for full 2s color/glow transition to complete
+            introTimersRef.current.clear = setTimeout(() => {
+              setPrompt('')
+              setIntroPlayed(true)
+              setIntroAnimating(false)
+            }, 2100)
+          }, 300)
+        }
+      }, 45)
     }, delay)
   }, [])
   
@@ -443,74 +488,27 @@ export default function App() {
     playIntroAnimation("Describe what you want to create...")
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Unified mode switch handler with debouncing for rapid toggling
+  // Play intro animation when switching to refine mode
   useEffect(() => {
-    const isRefine = !!editImage
-    const wasRefine = wasInRefineRef.current
-    const now = Date.now()
-    const timeSinceLastSwitch = now - lastModeSwitchRef.current
+    const currentMode = editImage ? 'edit' : 'create'
     
-    // Always update error state and track mode
-    if (editImage) {
-      setEditImageError(false)
-    }
-    lastModeRef.current = isRefine ? 'edit' : 'create'
-    
-    // Detect actual mode change
-    if (isRefine !== wasRefine) {
-      lastModeSwitchRef.current = now
-      
-      // Cancel any pending settle actions
-      if (modeSettleTimerRef.current) {
-        clearTimeout(modeSettleTimerRef.current)
-        modeSettleTimerRef.current = null
-      }
-      
-      // Cancel any pending intro animation
-      cancelIntroAnimation()
-      
-      // Trigger ripple animation
-      setModeRippleTrigger(prev => prev + 1)
-      
-      // Set glow for refine mode
-      if (isRefine) {
-        setRefineGlow(true)
-      } else {
-        setRefineGlow(false)
-      }
-      
-      // Schedule flame cooldown and intro text after settling
-      // Longer delay = user is rapidly switching, wait for them to settle
-      const settleDelay = timeSinceLastSwitch < 400 ? 800 : 500
-      
-      modeSettleTimerRef.current = setTimeout(() => {
-        // Mode has settled - now play intro animation if appropriate
-        // Use ref to get current value, not stale closure
-        const currentIsRefine = !!editImageRef.current
-        
-        if (currentIsRefine && !promptRef2.current.trim()) {
-          // Settled in refine mode
-          setPrompt('')
-          playIntroAnimation("Describe what you want to change...", 200)
-        } else if (!currentIsRefine && !promptRef2.current.trim()) {
-          // Settled in forge mode
-          playIntroAnimation("Describe what you want to create...", 200)
-        }
-        
-        // Turn off glow after settling
-        if (currentIsRefine) {
-          setTimeout(() => setRefineGlow(false), 2000)
-        }
-      }, settleDelay)
-      
-      wasInRefineRef.current = isRefine
+    // Check if we just switched TO refine mode
+    if (currentMode === 'edit' && lastModeRef.current === 'create') {
+      // Clear existing prompt and play the refine intro animation
+      setPrompt('')
+      playIntroAnimation("Describe what you want to change...", 800)
     }
     
-    return () => {
-      // Cleanup timers on unmount
-      if (modeSettleTimerRef.current) clearTimeout(modeSettleTimerRef.current)
+    lastModeRef.current = currentMode
+  }, [editImage, playIntroAnimation])
+  
+  // Play intro animation when switching from refine to forge
+  useEffect(() => {
+    if (shouldPlayForgeIntro) {
+      playIntroAnimation("Describe what you want to create...", 300)
+      setShouldPlayForgeIntro(false)
     }
-  }, [editImage, cancelIntroAnimation, playIntroAnimation])
+  }, [shouldPlayForgeIntro, playIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
@@ -1418,8 +1416,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
-            <LCDRippleGrid trigger={modeRippleTrigger} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-left" direction="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
@@ -1474,8 +1471,7 @@ export default function App() {
                 <span className={`lcd-grid-cell ${outputCount >= 4 ? 'lit' : ''}`} />
               </span>
             </button>
-            <LCDRippleGrid trigger={modeRippleTrigger} cols={16} rows={3} dotSize={4} gap={1} className="lcd-ripple-right" direction="right" mode={editImage ? 'refine' : 'forge'} />
-            <LCDFireGrid active={isGenerating} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={isGenerating || modeFlameActive} cols={16} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}
