@@ -446,7 +446,7 @@ export default function App() {
     setIntroAnimating(false)
   }, [introAnimating])
   
-  // Play intro animation with custom text - smooth left-to-right reveal
+  // Play intro animation with custom text - smooth character reveal
   const playIntroAnimation = useCallback((text: string, delay = 500) => {
     // Cancel any existing animation
     if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
@@ -458,23 +458,39 @@ export default function App() {
     setIntroAnimating(true)
     
     introTimersRef.current.start = setTimeout(() => {
-      // Apply hot class first (starts clipped), then set text
       setPromptHot(true)
-      // Small delay to ensure clip-path is applied before text appears
-      requestAnimationFrame(() => {
-        setPrompt(text)
-      })
       
-      // After reveal animation completes (~800ms), start cooldown
-      introTimersRef.current.cool = setTimeout(() => {
-        setPromptHot(false)
-        // Wait for color/glow transition to complete
-        introTimersRef.current.clear = setTimeout(() => {
-          setPrompt('')
-          setIntroPlayed(true)
-          setIntroAnimating(false)
-        }, 2100)
-      }, 1000) // Hold after reveal completes
+      // Smooth character reveal using requestAnimationFrame
+      const duration = 600 // Total duration in ms
+      const startTime = performance.now()
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const charCount = Math.floor(progress * text.length)
+        
+        setPrompt(text.slice(0, charCount))
+        
+        if (progress < 1) {
+          introTimersRef.current.type = requestAnimationFrame(animate) as unknown as ReturnType<typeof setInterval>
+        } else {
+          // Ensure full text is shown
+          setPrompt(text)
+          
+          // Cool down after a brief hold
+          introTimersRef.current.cool = setTimeout(() => {
+            setPromptHot(false)
+            // Wait for color transition to complete
+            introTimersRef.current.clear = setTimeout(() => {
+              setPrompt('')
+              setIntroPlayed(true)
+              setIntroAnimating(false)
+            }, 2100)
+          }, 500)
+        }
+      }
+      
+      requestAnimationFrame(animate)
     }, delay)
   }, [])
   
@@ -1483,12 +1499,12 @@ export default function App() {
                 value={prompt}
                 onChange={e => {
                   if (introAnimating) cancelIntroAnimation()
-                  if (promptHot) setPromptHot(false) // Stop glow when user types
+                  if (promptHot) setPromptHot(false)
                   setPrompt(e.target.value)
                 }}
                 onFocus={() => {
                   if (introAnimating) cancelIntroAnimation()
-                  if (promptHot) setPromptHot(false) // Stop glow on focus too
+                  if (promptHot) setPromptHot(false)
                 }}
                 placeholder={introPlayed ? (editImage ? "Describe what you want to change..." : "Describe what you want to create...") : ""}
                 rows={1}
