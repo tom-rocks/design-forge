@@ -431,11 +431,13 @@ export default function App() {
   
   // Cancel intro animation immediately
   const cancelIntroAnimation = useCallback(() => {
-    if (!introAnimating) return
-    
-    // Clear all timers
+    // Clear all timers - always clear even if not animating
     if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
-    if (introTimersRef.current.type) clearInterval(introTimersRef.current.type)
+    if (introTimersRef.current.type) {
+      // Could be setInterval OR requestAnimationFrame ID
+      clearInterval(introTimersRef.current.type)
+      cancelAnimationFrame(introTimersRef.current.type as unknown as number)
+    }
     if (introTimersRef.current.cool) clearTimeout(introTimersRef.current.cool)
     if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
     introTimersRef.current = {}
@@ -506,21 +508,25 @@ export default function App() {
     
     // Check if we just switched TO refine mode
     if (currentMode === 'edit' && lastModeRef.current === 'create') {
+      // Cancel any existing animation first
+      cancelIntroAnimation()
       // Clear existing prompt and play the refine intro animation
       setPrompt('')
       playIntroAnimation("Describe what you want to change...", 800)
     }
     
     lastModeRef.current = currentMode
-  }, [editImage, playIntroAnimation])
+  }, [editImage, playIntroAnimation, cancelIntroAnimation])
   
   // Play intro animation when switching from refine to forge
   useEffect(() => {
     if (shouldPlayForgeIntro) {
+      // Cancel any existing animation first
+      cancelIntroAnimation()
       playIntroAnimation("Describe what you want to create...", 300)
       setShouldPlayForgeIntro(false)
     }
-  }, [shouldPlayForgeIntro, playIntroAnimation])
+  }, [shouldPlayForgeIntro, playIntroAnimation, cancelIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
