@@ -449,19 +449,22 @@ textarea.textarea.floating-prompt-input::placeholder {
 }
 
 textarea.textarea.floating-prompt-input.prompt-hot {
-  color: var(--accent-text);
-  text-shadow: 0 0 8px var(--accent-text-glow);
-  transition: color 0.05s ease-out, text-shadow 0.05s ease-out;
-  clip-path: inset(0 0 0 0);
+  background: linear-gradient(90deg, var(--accent-text) 0%, var(--accent-text) 50%, transparent 50%, transparent 100%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   animation: text-reveal 0.8s ease-out forwards;
+  filter: drop-shadow(0 0 8px var(--accent-text-glow));
 }
 
 @keyframes text-reveal {
   0% {
-    clip-path: inset(0 100% 0 0);
+    background-position: 100% 0;
   }
   100% {
-    clip-path: inset(0 0 0 0);
+    background-position: 0% 0;
   }
 }
 
