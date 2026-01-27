@@ -479,12 +479,12 @@ export default function App() {
           // Cool down after a brief hold
           introTimersRef.current.cool = setTimeout(() => {
             setPromptHot(false)
-            // Wait for color transition to complete
+            // Wait briefly then clear
             introTimersRef.current.clear = setTimeout(() => {
               setPrompt('')
               setIntroPlayed(true)
               setIntroAnimating(false)
-            }, 2100)
+            }, 100)
           }, 500)
         }
       }
