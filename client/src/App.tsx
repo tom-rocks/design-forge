@@ -1510,7 +1510,7 @@ export default function App() {
             
             {/* Forge/Refine button - always allow queueing more generations */}
             <Button
-              variant={canGenerate && introPlayed ? 'accent' : 'dark'}
+              variant={canGenerate ? 'accent' : 'dark'}
               onClick={!canGenerate && !prompt.trim() ? scrollToPrompt : handleGenerate}
               disabled={!canGenerate && prompt.trim() !== ''}
               className="floating-forge-btn"
