@@ -1448,7 +1448,7 @@ export default function App() {
             ))}
             <span className="lcd-spec-sep">│</span>
             <button 
-              className={`lcd-spec-item lcd-mode ${!editImage ? 'lit forge' : ''}`}
+              className={`lcd-spec-item lcd-mode forge ${!editImage ? 'lit' : ''}`}
               onClick={() => {
                 if (editImage) {
                   setEditImage(null)
@@ -1460,7 +1460,7 @@ export default function App() {
               Forging
             </button>
             <button 
-              className={`lcd-spec-item lcd-mode ${editImage ? 'lit refine' : ''}`}
+              className={`lcd-spec-item lcd-mode refine ${editImage ? 'lit' : ''}`}
               onClick={() => {
                 if (!editImage) {
                   scrollToRefine()

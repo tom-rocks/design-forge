@@ -932,6 +932,17 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
+/* Mode button cooling animation */
+@keyframes mode-cool-off {
+  0% { color: var(--led-orange); text-shadow: 0 0 8px rgba(255, 140, 0, 0.7); }
+  100% { color: #3a3835; text-shadow: none; }
+}
+
+@keyframes mode-cool-off-refine {
+  0% { color: var(--led-yellow); text-shadow: 0 0 8px rgba(255, 200, 0, 0.7); }
+  100% { color: #3a3835; text-shadow: none; }
+}
+
 /* Mode indicators - clickable */
 .lcd-interactive button.lcd-mode {
   background: none;
@@ -942,8 +953,6 @@ textarea.textarea.floating-prompt-input.forging {
   margin: -4px -2px;
   color: #3a3835;
   text-shadow: none;
-  /* Smooth fade when cooling off */
-  transition: color 0.6s ease-out, text-shadow 0.6s ease-out, filter 0.3s ease !important;
 }
 
 .lcd-interactive button.lcd-mode:hover:not(.lit) {
@@ -954,9 +963,11 @@ textarea.textarea.floating-prompt-input.forging {
   transform: scale(0.95);
 }
 
+/* Lit states - instant on */
 .lcd-interactive button.lcd-mode.lit.forge {
   color: var(--led-orange);
   text-shadow: 0 0 8px rgba(255, 140, 0, 0.7);
+  animation: none;
 }
 
 .lcd-interactive button.lcd-mode.lit.forge:hover {
@@ -966,10 +977,21 @@ textarea.textarea.floating-prompt-input.forging {
 .lcd-interactive button.lcd-mode.lit.refine {
   color: var(--led-yellow);
   text-shadow: 0 0 8px rgba(255, 200, 0, 0.7);
+  animation: none;
 }
 
 .lcd-interactive button.lcd-mode.lit.refine:hover {
   filter: brightness(1.15);
+}
+
+/* When NOT lit, play cool-off animation (only for forge button) */
+.lcd-interactive button.lcd-mode.forge:not(.lit) {
+  animation: mode-cool-off 0.6s ease-out forwards;
+}
+
+/* When NOT lit, play cool-off animation (only for refine button) */
+.lcd-interactive button.lcd-mode.refine:not(.lit) {
+  animation: mode-cool-off-refine 0.6s ease-out forwards;
 }
 
 /* Specs panel header */
