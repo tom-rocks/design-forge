@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight, ImageOff, X, Plus, Trash2 } from 'lucide-react'
+import { Loader2, ChevronRight, ImageOff, X, Plus, Trash2, Flame } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -205,7 +205,8 @@ export function WorksSidebar({
                   onClick={onNewForge}
                   title={isNewForgeActive ? "Ready to forge" : "Start new forge"}
                 >
-                  <Plus className="w-6 h-6" />
+                  <Flame className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                 </motion.button>
                 
                 {/* Pending generation placeholders - show all while forging */}

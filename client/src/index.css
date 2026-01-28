@@ -845,6 +845,7 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   background: var(--surface);
   border: 2px dashed rgba(0, 0, 0, 0.15);
   color: var(--text-dim);
