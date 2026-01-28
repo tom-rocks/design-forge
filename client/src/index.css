@@ -2424,6 +2424,21 @@ textarea.textarea.floating-prompt-input.forging {
   min-height: 280px; /* Prevent layout shift when switching tabs */
 }
 
+/* Tab panels - kept mounted, hidden when not active */
+.canvas-tab-panel {
+  display: none;
+}
+
+.canvas-tab-panel.active {
+  display: block;
+  animation: tab-fade-in 0.2s ease-out;
+}
+
+@keyframes tab-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .canvas-source-panel {
   background: var(--surface);
   border-radius: 12px;
