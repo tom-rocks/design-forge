@@ -1633,10 +1633,18 @@ export default function App() {
             <button 
               className={`lcd-spec-item lcd-mode refine ${editImage || canvasMode === 'refine' ? 'lit' : ''}`}
               onClick={() => {
-                setCanvasMode('refine')
-                if (!editImage) {
+                // If we have a result image showing, use it as the edit source
+                if (!editImage && result?.imageUrl) {
+                  setEditImage({ url: result.imageUrl })
+                  // Clear prompt for new refine instructions
+                  setPrompt('')
+                  setReferences([])
+                } else if (!editImage) {
+                  // No image at all - scroll to canvas to drop one
+                  setCanvasMode('refine')
                   scrollToRefine()
                 }
+                // If editImage already set, we're already in refine mode
               }}
             >
               <Hammer className="w-3 h-3" />
