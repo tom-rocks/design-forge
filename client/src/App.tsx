@@ -1862,36 +1862,27 @@ export default function App() {
       />
 
       {/* Works Gallery Lightbox */}
-      <AnimatePresence>
-        {galleryOpen && (
-          <motion.div 
-            className="gallery-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setGalleryOpen(false)}
-          >
-            {/* Expanded single image view - uses shared Lightbox component with zoom */}
-            <Lightbox
-              data={galleryExpanded ? {
-                imageUrl: galleryExpanded.url,
-                prompt: galleryExpanded.prompt,
-                mode: galleryExpanded.mode,
-                resolution: galleryExpanded.resolution,
-                aspectRatio: galleryExpanded.aspectRatio,
-                references: galleryExpanded.settings?.styleImages?.map(img => ({
-                  url: img.url.startsWith('http') || img.url.startsWith('data:') 
-                    ? img.url 
-                    : `${API_URL}${img.url}`,
-                  name: img.name,
-                })),
-              } : null}
-              onClose={() => setGalleryExpanded(null)}
-              onDownload={downloadOutputImage}
-              onRefine={(url) => {
-                setEditImage({ url })
-                detectAndSetAspectRatio(url)
-                setReferences([]) // Clear alloy when refining
+      {/* Gallery Expanded Lightbox - rendered outside gallery-overlay to avoid z-index conflicts */}
+      <Lightbox
+        data={galleryExpanded ? {
+          imageUrl: galleryExpanded.url,
+          prompt: galleryExpanded.prompt,
+          mode: galleryExpanded.mode,
+          resolution: galleryExpanded.resolution,
+          aspectRatio: galleryExpanded.aspectRatio,
+          references: galleryExpanded.settings?.styleImages?.map(img => ({
+            url: img.url.startsWith('http') || img.url.startsWith('data:') 
+              ? img.url 
+              : `${API_URL}${img.url}`,
+            name: img.name,
+          })),
+        } : null}
+        onClose={() => setGalleryExpanded(null)}
+        onDownload={downloadOutputImage}
+        onRefine={(url) => {
+          setEditImage({ url })
+          detectAndSetAspectRatio(url)
+          setReferences([]) // Clear alloy when refining
                 setRefineExpanded(true)
                 setGalleryOpen(false)
                 setGalleryExpanded(null)
@@ -1928,8 +1919,17 @@ export default function App() {
                 setGalleryExpanded(null)
                 setGalleryOpen(false)
               } : undefined}
-            />
+        />
 
+      <AnimatePresence>
+        {galleryOpen && (
+          <motion.div 
+            className="gallery-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setGalleryOpen(false)}
+          >
             {/* Gallery grid - stays mounted to preserve scroll position */}
             <motion.div 
               className="gallery-container"
