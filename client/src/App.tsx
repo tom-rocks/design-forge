@@ -584,11 +584,17 @@ export default function App() {
     if (config.mode === 'edit' && config.editImageUrl) {
       const fullUrl = `${API_URL}${config.editImageUrl}`
       console.log('[Replay] Setting edit image for refine replay:', fullUrl)
-      // Clear result and set edit image together so canvas transitions directly
+      // First clear everything to force AnimatePresence to see a proper exit
       setResult(null)
       setViewingPastWork(false)
-      setEditImage({ url: fullUrl })
-      detectAndSetAspectRatio(fullUrl)
+      setEditImage(null)
+      // Then after a brief moment, set the new edit image so it animates in
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setEditImage({ url: fullUrl })
+          detectAndSetAspectRatio(fullUrl)
+        })
+      })
     } else {
       console.log('[Replay] Clearing for forge mode. mode:', config.mode, 'editImageUrl:', config.editImageUrl)
       // Clear edit image and canvas for create/forge mode
