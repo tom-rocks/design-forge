@@ -1696,6 +1696,17 @@ export default function App() {
                 <span className="prompt-alloy-subtitle">image references</span>
               )}
             </div>
+            {/* Clear all button - only shows when there are references */}
+            {references.length > 0 && (
+              <button
+                className="prompt-alloy-clear"
+                onClick={() => setReferences([])}
+                disabled={isGenerating}
+                title="Clear all references"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
             <div className="prompt-alloy-thumbs">
               <AnimatePresence mode="popLayout">
                 {references.map((ref) => (

@@ -5823,6 +5823,66 @@ textarea.textarea.floating-prompt-input.forging {
   opacity: 1;
 }
 
+/* Clear all alloy button */
+.prompt-alloy-clear {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 4px;
+  align-self: center;
+}
+
+/* Inner pressable button look - no outer ring */
+.prompt-alloy-clear::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.4) 0%, 
+    var(--surface-inset) 15%, 
+    var(--surface-inset) 85%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.prompt-alloy-clear svg {
+  position: relative;
+  z-index: 1;
+}
+
+.prompt-alloy-clear:hover {
+  color: var(--text);
+}
+
+.prompt-alloy-clear:hover::after {
+  background: var(--surface);
+}
+
+.prompt-alloy-clear:active::after {
+  background: var(--surface-inset);
+}
+
+.prompt-alloy-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .prompt-alloy-add {
   position: relative;
   width: 36px;
