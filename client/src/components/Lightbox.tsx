@@ -327,7 +327,7 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                     onClick={() => onRefine(data.imageUrl)}
                     title="Refine this image"
                   >
-                    <span className="btn-icon icon-refinement" style={{ width: 20, height: 20 }} />
+                    <Hammer className="w-5 h-5" />
                   </button>
                 )}
                 {onFavorite && (

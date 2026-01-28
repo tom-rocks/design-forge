@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Pin, Search, Star, Trash2 } from 'lucide-react'
+import { Loader2, LogIn, Expand, Pin, Search, Star, Trash2, Hammer } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { API_URL } from '../config'
 import { Lightbox } from './Lightbox'
@@ -610,7 +610,7 @@ export default function HistoryGrid({
                   }}
                   title="Refine this image"
                 >
-                  <span className="btn-icon icon-refinement" style={{ width: 14, height: 14 }} />
+                  <Hammer className="w-4 h-4" />
                 </button>
               )}
             </motion.div>
