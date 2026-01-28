@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight, ImageOff, X, Plus, Trash2, Flame, Box, Boxes } from 'lucide-react'
+import { Loader2, ImageOff, X, Plus, Trash2, Flame, Box, Boxes } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -344,8 +344,7 @@ export function WorksSidebar({
           onClick={onOpenWorksModal}
         >
           <Boxes className="w-4 h-4" />
-          <span>All Works</span>
-          <ChevronRight className="w-4 h-4" />
+          <span>All</span>
         </button>
       </div>
     </div>
