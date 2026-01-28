@@ -1516,7 +1516,6 @@ export default function App() {
           <div className="lcd-screen lcd-floating lcd-interactive">
             <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
-              <span className="lcd-icon icon-tomato" />
               V.2.19
             </span>
             <span className="lcd-spec-sep">│</span>
