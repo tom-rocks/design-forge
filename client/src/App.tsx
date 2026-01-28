@@ -583,13 +583,11 @@ export default function App() {
     if (config.mode === 'edit' && config.editImageUrl) {
       const fullUrl = `${API_URL}${config.editImageUrl}`
       console.log('[Replay] Setting edit image for refine replay:', fullUrl)
-      // Clear result so the canvas shows the edit image, not the old result
+      // Clear result and set edit image together so canvas transitions directly
       setResult(null)
       setViewingPastWork(false)
-      setTimeout(() => {
-        setEditImage({ url: fullUrl })
-        detectAndSetAspectRatio(fullUrl)
-      }, 100)
+      setEditImage({ url: fullUrl })
+      detectAndSetAspectRatio(fullUrl)
     } else {
       console.log('[Replay] Clearing for forge mode. mode:', config.mode, 'editImageUrl:', config.editImageUrl)
       // Clear edit image and canvas for create/forge mode
@@ -1169,7 +1167,7 @@ export default function App() {
         }}
         onDrop={handleRefineDrop}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {/* GENERATING STATE - only when viewing a pending generation, not when on fresh canvas */}
           {isGenerating && !viewingPastWork && !!selectedPendingId ? (
             <motion.div 
