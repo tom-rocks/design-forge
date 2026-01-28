@@ -388,7 +388,7 @@ body {
 }
 
 .floating-prompt-inner {
-  max-width: 800px;
+  max-width: 850px;
   margin: 0 auto;
   pointer-events: auto;
   background: var(--surface);
