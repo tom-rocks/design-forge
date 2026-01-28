@@ -1708,6 +1708,7 @@ export default function App() {
               disabled={!canGenerate && prompt.trim() !== ''}
               className="floating-forge-btn"
             >
+              {editImage ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
               {editImage ? 'Refine' : 'Forge'}{isGenerating ? ` +${pendingGenerations.length}` : ''}
             </Button>
           </div>

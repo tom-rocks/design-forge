@@ -527,6 +527,9 @@ textarea.textarea.floating-prompt-input.forging {
   font-weight: 700;
   font-size: 14px;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Add padding to main content so it doesn't hide behind floating prompt */
