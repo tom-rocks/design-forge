@@ -1359,7 +1359,7 @@ export default function App() {
                     <div className="canvas-dropzone-inner">
                       <span className="canvas-dropzone-icon">
                         {canvasMode === 'forge' 
-                          ? <span className="btn-icon icon-alloy" style={{ width: 48, height: 48 }} />
+                          ? <span className="btn-icon icon-alloy" style={{ width: 32, height: 32 }} />
                           : <ArchiveRestore style={{ width: 32, height: 32 }} />
                         }
                       </span>
