@@ -584,17 +584,26 @@ export default function App() {
     if (config.mode === 'edit' && config.editImageUrl) {
       const fullUrl = `${API_URL}${config.editImageUrl}`
       console.log('[Replay] Setting edit image for refine replay:', fullUrl)
+      
       // First clear everything to force AnimatePresence to see a proper exit
       setResult(null)
       setViewingPastWork(false)
       setEditImage(null)
-      // Then after a brief moment, set the new edit image so it animates in
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setEditImage({ url: fullUrl })
-          detectAndSetAspectRatio(fullUrl)
-        })
-      })
+      
+      // Preload the image before showing it, so animation plays with visible content
+      const img = new Image()
+      img.onload = () => {
+        console.log('[Replay] Parent image preloaded, now showing')
+        setEditImage({ url: fullUrl })
+        detectAndSetAspectRatio(fullUrl)
+      }
+      img.onerror = () => {
+        // Still show even if preload fails (might work via ImageCanvas)
+        console.log('[Replay] Preload failed, showing anyway')
+        setEditImage({ url: fullUrl })
+        detectAndSetAspectRatio(fullUrl)
+      }
+      img.src = fullUrl
     } else {
       console.log('[Replay] Clearing for forge mode. mode:', config.mode, 'editImageUrl:', config.editImageUrl)
       // Clear edit image and canvas for create/forge mode
