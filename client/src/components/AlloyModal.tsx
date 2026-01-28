@@ -167,9 +167,10 @@ export function AlloyModal({
               </div>
             </div>
 
-            {/* Content */}
+            {/* Content - tabs stay mounted to preserve state */}
             <div className="alloy-modal-content">
-              {refSource === 'drop' && (
+              {/* Drop tab */}
+              <div className={`alloy-tab-panel ${refSource === 'drop' ? 'active' : ''}`}>
                 <div 
                   className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
                   onClick={() => setActiveDropTarget('refs')}
@@ -181,8 +182,10 @@ export function AlloyModal({
                     DROP OR PASTE IMAGES
                   </span>
                 </div>
-              )}
-              {refSource === 'items' && (
+              </div>
+
+              {/* Items tab */}
+              <div className={`alloy-tab-panel ${refSource === 'items' ? 'active' : ''}`}>
                 <HighriseSearch
                   references={references}
                   onAddReference={onAddReference}
@@ -192,8 +195,10 @@ export function AlloyModal({
                   bridgeConnected={bridgeConnected}
                   useAPBridge={inAPContext}
                 />
-              )}
-              {refSource === 'history' && (
+              </div>
+
+              {/* History/Works tab */}
+              <div className={`alloy-tab-panel ${refSource === 'history' ? 'active' : ''}`}>
                 <HistoryGrid
                   authenticated={authenticated}
                   onLogin={onLogin}
@@ -207,8 +212,10 @@ export function AlloyModal({
                   onRefine={onRefine}
                   onUseAlloy={onUseAlloy}
                 />
-              )}
-              {refSource === 'favorites' && (
+              </div>
+
+              {/* Favorites tab */}
+              <div className={`alloy-tab-panel ${refSource === 'favorites' ? 'active' : ''}`}>
                 <Favorites
                   authenticated={authenticated}
                   onLogin={onLogin}
@@ -220,7 +227,7 @@ export function AlloyModal({
                   isActive={refSource === 'favorites'}
                   resetKey={favoritesResetKey + localFavoritesResetKey}
                 />
-              )}
+              </div>
             </div>
 
             {/* Active References Footer */}

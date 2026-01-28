@@ -5675,6 +5675,16 @@ textarea.textarea.floating-prompt-input.forging {
   max-height: 400px;
 }
 
+/* Alloy tab panels - kept mounted, hidden when not active */
+.alloy-tab-panel {
+  display: none;
+}
+
+.alloy-tab-panel.active {
+  display: block;
+  animation: tab-fade-in 0.2s ease-out;
+}
+
 .alloy-modal-footer {
   padding: 16px 20px;
   background: var(--surface);
