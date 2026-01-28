@@ -98,6 +98,20 @@ html.os-windows body {
   font-size: 18.5px; /* Slightly larger base text */
 }
 
+/* Windows LCD scaling */
+html.os-windows .lcd-spec-item {
+  font-size: 11px;
+}
+
+html.os-windows .lcd-spec-sep {
+  font-size: 11px;
+}
+
+html.os-windows .lcd-screen {
+  padding: 7px 11px;
+  gap: 11px;
+}
+
 * {
   box-sizing: border-box;
 }
