@@ -837,6 +837,7 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 /* New Forge button - light and subtle when active, inviting when inactive */
+/* Always uses forge orange since it starts a forge, regardless of current mode */
 .gen-panel-new-forge {
   display: flex;
   align-items: center;
@@ -851,9 +852,9 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-new-forge:hover {
-  border-color: var(--accent);
+  border-color: #ff5722;
   border-style: solid;
-  color: var(--accent);
+  color: #ff5722;
   background: var(--surface-raised);
   box-shadow: 
     inset 0 1px 2px rgba(0, 0, 0, 0.05),
