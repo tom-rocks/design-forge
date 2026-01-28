@@ -374,7 +374,8 @@ export default function App() {
     }
   }, [editImage]) // Only depend on editImage, not prompt
   
-  // Sync canvasMode with editImage state
+  // Sync canvasMode with editImage state - only auto-switch TO refine, not back
+  // (switching back to forge is handled explicitly by buttons/onNewForge)
   useEffect(() => {
     if (editImage) {
       setCanvasMode('refine')
@@ -1047,7 +1048,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app ${editImage ? 'refine-mode' : ''}`}>
+    <div className={`app ${editImage || canvasMode === 'refine' ? 'refine-mode' : ''}`}>
       {/* WORKS SIDEBAR - Left side works list */}
       <WorksSidebar
         authenticated={authenticated}
@@ -1080,12 +1081,17 @@ export default function App() {
         }}
         onNewForge={() => {
           // Start fresh - clear everything for a new creation
+          setCanvasMode('forge')
           setEditImage(null)
           setResult(null)
           setPrompt('')
           setReferences([])
           setViewingPastWork(false)
           setSelectedPendingId(null)
+          // Trigger forge intro animation
+          if (!prompt.trim()) {
+            setShouldPlayForgeIntro(true)
+          }
         }}
         onDeleteImage={async (generationId) => {
           // Sidebar handles optimistic removal - just do the API call
@@ -1561,20 +1567,12 @@ export default function App() {
             <button 
               className={`lcd-spec-item lcd-mode forge ${!editImage && canvasMode === 'forge' ? 'lit' : ''}`}
               onClick={() => {
-                if (canvasMode !== 'forge' || editImage) {
-                  setCanvasMode('forge')
-                  // Trigger flame animation for mode switch
-                  setModeFlameActive(true)
-                  setTimeout(() => setModeFlameActive(false), 1500)
-                  // Trigger forge intro animation if prompt is empty
-                  if (!prompt.trim()) {
-                    setShouldPlayForgeIntro(true)
-                  }
-                }
+                // Clear editImage - the useEffect handles all animations
                 if (editImage) {
                   setEditImage(null)
                   setResult(null)
                 }
+                setCanvasMode('forge')
               }}
             >
               <Flame className="w-3 h-3" />
@@ -1583,16 +1581,7 @@ export default function App() {
             <button 
               className={`lcd-spec-item lcd-mode refine ${editImage || canvasMode === 'refine' ? 'lit' : ''}`}
               onClick={() => {
-                if (canvasMode !== 'refine') {
-                  setCanvasMode('refine')
-                  // Trigger flame animation for mode switch
-                  setModeFlameActive(true)
-                  setTimeout(() => setModeFlameActive(false), 1500)
-                  // Trigger refine intro animation if prompt is empty
-                  if (!prompt.trim()) {
-                    setShouldPlayRefineIntro(true)
-                  }
-                }
+                setCanvasMode('refine')
                 if (!editImage) {
                   scrollToRefine()
                 }
