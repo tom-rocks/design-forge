@@ -5700,7 +5700,7 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
   gap: 6px;
   flex: 1;
