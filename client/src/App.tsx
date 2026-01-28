@@ -1376,6 +1376,12 @@ export default function App() {
                         maxRefs={14}
                         bridgeConnected={bridgeConnected}
                         useAPBridge={inAPContext}
+                        onRefine={(url) => {
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                          setPrompt('')
+                          setReferences([])
+                        }}
                       />
                     ) : (
                       <HighriseSearch 
@@ -1387,6 +1393,12 @@ export default function App() {
                         }} 
                         bridgeConnected={bridgeConnected}
                         useAPBridge={inAPContext}
+                        onRefine={(url) => {
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                          setPrompt('')
+                          setReferences([])
+                        }}
                       />
                     )}
                   </div>
@@ -1436,6 +1448,12 @@ export default function App() {
                         references={references}
                         maxRefs={14}
                         isActive={refineSource === 'favorites'}
+                        onRefine={(url) => {
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                          setPrompt('')
+                          setReferences([])
+                        }}
                       />
                     ) : (
                       <Favorites 
@@ -1462,6 +1480,12 @@ export default function App() {
                           detectAndSetAspectRatio(url)
                         }}
                         isActive={refineSource === 'favorites'}
+                        onRefine={(url) => {
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                          setPrompt('')
+                          setReferences([])
+                        }}
                       />
                     )}
                   </div>

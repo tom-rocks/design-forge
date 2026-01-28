@@ -155,6 +155,8 @@ interface FavoritesProps {
   // Single-select mode for refine
   singleSelect?: boolean
   onSingleSelect?: (favorite: Favorite) => void
+  // Refine action for lightbox
+  onRefine?: (url: string) => void
   // Whether this tab is currently active (triggers refresh)
   isActive?: boolean
   // Reset key - when changed, resets to root view
@@ -171,6 +173,7 @@ export function Favorites({
   disabled,
   singleSelect,
   onSingleSelect,
+  onRefine,
   isActive = true,
   resetKey,
 }: FavoritesProps) {
@@ -912,6 +915,7 @@ export function Favorites({
             console.error('Download failed:', e)
           }
         }}
+        onRefine={onRefine}
       />
     </div>
   )

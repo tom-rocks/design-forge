@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Search, Loader2, WifiOff, Expand, Download, Pin, Star } from 'lucide-react'
+import { Search, Loader2, WifiOff, Expand, Pin, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 import { searchItemsViaAP, fetchImageViaAP, checkAPContext } from '../lib/ap-bridge'
+import { Lightbox } from './Lightbox'
 
 const PINNED_ITEMS_KEY = 'pinned-highrise-items'
 
 // Module-level cache for loaded images (survives component remount/tab switch)
 const loadedImageCache = new Set<string>()
-const lightboxLoadedCache = new Set<string>()
 // Module-level cache for AP-proxied images (item.id → data URL)
 // This survives component unmount so we don't re-fetch on tab switch
 const proxiedImageCache = new Map<string, string>()
@@ -44,6 +44,8 @@ interface HighriseSearchProps {
   // Single select mode - pick one item
   singleSelect?: boolean
   onSingleSelect?: (item: HighriseItem) => void
+  // Refine action for lightbox
+  onRefine?: (url: string) => void
 }
 
 export default function HighriseSearch({ 
@@ -55,7 +57,8 @@ export default function HighriseSearch({
   bridgeConnected = false,
   useAPBridge = false,
   singleSelect = false,
-  onSingleSelect
+  onSingleSelect,
+  onRefine
 }: HighriseSearchProps) {
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<HighriseItem[]>([])
@@ -64,7 +67,6 @@ export default function HighriseSearch({
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [lightbox, setLightbox] = useState<HighriseItem | null>(null)
-  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   // Initialize from module-level cache so state persists across tab switches
   const [loadedImages, setLoadedImages] = useState<Set<string>>(() => new Set(loadedImageCache))
@@ -162,18 +164,6 @@ export default function HighriseSearch({
     return getDisplayUrl(item)
   }, [proxiedImages, getDisplayUrl, useAPBridge])
   const gridRef = useRef<HTMLDivElement>(null)
-  
-  // Check if lightbox image was already loaded (from cache)
-  useEffect(() => {
-    if (lightbox) {
-      const url = getDisplayUrl(lightbox)
-      if (lightboxLoadedCache.has(url)) {
-        setLightboxImageLoaded(true)
-      } else {
-        setLightboxImageLoaded(false)
-      }
-    }
-  }, [lightbox?.id, getDisplayUrl])
   
   // Pinned items - persisted to localStorage
   // Normalize URLs on load to use proxy
@@ -840,57 +830,15 @@ export default function HighriseSearch({
       </AnimatePresence>
 
       {/* Lightbox */}
-      <AnimatePresence>
-        {lightbox && (
-          <motion.div
-            className="lightbox-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setLightbox(null)}
-          >
-            <motion.div
-              className="lightbox-content"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="lightbox-image-container">
-                {!lightboxImageLoaded && (
-                  <div className="lightbox-image-loading">
-                    <Loader2 className="w-8 h-8 animate-spin" />
-                  </div>
-                )}
-                <motion.img
-                  src={getDisplayUrl(lightbox)}
-                  alt={lightbox.name}
-                  onLoad={() => {
-                    setLightboxImageLoaded(true)
-                    lightboxLoadedCache.add(getDisplayUrl(lightbox))
-                  }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: lightboxImageLoaded ? 1 : 0 }}
-                  transition={{ duration: 0.2 }}
-                />
-              </div>
-              <div className="lightbox-footer">
-                <p className="lightbox-prompt">
-                  <strong>{lightbox.name}</strong>
-                  <span className="lightbox-meta"> · {lightbox.category} · {lightbox.rarity}</span>
-                </p>
-                <button
-                  className="lightbox-download"
-                  onClick={() => downloadImage(lightbox)}
-                  title="Download"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Lightbox
+        data={lightbox ? {
+          imageUrl: getDisplayUrl(lightbox),
+          name: `${lightbox.name} · ${lightbox.category} · ${lightbox.rarity}`,
+        } : null}
+        onClose={() => setLightbox(null)}
+        onDownload={() => lightbox && downloadImage(lightbox)}
+        onRefine={onRefine}
+      />
     </div>
   )
 }
