@@ -103,7 +103,7 @@ export function WorksSidebar({
     try {
       const currentOffset = loadMore ? offset : 0
       const res = await fetch(
-        `${API_URL}/api/generations?limit=${LIMIT}&offset=${currentOffset}`,
+        `${API_URL}/api/generations/my?limit=${LIMIT}&offset=${currentOffset}`,
         { credentials: 'include' }
       )
       
