@@ -435,10 +435,17 @@ export function Favorites({
     } else if (references.length < maxRefs) {
       // Use crisp URL for clothing items when attaching as reference
       const imageUrl = getFavoriteReferenceUrl(favorite)
+      // Use thumbnail for preview display (works have thumbnails)
+      const thumbUrl = favorite.item_data.thumbnailUrl 
+        ? (favorite.item_data.thumbnailUrl.startsWith('http') 
+            ? favorite.item_data.thumbnailUrl 
+            : `${API_URL}${favorite.item_data.thumbnailUrl}`)
+        : undefined
       
       onAddReference({
         id: refId,
         url: imageUrl,
+        thumbnailUrl: thumbUrl,
         name: favorite.item_data.name,
         type: favorite.type === 'item' ? 'highrise' : 'generation',
       })

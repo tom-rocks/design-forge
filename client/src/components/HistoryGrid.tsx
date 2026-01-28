@@ -367,9 +367,12 @@ export default function HistoryGrid({
     if (existingRef) {
       onRemoveReference(existingRef.id)
     } else if (references.length < maxRefs) {
+      // Include thumbnail URL for faster preview loading
+      const thumbUrl = img.thumbnailUrl ? `${API_URL}${img.thumbnailUrl}` : undefined
       onAddReference({
         id: `img-${img.id}`,
         url: fullUrl,
+        thumbnailUrl: thumbUrl,
         name: gen.prompt.slice(0, 30),
         type: 'generation',
       })

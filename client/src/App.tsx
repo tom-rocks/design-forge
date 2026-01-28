@@ -41,6 +41,7 @@ type Mode = 'create' | 'edit'
 interface Reference {
   id: string
   url: string
+  thumbnailUrl?: string // Small preview for UI display
   name?: string
   type: 'file' | 'highrise' | 'generation'
 }
@@ -1650,7 +1651,13 @@ export default function App() {
                     title={ref.name || 'Click to remove'}
                   >
                     <img 
-                      src={ref.url.startsWith('http') || ref.url.startsWith('data:') ? ref.url : `${API_URL}${ref.url}`} 
+                      src={(() => {
+                        // Use thumbnail for display if available, otherwise fall back to full URL
+                        const displayUrl = ref.thumbnailUrl || ref.url
+                        return displayUrl.startsWith('http') || displayUrl.startsWith('data:') 
+                          ? displayUrl 
+                          : `${API_URL}${displayUrl}`
+                      })()} 
                       alt={ref.name || ''} 
                     />
                     <div className="prompt-alloy-thumb-remove">
