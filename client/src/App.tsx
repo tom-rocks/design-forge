@@ -1410,10 +1410,13 @@ export default function App() {
             <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                {/* Tomato */}
-                <path d="M12 6c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8z"/>
-                <path d="M12 6c-.6-1.3-1.5-2.5-3-3 1.5-.5 3-.5 4.5 0 .8.3 1.5.8 2 1.5L12 6z" opacity="0.7"/>
-                <ellipse cx="14" cy="9" rx="1.5" ry="1" opacity="0.3" transform="rotate(-20 14 9)"/>
+                {/* Tomato body */}
+                <ellipse cx="12" cy="14" rx="8" ry="7"/>
+                {/* Stem */}
+                <path d="M12 7 L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                {/* Leaves */}
+                <path d="M12 6 Q8 4 6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M12 6 Q16 4 18 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
               V.1.21
             </span>
