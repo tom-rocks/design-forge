@@ -583,6 +583,9 @@ export default function App() {
     if (config.mode === 'edit' && config.editImageUrl) {
       const fullUrl = `${API_URL}${config.editImageUrl}`
       console.log('[Replay] Setting edit image for refine replay:', fullUrl)
+      // Clear result so the canvas shows the edit image, not the old result
+      setResult(null)
+      setViewingPastWork(false)
       setTimeout(() => {
         setEditImage({ url: fullUrl })
         detectAndSetAspectRatio(fullUrl)
