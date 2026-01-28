@@ -173,6 +173,7 @@ export default function App() {
     model?: string
     resolution?: string
     aspectRatio?: string
+    parentId?: string | null // For edit mode - the parent generation that was refined
     settings?: {
       styleImages?: { url: string; name?: string }[]
       negativePrompt?: string
@@ -243,6 +244,7 @@ export default function App() {
               model: gen.model,
               resolution: gen.resolution,
               aspectRatio: gen.aspect_ratio,
+              parentId: gen.parent_id,
               settings: gen.settings
             })
           }
@@ -659,6 +661,11 @@ export default function App() {
     const genOutputCount = outputCount
     const genMode = genEditImage?.url ? 'edit' : 'create'
     
+    // Extract parent generation ID from edit image URL if present
+    // URL pattern: .../api/generations/{uuid}/image/{index}
+    const parentIdMatch = genEditImage?.url?.match(/\/api\/generations\/([a-f0-9-]+)\/image\//)
+    const genParentId = parentIdMatch?.[1] || null
+    
     // Add to pending generations and auto-select it
     setPendingGenerations(prev => [...prev, {
       id: genId,
@@ -766,7 +773,9 @@ export default function App() {
                 prompt: genPrompt,
                 mode: genMode,
                 aspectRatio: genAspectRatio,
-                resolution: genResolution
+                resolution: genResolution,
+                parentId: genParentId,
+                styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name }))
               })
               setViewingPastWork(false)
               removePending()
@@ -1727,6 +1736,10 @@ export default function App() {
                     resolution: galleryExpanded.resolution,
                     aspectRatio: galleryExpanded.aspectRatio,
                     references: galleryExpanded.settings?.styleImages,
+                    // For edit mode, include the parent image URL
+                    editImageUrl: galleryExpanded.mode === 'edit' && galleryExpanded.parentId
+                      ? `/api/generations/${galleryExpanded.parentId}/image/0`
+                      : undefined,
                   })
                   setGalleryExpanded(null)
                   setGalleryOpen(false)
