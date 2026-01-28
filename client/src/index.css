@@ -89,6 +89,15 @@
   }
 }
 
+/* Windows-specific scaling - slightly larger UI */
+html.os-windows {
+  font-size: 17.5px; /* ~110% of default 16px */
+}
+
+html.os-windows body {
+  font-size: 18.5px; /* Slightly larger base text */
+}
+
 * {
   box-sizing: border-box;
 }

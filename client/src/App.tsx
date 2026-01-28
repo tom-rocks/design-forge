@@ -78,6 +78,15 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
   
+  // Detect Windows and apply scaling class
+  useEffect(() => {
+    const isWindows = navigator.platform.toLowerCase().includes('win') || 
+                      navigator.userAgent.toLowerCase().includes('windows')
+    if (isWindows) {
+      document.documentElement.classList.add('os-windows')
+    }
+  }, [])
+  
   const navigateTo = useCallback((page: 'forge' | 'dashboard') => {
     const path = page === 'dashboard' ? '/dashboard' : '/'
     window.history.pushState(null, '', path)
