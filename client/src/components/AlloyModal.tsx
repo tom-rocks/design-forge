@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { X, Trash2, ArchiveRestore, Swords, Box, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Thumb } from './Thumb'
 import { API_URL } from '../config'
@@ -133,21 +133,21 @@ export function AlloyModal({
                   className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
                   onClick={() => setRefSource('drop')}
                 >
-                  <span className="btn-icon icon-drop" />
+                  <ArchiveRestore className="w-4 h-4" />
                   Drop
                 </button>
                 <button 
                   className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
                   onClick={() => setRefSource('items')}
                 >
-                  <span className="btn-icon icon-items" />
+                  <Swords className="w-4 h-4" />
                   Items
                 </button>
                 <button 
                   className={`btn ${refSource === 'history' ? 'btn-accent' : 'btn-dark'}`}
                   onClick={() => setRefSource('history')}
                 >
-                  <span className="btn-icon icon-works" />
+                  <Box className="w-4 h-4" />
                   Works
                 </button>
                 <button 
@@ -161,7 +161,7 @@ export function AlloyModal({
                     }
                   }}
                 >
-                  <span className="btn-icon icon-star" />
+                  <Star className="w-4 h-4" />
                   Favorites
                 </button>
               </div>

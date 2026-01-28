@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { LogIn, Plus, X, Search, Trash2, Star, Download, Flame, Hammer, Gem, RotateCcw } from 'lucide-react'
+import { LogIn, Plus, X, Search, Trash2, Star, Download, Flame, Hammer, Gem, RotateCcw, Anvil, ArchiveRestore, Swords, Box, Boxes } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
@@ -1307,28 +1307,28 @@ export default function App() {
                   className={`canvas-tab ${refineSource === 'drop' ? 'active' : ''}`}
                   onClick={() => setRefineSource('drop')}
                 >
-                  <span className="btn-icon icon-drop" />
+                  <ArchiveRestore className="w-4 h-4" />
                   Drop
                 </button>
                 <button 
                   className={`canvas-tab ${refineSource === 'items' ? 'active' : ''}`}
                   onClick={() => setRefineSource('items')}
                 >
-                  <span className="btn-icon icon-items" />
+                  <Swords className="w-4 h-4" />
                   Items
                 </button>
                 <button 
                   className={`canvas-tab ${refineSource === 'history' ? 'active' : ''}`}
                   onClick={() => setRefineSource('history')}
                 >
-                  <span className="btn-icon icon-works" />
+                  <Box className="w-4 h-4" />
                   Works
                 </button>
                 <button 
                   className={`canvas-tab ${refineSource === 'favorites' ? 'active' : ''}`}
                   onClick={() => setRefineSource('favorites')}
                 >
-                  <span className="btn-icon icon-star" />
+                  <Star className="w-4 h-4" />
                   Favorites
                 </button>
               </div>
@@ -1345,7 +1345,10 @@ export default function App() {
                   >
                     <div className="canvas-dropzone-inner">
                       <span className="canvas-dropzone-icon">
-                        <span className={`btn-icon ${canvasMode === 'forge' ? 'icon-alloy' : 'icon-drop'}`} style={{ width: 56, height: 56 }} />
+                        {canvasMode === 'forge' 
+                          ? <span className="btn-icon icon-alloy" style={{ width: 56, height: 56 }} />
+                          : <ArchiveRestore style={{ width: 56, height: 56 }} />
+                        }
                       </span>
                       <p className="canvas-dropzone-text">
                         {canvasMode === 'forge' ? 'Drop or paste images for Alloy' : 'Drop or paste an image to refine'}
@@ -1590,6 +1593,7 @@ export default function App() {
           <div className="lcd-screen lcd-floating lcd-interactive">
             <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
+              <Anvil className="w-3 h-3" />
               V.2.19
             </span>
             <span className="lcd-spec-sep">│</span>
@@ -1904,7 +1908,7 @@ export default function App() {
             >
                 <div className="gallery-header">
                   <div className="gallery-header-top">
-                    <h2><span className="btn-icon icon-works" /> Past Works</h2>
+                    <h2><Boxes className="w-5 h-5" /> Past Works</h2>
                     <button className="gallery-close" onClick={() => setGalleryOpen(false)}>
                       <X className="w-5 h-5" />
                     </button>

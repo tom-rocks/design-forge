@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ChevronRight, ImageOff, X, Plus, Trash2, Flame } from 'lucide-react'
+import { Loader2, ChevronRight, ImageOff, X, Plus, Trash2, Flame, Box, Boxes } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -167,7 +167,7 @@ export function WorksSidebar({
       <div className="gen-panel-box">
         {/* Header */}
         <div className="gen-panel-head">
-          <span className="btn-icon icon-works" />
+          <Box className="w-4 h-4" />
           <span className="gen-panel-label">Works</span>
         </div>
 
@@ -205,8 +205,8 @@ export function WorksSidebar({
                   onClick={onNewForge}
                   title={isNewForgeActive ? "Ready to forge" : "Start new forge"}
                 >
-                  <Flame className="w-5 h-5" />
-                  <Plus className="w-4 h-4" />
+                  <Flame style={{ width: 18, height: 18 }} />
+                  <Plus style={{ width: 18, height: 18 }} />
                 </motion.button>
                 
                 {/* Pending generation placeholders - show all while forging */}
@@ -343,6 +343,7 @@ export function WorksSidebar({
           className="gen-panel-all"
           onClick={onOpenWorksModal}
         >
+          <Boxes className="w-4 h-4" />
           <span>All Works</span>
           <ChevronRight className="w-4 h-4" />
         </button>
