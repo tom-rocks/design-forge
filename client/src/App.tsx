@@ -1927,9 +1927,10 @@ export default function App() {
           <motion.div 
             className="gallery-overlay"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: galleryExpanded ? 0 : 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setGalleryOpen(false)}
+            onClick={() => !galleryExpanded && setGalleryOpen(false)}
+            style={{ pointerEvents: galleryExpanded ? 'none' : 'auto' }}
           >
             {/* Gallery grid - stays mounted to preserve scroll position */}
             <motion.div 
