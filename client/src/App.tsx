@@ -1168,7 +1168,7 @@ export default function App() {
         }}
         onDrop={handleRefineDrop}
       >
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait">
           {/* GENERATING STATE - only when viewing a pending generation, not when on fresh canvas */}
           {isGenerating && !viewingPastWork && !!selectedPendingId ? (
             <motion.div 
@@ -1177,7 +1177,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
             >
               <div className={`canvas-preview-grid preview-${outputCount}`}>
                 {[...Array(outputCount)].map((_, i) => (
@@ -1204,10 +1204,13 @@ export default function App() {
               key="output"
               className="canvas-output"
               ref={outputRef}
-              initial={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ 
+                duration: 0.25,
+                exit: { duration: 0.15 }
+              }}
             >
               <ImageCanvas images={validImages} onZoomChange={setCanvasZoom} />
             </motion.div>
@@ -1216,12 +1219,13 @@ export default function App() {
             <motion.div 
               key={`edit-image-${editImage.url}`}
               className="canvas-output"
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ 
                 duration: 0.4,
-                ease: [0.4, 0, 0.2, 1]
+                ease: [0.16, 1, 0.3, 1],
+                exit: { duration: 0.15 }
               }}
             >
               <ImageCanvas 
