@@ -339,7 +339,8 @@ export default function App() {
           clearTimeout(glowTimer)
         }
       } else {
-        // Already in refine mode, just reset glow timer
+        // Already in refine mode - turn off any lingering flames and just reset glow timer
+        setModeFlameActive(false)
         const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
         return () => clearTimeout(glowTimer)
       }
@@ -616,12 +617,13 @@ export default function App() {
     const genOutputCount = outputCount
     const genMode = genEditImage?.url ? 'edit' : 'create'
     
-    // Add to pending generations
+    // Add to pending generations and auto-select it
     setPendingGenerations(prev => [...prev, {
       id: genId,
       prompt: genPrompt,
       outputCount: genOutputCount
     }])
+    setSelectedPendingId(genId)
     
     // Only update UI state if this is the first/only generation
     if (!isGenerating) {
@@ -1055,6 +1057,7 @@ export default function App() {
           setPrompt('')
           setReferences([])
           setViewingPastWork(false)
+          setSelectedPendingId(null)
         }}
         onDeleteImage={async (generationId) => {
           // Sidebar handles optimistic removal - just do the API call
@@ -1077,7 +1080,7 @@ export default function App() {
         onCancelPending={handleCancelPending}
         onSelectPending={handleSelectPending}
         selectedPendingId={selectedPendingId}
-        isNewForgeActive={!result && !editImage && !selectedPendingId && !viewingPastWork}
+        isNewForgeActive={!result && !editImage && !selectedPendingId && !viewingPastWork && !isGenerating}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}
@@ -1092,8 +1095,8 @@ export default function App() {
         onDrop={handleRefineDrop}
       >
         <AnimatePresence mode="wait">
-          {/* GENERATING STATE - only during actual generation, not when viewing past works */}
-          {isGenerating && !viewingPastWork ? (
+          {/* GENERATING STATE - only when viewing a pending generation, not when on fresh canvas */}
+          {isGenerating && !viewingPastWork && !!selectedPendingId ? (
             <motion.div 
               key="generating"
               className="canvas-generating"
@@ -1404,10 +1407,13 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={isGenerating || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                <path d="M1 10l4-2h12l2 2v2l-2 1v1H7v-1l-2-1v-2H1zm6 6h10v2H7v-2z"/>
+                {/* Tomato */}
+                <path d="M12 6c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8z"/>
+                <path d="M12 6c-.6-1.3-1.5-2.5-3-3 1.5-.5 3-.5 4.5 0 .8.3 1.5.8 2 1.5L12 6z" opacity="0.7"/>
+                <ellipse cx="14" cy="9" rx="1.5" ry="1" opacity="0.3" transform="rotate(-20 14 9)"/>
               </svg>
               V.1.21
             </span>
@@ -1470,7 +1476,7 @@ export default function App() {
               <Hammer className="w-3 h-3" />
               Refining
             </button>
-            <LCDFireGrid active={isGenerating || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}

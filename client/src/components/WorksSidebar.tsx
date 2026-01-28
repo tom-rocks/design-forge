@@ -181,9 +181,11 @@ export function WorksSidebar({
                 {/* New Forge button - always at top */}
                 <motion.button
                   key="new-forge"
+                  layout
                   className={`gen-panel-thumb gen-panel-new-forge ${isNewForgeActive ? 'active' : ''}`}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
+                  transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
                   onClick={onNewForge}
                   title={isNewForgeActive ? "Ready to forge" : "Start new forge"}
                 >
@@ -200,11 +202,16 @@ export function WorksSidebar({
                     return (
                       <motion.button
                         key={`pending-${pending.id}-${i}`}
+                        layout
                         className={`gen-panel-thumb forging ${isSelected ? 'selected' : ''}`}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                        transition={{ 
+                          duration: 0.3,
+                          ease: [0.4, 0, 0.2, 1],
+                          layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+                        }}
                         title={`Forging: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`}
                         onClick={() => onSelectPending?.(pending.id)}
                         onMouseEnter={() => setHoveredPendingId(pending.id)}
@@ -230,16 +237,22 @@ export function WorksSidebar({
                 )}
                 
                 {/* Existing generations */}
-                {displayImages.map((img) => {
+                {displayImages.map((img, index) => {
                   const isFailed = failedImages.has(img.id)
                   return (
                     <motion.button
                       key={img.id}
+                      layout
                       className={`gen-panel-thumb ${isFailed ? 'failed' : ''}`}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.15 }}
+                      initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                      transition={{ 
+                        duration: 0.3,
+                        delay: index === 0 ? 0.1 : 0, // Slight delay for newest item
+                        ease: [0.4, 0, 0.2, 1],
+                        layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+                      }}
                       onClick={() => {
                         // Don't select broken images
                         if (!isFailed) {
