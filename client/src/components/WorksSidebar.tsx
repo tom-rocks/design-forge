@@ -189,11 +189,17 @@ export function WorksSidebar({
                 {/* New Forge button - always at top */}
                 <motion.button
                   key="new-forge"
-                  layout
+                  layout="position"
                   className={`gen-panel-thumb gen-panel-new-forge ${isNewForgeActive ? 'active' : ''}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
+                  transition={{ 
+                    layout: { 
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30
+                    }
+                  }}
                   onClick={onNewForge}
                   title={isNewForgeActive ? "Ready to forge" : "Start new forge"}
                 >
@@ -210,15 +216,19 @@ export function WorksSidebar({
                     return (
                       <motion.button
                         key={`pending-${pending.id}-${i}`}
-                        layout
+                        layout="position"
                         className={`gen-panel-thumb forging ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
-                        initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ 
-                          duration: 0.3,
+                          duration: 0.2,
                           ease: [0.4, 0, 0.2, 1],
-                          layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+                          layout: { 
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30
+                          }
                         }}
                         title={`Forging: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`}
                         onClick={() => onSelectPending?.(pending.id)}
@@ -251,16 +261,20 @@ export function WorksSidebar({
                   return (
                     <motion.button
                       key={img.id}
-                      layout
+                      layout="position"
                       className={`gen-panel-thumb ${isFailed ? 'failed' : ''} ${isSelected ? 'selected' : ''}`}
-                      initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ 
-                        duration: 0.3,
+                        duration: 0.2,
                         delay: index === 0 ? 0.1 : 0, // Slight delay for newest item
                         ease: [0.4, 0, 0.2, 1],
-                        layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+                        layout: { 
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 30
+                        }
                       }}
                       onClick={() => {
                         // Don't select broken images
