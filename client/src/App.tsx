@@ -465,11 +465,12 @@ export default function App() {
     if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
     introTimersRef.current = {}
     
-    // Immediately finish
-    setPromptHot(false)
+    // Clear prompt first (removes text), then hot state, to avoid color flash
     setPrompt('')
     setIntroAnimating(false)
-  }, [introAnimating])
+    // Delay hot state reset slightly to avoid visual glitch
+    setTimeout(() => setPromptHot(false), 0)
+  }, [])
   
   // Play intro animation with custom text - smooth character reveal
   const playIntroAnimation = useCallback((text: string, delay = 500) => {
@@ -502,16 +503,15 @@ export default function App() {
           // Ensure full text is shown
           setPrompt(text)
           
-          // Cool down after a brief hold
+          // Cool down after a brief hold - clear text while still hot to avoid color flash
           introTimersRef.current.cool = setTimeout(() => {
-            setPromptHot(false)
-            // Wait briefly then clear
-            introTimersRef.current.clear = setTimeout(() => {
-              setPrompt('')
-              setIntroPlayed(true)
-              setIntroAnimating(false)
-            }, 100)
-          }, 500)
+            // Clear text first while still "hot" so it fades out in orange
+            setPrompt('')
+            setIntroPlayed(true)
+            setIntroAnimating(false)
+            // Then reset hot state after text is gone
+            setTimeout(() => setPromptHot(false), 50)
+          }, 600)
         }
       }
       
