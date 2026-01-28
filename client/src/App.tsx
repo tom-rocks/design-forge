@@ -1565,6 +1565,18 @@ export default function App() {
             </button>
             <button 
               className="canvas-control-btn"
+              onClick={() => {
+                // Set current image as edit source for refinement
+                setEditImage({ url: validImages[0] })
+                setPrompt('')
+                setReferences([])
+              }}
+              title="Refine this image"
+            >
+              <Hammer className="w-4 h-4" />
+            </button>
+            <button 
+              className="canvas-control-btn"
               onClick={() => downloadOutputImage(validImages[0])}
               title="Download"
             >
