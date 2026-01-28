@@ -330,6 +330,7 @@ export default function App() {
   // Track previous editImage to detect mode transitions
   const wasInRefineRef = useRef(false)
   const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
+  const [shouldPlayRefineIntro, setShouldPlayRefineIntro] = useState(false)
   const promptRef2 = useRef(prompt) // Track prompt without triggering effect
   promptRef2.current = prompt
   
@@ -542,6 +543,16 @@ export default function App() {
       setShouldPlayForgeIntro(false)
     }
   }, [shouldPlayForgeIntro, playIntroAnimation, cancelIntroAnimation])
+  
+  // Play intro animation when switching to refine mode
+  useEffect(() => {
+    if (shouldPlayRefineIntro) {
+      // Cancel any existing animation first
+      cancelIntroAnimation()
+      playIntroAnimation("Describe what you want to change...", 300)
+      setShouldPlayRefineIntro(false)
+    }
+  }, [shouldPlayRefineIntro, playIntroAnimation, cancelIntroAnimation])
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
@@ -1214,6 +1225,10 @@ export default function App() {
                       // Trigger flame animation for mode switch
                       setModeFlameActive(true)
                       setTimeout(() => setModeFlameActive(false), 1500)
+                      // Trigger refine intro animation if prompt is empty
+                      if (!prompt.trim()) {
+                        setShouldPlayRefineIntro(true)
+                      }
                     }
                     if (!editImage) {
                       scrollToRefine()
@@ -1573,6 +1588,10 @@ export default function App() {
                   // Trigger flame animation for mode switch
                   setModeFlameActive(true)
                   setTimeout(() => setModeFlameActive(false), 1500)
+                  // Trigger refine intro animation if prompt is empty
+                  if (!prompt.trim()) {
+                    setShouldPlayRefineIntro(true)
+                  }
                 }
                 if (!editImage) {
                   scrollToRefine()
