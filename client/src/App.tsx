@@ -1176,7 +1176,16 @@ export default function App() {
                 <button 
                   className={`canvas-mode-btn ${canvasMode === 'forge' ? 'active' : ''}`}
                   onClick={() => {
-                    setCanvasMode('forge')
+                    if (canvasMode !== 'forge') {
+                      setCanvasMode('forge')
+                      // Trigger flame animation for mode switch
+                      setModeFlameActive(true)
+                      setTimeout(() => setModeFlameActive(false), 1500)
+                      // Trigger forge intro animation if prompt is empty
+                      if (!prompt.trim()) {
+                        setShouldPlayForgeIntro(true)
+                      }
+                    }
                     // Clear edit image to switch prompt bar to Forge mode
                     if (editImage) {
                       setEditImage(null)
@@ -1189,7 +1198,14 @@ export default function App() {
                 </button>
                 <button 
                   className={`canvas-mode-btn ${canvasMode === 'refine' ? 'active' : ''}`}
-                  onClick={() => setCanvasMode('refine')}
+                  onClick={() => {
+                    if (canvasMode !== 'refine') {
+                      setCanvasMode('refine')
+                      // Trigger flame animation for mode switch
+                      setModeFlameActive(true)
+                      setTimeout(() => setModeFlameActive(false), 1500)
+                    }
+                  }}
                 >
                   <Hammer className="w-4 h-4" />
                   Refine
@@ -1517,7 +1533,16 @@ export default function App() {
             <button 
               className={`lcd-spec-item lcd-mode forge ${!editImage && canvasMode === 'forge' ? 'lit' : ''}`}
               onClick={() => {
-                setCanvasMode('forge')
+                if (canvasMode !== 'forge' || editImage) {
+                  setCanvasMode('forge')
+                  // Trigger flame animation for mode switch
+                  setModeFlameActive(true)
+                  setTimeout(() => setModeFlameActive(false), 1500)
+                  // Trigger forge intro animation if prompt is empty
+                  if (!prompt.trim()) {
+                    setShouldPlayForgeIntro(true)
+                  }
+                }
                 if (editImage) {
                   setEditImage(null)
                   setResult(null)
@@ -1530,7 +1555,12 @@ export default function App() {
             <button 
               className={`lcd-spec-item lcd-mode refine ${editImage || canvasMode === 'refine' ? 'lit' : ''}`}
               onClick={() => {
-                setCanvasMode('refine')
+                if (canvasMode !== 'refine') {
+                  setCanvasMode('refine')
+                  // Trigger flame animation for mode switch
+                  setModeFlameActive(true)
+                  setTimeout(() => setModeFlameActive(false), 1500)
+                }
                 if (!editImage) {
                   scrollToRefine()
                 }
