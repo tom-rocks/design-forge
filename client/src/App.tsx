@@ -377,6 +377,10 @@ export default function App() {
         setRefineGlow(true)
         if (glowTimerRef.current) clearTimeout(glowTimerRef.current)
         glowTimerRef.current = setTimeout(() => setRefineGlow(false), 3000)
+        // Trigger refine intro animation if prompt is empty and not replaying
+        if (!promptRef2.current.trim() && !isReplayingRef.current) {
+          setShouldPlayRefineIntro(true)
+        }
       } else {
         // Switching to forge
         setRefineGlow(false)
