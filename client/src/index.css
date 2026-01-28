@@ -626,7 +626,7 @@ textarea.textarea.floating-prompt-input.forging {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px 10px 10px 10px;
+  padding: 6px 10px 6px 10px;
   padding-right: 14px; /* Extra padding for scrollbar space */
   background-color: #e8e4e0;
   scrollbar-width: none; /* Hide Firefox scrollbar */
@@ -899,8 +899,10 @@ textarea.textarea.floating-prompt-input.forging {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px;
+  height: 36px;
+  margin: 0 6px 6px 6px;
   border: none;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-dim);
   font-size: 13px;
