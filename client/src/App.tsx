@@ -1584,6 +1584,13 @@ export default function App() {
                   if (introAnimating) cancelIntroAnimation()
                   if (promptHot) setPromptHot(false)
                 }}
+                onKeyDown={e => {
+                  // Enter submits, Shift+Enter for line break
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (canGenerate) handleGenerate()
+                  }
+                }}
                 placeholder={introPlayed && !introAnimating ? (editImage ? "Describe what you want to change..." : "Describe what you want to create...") : ""}
                 rows={1}
               />
