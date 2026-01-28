@@ -1954,7 +1954,7 @@ export default function App() {
                             onClick={(e) => deleteGalleryImage(img, e)}
                             title="Delete"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       ))}

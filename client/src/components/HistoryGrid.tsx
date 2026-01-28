@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Loader2, LogIn, Expand, Pin, Search, Star, Trash2, Hammer } from 'lucide-react'
+import { Loader2, LogIn, Expand, Pin, Search, Star, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { API_URL } from '../config'
 import { Lightbox } from './Lightbox'
@@ -599,20 +599,8 @@ export default function HistoryGrid({
                 onClick={(e) => deleteGeneration(gen, e)}
                 title="Delete"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3 h-3" />
               </button>
-              {onRefine && (
-                <button
-                  className="history-item-refine"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRefine(`${API_URL}${img.imageUrl}`)
-                  }}
-                  title="Refine this image"
-                >
-                  <Hammer className="w-3 h-3" />
-                </button>
-              )}
             </motion.div>
           )
         })}
