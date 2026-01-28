@@ -445,8 +445,23 @@ body {
 
 /* Override .textarea color for floating prompt - must be more specific */
 textarea.textarea.floating-prompt-input {
-  color: var(--text-light);
-  transition: color 2s ease-out, text-shadow 2s ease-out;
+  color: var(--text);
+  transition: color 0.5s ease-out, text-shadow 0.5s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+textarea.textarea.floating-prompt-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+textarea.textarea.floating-prompt-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea.textarea.floating-prompt-input::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
 }
 
 textarea.textarea.floating-prompt-input::placeholder {
@@ -465,7 +480,7 @@ textarea.textarea.floating-prompt-input.forging {
 
 @keyframes forge-pulse {
   0%, 100% {
-    color: var(--text-light);
+    color: var(--text-dim);
     text-shadow: 0 0 4px var(--accent-glow);
   }
   50% {
