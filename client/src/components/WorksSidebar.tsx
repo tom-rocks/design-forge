@@ -132,11 +132,15 @@ export function WorksSidebar({
     }
   }, [authenticated]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refresh when new generation is created
+  // Refresh when new generation is created and scroll to top
   useEffect(() => {
     if (newGenerationTrigger && authenticated) {
       setOffset(0)
       fetchGenerations(false)
+      // Scroll to top to show the new generation
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     }
   }, [newGenerationTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
 
