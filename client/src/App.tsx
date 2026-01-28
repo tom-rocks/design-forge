@@ -1183,9 +1183,10 @@ export default function App() {
               {/* Mode toggle */}
               <div className="canvas-mode-toggle">
                 <button 
-                  className={`canvas-mode-btn ${canvasMode === 'forge' ? 'active' : ''}`}
+                  className={`canvas-mode-btn ${!editImage && canvasMode === 'forge' ? 'active' : ''}`}
                   onClick={() => {
-                    if (canvasMode !== 'forge') {
+                    // Always set forge mode and trigger effects when switching
+                    if (canvasMode !== 'forge' || editImage) {
                       setCanvasMode('forge')
                       // Trigger flame animation for mode switch
                       setModeFlameActive(true)
@@ -1206,13 +1207,16 @@ export default function App() {
                   Forge
                 </button>
                 <button 
-                  className={`canvas-mode-btn ${canvasMode === 'refine' ? 'active' : ''}`}
+                  className={`canvas-mode-btn ${editImage || canvasMode === 'refine' ? 'active' : ''}`}
                   onClick={() => {
                     if (canvasMode !== 'refine') {
                       setCanvasMode('refine')
                       // Trigger flame animation for mode switch
                       setModeFlameActive(true)
                       setTimeout(() => setModeFlameActive(false), 1500)
+                    }
+                    if (!editImage) {
+                      scrollToRefine()
                     }
                   }}
                 >
