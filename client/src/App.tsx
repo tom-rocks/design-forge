@@ -1126,7 +1126,7 @@ export default function App() {
         onSelectImage={(imageUrl, generation) => {
           const genMode = generation.mode || 'create'
           
-          // Store result info for reference
+          // Store result info for reference (used by Replay button)
           setResult({
             imageUrl: imageUrl,
             imageUrls: generation.imageUrls.map(url => `${API_URL}${url}`),
@@ -1139,28 +1139,30 @@ export default function App() {
             parentId: generation.parent_id
           })
           
-          // Load the generation's prompt
-          setPrompt(generation.prompt || '')
-          
-          // Load alloy references from style_images
-          const styleImages = generation.settings?.styleImages || []
-          const refs: Reference[] = styleImages.map((img, i) => ({
-            id: `ref-${generation.id}-${i}`,
-            url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/')
-              ? img.url 
-              : `${API_URL}${img.url}`,
-            name: img.name,
-            type: 'generation' as const
-          }))
-          setReferences(refs)
-          
-          // Set mode based on original generation type
+          // Set mode and load data based on original generation type
           if (genMode === 'edit') {
             // Refine result: show as edit source for further refinement
+            // Clear prompt and alloys - user will give NEW instructions
+            setPrompt('')
+            setReferences([])
             setEditImage({ url: imageUrl })
             // canvasMode will be derived from editImage
           } else {
-            // Forge result: show in forge mode, image visible via result
+            // Forge result: load prompt + alloys, ready to forge again
+            setPrompt(generation.prompt || '')
+            
+            // Load alloy references from style_images
+            const styleImages = generation.settings?.styleImages || []
+            const refs: Reference[] = styleImages.map((img, i) => ({
+              id: `ref-${generation.id}-${i}`,
+              url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/')
+                ? img.url 
+                : `${API_URL}${img.url}`,
+              name: img.name,
+              type: 'generation' as const
+            }))
+            setReferences(refs)
+            
             setEditImage(null)
             setCanvasMode('forge')
           }
