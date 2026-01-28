@@ -627,7 +627,7 @@ textarea.textarea.floating-prompt-input.forging {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px 10px 10px 10px;
+  padding: 0 10px 10px 10px;
   padding-right: 14px; /* Extra padding for scrollbar space */
   background-color: #e8e4e0;
   scrollbar-width: none; /* Hide Firefox scrollbar */
@@ -2609,7 +2609,9 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .canvas-dropzone-icon {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 20px;
   opacity: 0.5;
 }
