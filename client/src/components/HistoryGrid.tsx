@@ -591,7 +591,7 @@ export default function HistoryGrid({
                 }}
                 title="View full size"
               >
-                <Expand className="w-4 h-4" />
+                <Expand className="w-3 h-3" />
               </button>
               {/* Delete button - top right */}
               <button
@@ -610,7 +610,7 @@ export default function HistoryGrid({
                   }}
                   title="Refine this image"
                 >
-                  <Hammer className="w-4 h-4" />
+                  <Hammer className="w-3 h-3" />
                 </button>
               )}
             </motion.div>
