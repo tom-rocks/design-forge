@@ -1416,7 +1416,7 @@ export default function App() {
                 <path d="M12 7 L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 {/* Leaves - left, center, right */}
                 <path d="M12 6 Q8 4 6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M12 5 Q12 2 12 1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M12 5 Q12 3 12 2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <path d="M12 6 Q16 4 18 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
               V.2.19
