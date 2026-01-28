@@ -1563,6 +1563,7 @@ export default function App() {
               <span className="lightbox-spec-sep">·</span>
               {/* Zoom */}
               <span className="lightbox-spec" title={`Zoom ${canvasZoom}%`}>
+                <Search className="w-4 h-4" />
                 {canvasZoom}%
               </span>
             </div>
