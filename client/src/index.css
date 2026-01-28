@@ -446,7 +446,7 @@ body {
 /* Override .textarea color for floating prompt - must be more specific */
 textarea.textarea.floating-prompt-input {
   color: var(--text);
-  transition: color 0.5s ease-out, text-shadow 0.5s ease-out;
+  transition: color 0.15s ease-out, text-shadow 0.15s ease-out;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
@@ -1411,16 +1411,8 @@ textarea.textarea.floating-prompt-input.forging {
   line-height: 1.5;
 }
 
-/* Hot prompt effect during replay */
-.textarea.prompt-hot {
-  color: var(--accent-text);
-  text-shadow: 0 0 8px var(--accent-text-glow);
-  transition: color 0.8s ease-out, text-shadow 0.8s ease-out;
-}
-
-.textarea:not(.prompt-hot) {
-  transition: color 0.8s ease-out, text-shadow 0.8s ease-out;
-}
+/* Hot prompt effect during replay - kept for backwards compatibility */
+/* Main styling is in textarea.textarea.floating-prompt-input.prompt-hot */
 
 /* Prompt input with LED indicator */
 .prompt-input-wrapper {
