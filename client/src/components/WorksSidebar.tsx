@@ -33,6 +33,7 @@ interface PendingGeneration {
   id: string
   prompt: string
   outputCount: number
+  mode: 'create' | 'edit'
 }
 
 interface WorksSidebarProps {
@@ -204,7 +205,7 @@ export function WorksSidebar({
                       <motion.button
                         key={`pending-${pending.id}-${i}`}
                         layout
-                        className={`gen-panel-thumb forging ${isSelected ? 'selected' : ''}`}
+                        className={`gen-panel-thumb forging ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
                         initial={{ opacity: 0, scale: 0.8, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: -10 }}

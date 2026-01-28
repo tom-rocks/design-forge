@@ -136,6 +136,7 @@ export default function App() {
     id: string
     prompt: string
     outputCount: number
+    mode: 'create' | 'edit'
   }>>([])
   
   
@@ -662,7 +663,8 @@ export default function App() {
     setPendingGenerations(prev => [...prev, {
       id: genId,
       prompt: genPrompt,
-      outputCount: genOutputCount
+      outputCount: genOutputCount,
+      mode: genMode
     }])
     setSelectedPendingId(genId)
     

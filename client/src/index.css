@@ -777,6 +777,34 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Refine mode forging - gold/yellow colors */
+.gen-panel-thumb.forging.forging-refine .gen-panel-thumb-forging::before {
+  background: linear-gradient(
+    135deg,
+    #d4a017 0%,
+    transparent 30%,
+    transparent 70%,
+    #f5c518 100%
+  );
+}
+
+.gen-panel-thumb.forging.forging-refine .gen-panel-thumb-forging::after {
+  background: linear-gradient(
+    -45deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(245, 197, 24, 0.15) 45%,
+    rgba(245, 197, 24, 0.25) 50%,
+    rgba(245, 197, 24, 0.15) 55%,
+    transparent 60%,
+    transparent 100%
+  );
+}
+
+.gen-panel-thumb.forging.forging-refine.selected {
+  box-shadow: 0 0 0 2px #d4a017;
+}
+
 /* Delete button on thumbnails */
 .gen-panel-delete {
   position: absolute;
