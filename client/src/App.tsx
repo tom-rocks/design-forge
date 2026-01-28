@@ -1346,8 +1346,8 @@ export default function App() {
                     <div className="canvas-dropzone-inner">
                       <span className="canvas-dropzone-icon">
                         {canvasMode === 'forge' 
-                          ? <span className="btn-icon icon-alloy" style={{ width: 56, height: 56 }} />
-                          : <ArchiveRestore style={{ width: 56, height: 56 }} />
+                          ? <span className="btn-icon icon-alloy" style={{ width: 48, height: 48 }} />
+                          : <ArchiveRestore style={{ width: 32, height: 32 }} />
                         }
                       </span>
                       <p className="canvas-dropzone-text">
@@ -1736,8 +1736,8 @@ export default function App() {
               disabled={!canGenerate && prompt.trim() !== ''}
               className="floating-forge-btn"
             >
-              {editImage ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
-              {editImage ? 'Refine' : 'Forge'}{isGenerating ? ` +${pendingGenerations.length}` : ''}
+              {editImage || canvasMode === 'refine' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+              {editImage || canvasMode === 'refine' ? 'Refine' : 'Forge'}{isGenerating ? ` +${pendingGenerations.length}` : ''}
             </Button>
           </div>
           

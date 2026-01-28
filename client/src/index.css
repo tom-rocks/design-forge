@@ -3316,7 +3316,7 @@ textarea.textarea.floating-prompt-input.forging {
 
 .item-pin.active {
   opacity: 1;
-  background: var(--accent);
+  background: #ff5722;
   color: white;
 }
 
@@ -3504,7 +3504,7 @@ textarea.textarea.floating-prompt-input.forging {
 /* Pinned item indicator */
 .highrise-item.pinned,
 .history-item.pinned {
-  box-shadow: 0 0 0 2px var(--accent);
+  box-shadow: 0 0 0 2px #ff5722;
 }
 
 .highrise-loader-sentinel {
