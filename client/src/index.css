@@ -813,6 +813,27 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 0 2px #d4a017;
 }
 
+/* Forging icons - centered in pending thumbnails */
+.forging-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  z-index: 5;
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.forging-icon-forge {
+  color: #ff5722;
+}
+
+.forging-icon-refine {
+  color: #f5c518;
+}
+
 /* Delete button on thumbnails */
 .gen-panel-delete {
   position: absolute;

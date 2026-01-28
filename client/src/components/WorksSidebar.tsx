@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ImageOff, X, Plus, Trash2, Flame, Box, Boxes } from 'lucide-react'
+import { Loader2, ImageOff, X, Plus, Trash2, Flame, Hammer, Box, Boxes } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -233,12 +233,17 @@ export function WorksSidebar({
                             damping: 30
                           }
                         }}
-                        title={`Forging: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`}
+                        title={`${pending.mode === 'edit' ? 'Refining' : 'Forging'}: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`}
                         onClick={() => onSelectPending?.(pending.id)}
                         onMouseEnter={() => setHoveredPendingId(pending.id)}
                         onMouseLeave={() => setHoveredPendingId(null)}
                       >
-                        <div className="gen-panel-thumb-forging" />
+                        <div className="gen-panel-thumb-forging">
+                          {pending.mode === 'edit' 
+                            ? <Hammer className="forging-icon forging-icon-refine" />
+                            : <Flame className="forging-icon forging-icon-forge" />
+                          }
+                        </div>
                         {/* Cancel button - only on first image of each generation, on hover */}
                         {isFirst && (isHovered || isSelected) && (
                           <button
