@@ -777,6 +777,12 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Selected completed generation */
+.gen-panel-thumb.selected:not(.forging) {
+  box-shadow: 0 0 0 2px var(--accent);
+  transform: scale(1.02);
+}
+
 /* Refine mode forging - gold/yellow colors */
 .gen-panel-thumb.forging.forging-refine .gen-panel-thumb-forging::before {
   background: linear-gradient(

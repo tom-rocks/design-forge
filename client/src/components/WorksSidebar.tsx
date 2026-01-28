@@ -48,6 +48,7 @@ interface WorksSidebarProps {
   onNewForge?: () => void // Start a new forge (clear canvas)
   onDeleteImage?: (generationId: string) => void // Delete a generation
   isNewForgeActive?: boolean // True when canvas is fresh/empty (we're "in" new forge)
+  selectedImageUrl?: string | null // Currently selected/viewed image URL
 }
 
 export function WorksSidebar({ 
@@ -61,7 +62,8 @@ export function WorksSidebar({
   selectedPendingId,
   onNewForge,
   onDeleteImage,
-  isNewForgeActive = false
+  isNewForgeActive = false,
+  selectedImageUrl
 }: WorksSidebarProps) {
   const [hoveredPendingId, setHoveredPendingId] = useState<string | null>(null)
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
@@ -245,11 +247,12 @@ export function WorksSidebar({
                 {/* Existing generations */}
                 {displayImages.map((img, index) => {
                   const isFailed = failedImages.has(img.id)
+                  const isSelected = selectedImageUrl === `${API_URL}${img.imageUrl}`
                   return (
                     <motion.button
                       key={img.id}
                       layout
-                      className={`gen-panel-thumb ${isFailed ? 'failed' : ''}`}
+                      className={`gen-panel-thumb ${isFailed ? 'failed' : ''} ${isSelected ? 'selected' : ''}`}
                       initial={{ opacity: 0, scale: 0.8, y: -20 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: -10 }}

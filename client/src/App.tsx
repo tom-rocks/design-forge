@@ -1130,6 +1130,7 @@ export default function App() {
         onSelectPending={handleSelectPending}
         selectedPendingId={selectedPendingId}
         isNewForgeActive={!result && !editImage && !selectedPendingId && !viewingPastWork && !isGenerating}
+        selectedImageUrl={result?.imageUrl}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}
