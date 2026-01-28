@@ -574,7 +574,7 @@ textarea.textarea.floating-prompt-input.forging {
   height: 20px;
   pointer-events: none;
   z-index: 10;
-  top: 36px; /* Below header */
+  top: 40px; /* Below header */
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.1) 0%,
@@ -588,7 +588,7 @@ textarea.textarea.floating-prompt-input.forging {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px;
+  height: 40px;
   background-color: #e8e4e0;
   flex-shrink: 0;
 }
@@ -906,7 +906,7 @@ textarea.textarea.floating-prompt-input.forging {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px;
+  height: 40px;
   border: none;
   background: #e8e4e0;
   color: var(--text-dim);
