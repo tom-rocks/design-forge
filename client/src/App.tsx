@@ -529,8 +529,8 @@ export default function App() {
   useEffect(() => {
     const currentMode = editImage ? 'edit' : 'create'
     
-    // Check if we just switched TO refine mode
-    if (currentMode === 'edit' && lastModeRef.current === 'create') {
+    // Check if we just switched TO refine mode (but NOT during replay)
+    if (currentMode === 'edit' && lastModeRef.current === 'create' && !isReplayingRef.current) {
       // Cancel any existing animation first
       cancelIntroAnimation()
       // Clear existing prompt and play the refine intro animation
@@ -1476,11 +1476,12 @@ export default function App() {
               className="canvas-control-btn"
               onClick={() => {
                 if (result) {
-                  console.log('[Replay Button] result state:', {
-                    mode: result.mode,
-                    parentId: result.parentId,
-                    hasStyleImages: result.styleImages?.length
-                  })
+                  const editImageUrl = result.mode === 'edit' && result.parentId 
+                    ? `/api/generations/${result.parentId}/image/0`
+                    : undefined
+                  console.log('[Replay Button] Full result:', result)
+                  console.log('[Replay Button] Computed editImageUrl:', editImageUrl)
+                  console.log('[Replay Button] Condition check: mode=', result.mode, 'parentId=', result.parentId)
                   handleReplay({
                     prompt: result.prompt,
                     mode: result.mode || 'create',
@@ -1488,10 +1489,7 @@ export default function App() {
                     resolution: result.resolution,
                     aspectRatio: result.aspectRatio,
                     references: result.styleImages,
-                    // For edit mode, include the parent image URL
-                    editImageUrl: result.mode === 'edit' && result.parentId 
-                      ? `/api/generations/${result.parentId}/image/0`
-                      : undefined,
+                    editImageUrl,
                   })
                 }
               }}
