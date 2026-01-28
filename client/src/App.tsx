@@ -138,6 +138,8 @@ export default function App() {
     prompt: string
     outputCount: number
     mode: 'create' | 'edit'
+    references: Reference[]
+    editImageUrl?: string
   }>>([])
   
   
@@ -697,7 +699,9 @@ export default function App() {
       id: genId,
       prompt: genPrompt,
       outputCount: genOutputCount,
-      mode: genMode
+      mode: genMode,
+      references: [...genReferences],
+      editImageUrl: genEditImage?.url
     }])
     setSelectedPendingId(genId)
     
@@ -876,14 +880,28 @@ export default function App() {
     }
   }, [selectedPendingId])
   
-  // Select a pending generation - navigate to it (shows generating view)
+  // Select a pending generation - navigate to it and restore its setup
   const handleSelectPending = useCallback((pendingId: string) => {
     setSelectedPendingId(pendingId)
     // Clear current result to show the generating view for this pending item
     setResult(null)
     setViewingPastWork(false)
-    setEditImage(null)
-  }, [])
+    
+    // Find the pending generation and restore its setup
+    const pending = pendingGenerations.find(p => p.id === pendingId)
+    if (pending) {
+      setPrompt(pending.prompt)
+      setReferences(pending.references)
+      if (pending.mode === 'edit' && pending.editImageUrl) {
+        setEditImage({ url: pending.editImageUrl })
+      } else {
+        setEditImage(null)
+        setCanvasMode('forge')
+      }
+    } else {
+      setEditImage(null)
+    }
+  }, [pendingGenerations])
 
   const addReference = (ref: Reference) => {
     setReferences(prev => {

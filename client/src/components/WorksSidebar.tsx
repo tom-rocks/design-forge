@@ -34,6 +34,8 @@ interface PendingGeneration {
   prompt: string
   outputCount: number
   mode: 'create' | 'edit'
+  references?: Array<{ id: string; url: string; thumbnailUrl?: string; name?: string; type: string }>
+  editImageUrl?: string
 }
 
 interface WorksSidebarProps {
