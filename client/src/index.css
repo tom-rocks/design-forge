@@ -2370,6 +2370,50 @@ textarea.textarea.floating-prompt-input.forging {
   max-width: 600px;
 }
 
+/* Mode toggle - Forge vs Refine */
+.canvas-mode-toggle {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 4px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1), inset -1px -1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.canvas-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.canvas-mode-btn:hover {
+  color: var(--text);
+}
+
+.canvas-mode-btn.active {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.canvas-mode-btn.active svg {
+  color: var(--accent);
+}
+
 .canvas-source-tabs {
   display: flex;
   gap: 8px;

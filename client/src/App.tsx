@@ -109,6 +109,7 @@ export default function App() {
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
   const [favoritesResetKey, _setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
+  const [canvasMode, setCanvasMode] = useState<'forge' | 'refine'>('forge')
   
   // Forge specs state
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
@@ -1163,6 +1164,24 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
+              {/* Mode toggle */}
+              <div className="canvas-mode-toggle">
+                <button 
+                  className={`canvas-mode-btn ${canvasMode === 'forge' ? 'active' : ''}`}
+                  onClick={() => setCanvasMode('forge')}
+                >
+                  <Flame className="w-4 h-4" />
+                  Forge
+                </button>
+                <button 
+                  className={`canvas-mode-btn ${canvasMode === 'refine' ? 'active' : ''}`}
+                  onClick={() => setCanvasMode('refine')}
+                >
+                  <Hammer className="w-4 h-4" />
+                  Refine
+                </button>
+              </div>
+
               {/* Source tabs */}
               <div className="canvas-source-tabs">
                 <button 
@@ -1197,7 +1216,7 @@ export default function App() {
 
               {/* Source content - kept mounted to preserve state */}
               <div className="canvas-source-content">
-                {/* Drop tab - mode aware: Alloy in forge mode, Refine in refine context */}
+                {/* Drop tab - mode aware */}
                 <div className={`canvas-tab-panel ${refineSource === 'drop' ? 'active' : ''}`}>
                   <div 
                     className={`canvas-dropzone ${isDraggingRefine ? 'dragging' : ''} ${activeDropTarget === 'refine' ? 'active' : ''}`}
@@ -1207,10 +1226,18 @@ export default function App() {
                   >
                     <div className="canvas-dropzone-inner">
                       <span className="canvas-dropzone-icon">
-                        <span className="btn-icon icon-alloy" style={{ width: 56, height: 56 }} />
+                        <span className={`btn-icon ${canvasMode === 'forge' ? 'icon-alloy' : 'icon-drop'}`} style={{ width: 56, height: 56 }} />
                       </span>
-                      <p className="canvas-dropzone-text">Drop or paste images for Alloy</p>
-                      <p className="canvas-dropzone-hint">{activeDropTarget === 'refine' ? 'Ready to paste - press ⌘V' : 'Style references to guide generation'}</p>
+                      <p className="canvas-dropzone-text">
+                        {canvasMode === 'forge' ? 'Drop or paste images for Alloy' : 'Drop or paste an image to refine'}
+                      </p>
+                      <p className="canvas-dropzone-hint">
+                        {activeDropTarget === 'refine' 
+                          ? 'Ready to paste - press ⌘V' 
+                          : canvasMode === 'forge' 
+                            ? 'Style references to guide generation' 
+                            : 'Click to select, then paste'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1218,46 +1245,103 @@ export default function App() {
                 {/* Items tab */}
                 <div className={`canvas-tab-panel ${refineSource === 'items' ? 'active' : ''}`}>
                   <div className="canvas-source-panel">
-                    <HighriseSearch 
-                      singleSelect={false}
-                      onAddReference={(ref) => addAlloyReferences([ref])}
-                      onRemoveReference={removeReference}
-                      references={references}
-                      maxRefs={14}
-                      bridgeConnected={bridgeConnected}
-                      useAPBridge={inAPContext}
-                    />
+                    {canvasMode === 'forge' ? (
+                      <HighriseSearch 
+                        singleSelect={false}
+                        onAddReference={(ref) => addAlloyReferences([ref])}
+                        onRemoveReference={removeReference}
+                        references={references}
+                        maxRefs={14}
+                        bridgeConnected={bridgeConnected}
+                        useAPBridge={inAPContext}
+                      />
+                    ) : (
+                      <HighriseSearch 
+                        singleSelect
+                        onSingleSelect={(item) => { 
+                          const url = item.displayUrl || item.imageUrl
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                        }} 
+                        bridgeConnected={bridgeConnected}
+                        useAPBridge={inAPContext}
+                      />
+                    )}
                   </div>
                 </div>
 
                 {/* History/Works tab */}
                 <div className={`canvas-tab-panel ${refineSource === 'history' ? 'active' : ''}`}>
                   <div className="canvas-source-panel">
-                    <HistoryGrid 
-                      singleSelect={false}
-                      onAddReference={(ref) => addAlloyReferences([ref])}
-                      onRemoveReference={removeReference}
-                      references={references}
-                      maxRefs={14}
-                      isActive={refineSource === 'history'}
-                      onUseAlloy={addAlloyReferences}
-                    />
+                    {canvasMode === 'forge' ? (
+                      <HistoryGrid 
+                        singleSelect={false}
+                        onAddReference={(ref) => addAlloyReferences([ref])}
+                        onRemoveReference={removeReference}
+                        references={references}
+                        maxRefs={14}
+                        isActive={refineSource === 'history'}
+                        onUseAlloy={addAlloyReferences}
+                      />
+                    ) : (
+                      <HistoryGrid 
+                        singleSelect
+                        onSingleSelect={(gen) => { 
+                          const url = `${API_URL}${gen.imageUrls[0]}`
+                          setEditImage({ 
+                            url,
+                            thumbnail: gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : undefined
+                          })
+                          detectAndSetAspectRatio(url)
+                        }}
+                        isActive={refineSource === 'history'}
+                        onUseAlloy={addAlloyReferences}
+                      />
+                    )}
                   </div>
                 </div>
 
                 {/* Favorites tab */}
                 <div className={`canvas-tab-panel ${refineSource === 'favorites' ? 'active' : ''}`}>
                   <div className="canvas-source-panel">
-                    <Favorites 
-                      authenticated={authenticated}
-                      onLogin={login}
-                      singleSelect={false}
-                      onAddReference={(ref) => addAlloyReferences([ref])}
-                      onRemoveReference={removeReference}
-                      references={references}
-                      maxRefs={14}
-                      isActive={refineSource === 'favorites'}
-                    />
+                    {canvasMode === 'forge' ? (
+                      <Favorites 
+                        authenticated={authenticated}
+                        onLogin={login}
+                        singleSelect={false}
+                        onAddReference={(ref) => addAlloyReferences([ref])}
+                        onRemoveReference={removeReference}
+                        references={references}
+                        maxRefs={14}
+                        isActive={refineSource === 'favorites'}
+                      />
+                    ) : (
+                      <Favorites 
+                        authenticated={authenticated}
+                        onLogin={login}
+                        singleSelect
+                        onSingleSelect={(fav) => { 
+                          let url = fav.item_data.imageUrl
+                          const itemId = fav.item_data.itemId
+                          const isMongoId = itemId && /^[a-f0-9]{24}$/i.test(itemId)
+                          
+                          if (fav.type === 'item' && itemId && !isMongoId) {
+                            const dispId = itemId
+                            const isClothing = ['shirt', 'pants', 'shorts', 'skirt', 'dress', 'jacket', 'fullsuit',
+                              'hat', 'shoes', 'glasses', 'bag', 'handbag', 'necklace', 'earrings',
+                              'gloves', 'watch', 'sock'].includes(fav.item_data.category || '')
+                            if (isClothing) {
+                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png?crisp=1`
+                            } else if (!dispId.startsWith('cn-') && !dispId.startsWith('bg-')) {
+                              url = `https://production-ap.highrise.game/avataritem/front/${dispId}.png`
+                            }
+                          }
+                          setEditImage({ url })
+                          detectAndSetAspectRatio(url)
+                        }}
+                        isActive={refineSource === 'favorites'}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
