@@ -610,17 +610,17 @@ textarea.textarea.floating-prompt-input.forging {
 
 .gen-panel-head .btn-icon,
 .gen-panel-head .gen-panel-icon {
-  width: 14px;
-  height: 14px;
-  opacity: 0.5;
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
 }
 
 .gen-panel-label {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6b6560;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
 }
 
 .gen-panel-list {
