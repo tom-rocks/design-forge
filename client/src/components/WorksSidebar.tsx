@@ -14,6 +14,7 @@ interface Generation {
   model?: string
   resolution?: string
   aspect_ratio?: string
+  parent_id?: string | null // For edit mode - reference to parent generation
   settings?: {
     styleImages?: { url: string; name?: string }[]
     [key: string]: any

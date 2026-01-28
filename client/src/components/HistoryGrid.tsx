@@ -447,9 +447,9 @@ export default function HistoryGrid({
       aspectRatio: gen.aspect_ratio,
       numImages: gen.settings?.numImages,
       references: gen.settings?.styleImages,
-      // For edit mode, include the parent image URL (with full API URL)
+      // For edit mode, include the parent image URL (path only - API_URL added by handleReplay)
       editImageUrl: gen.mode === 'edit' && gen.parent_id 
-        ? `${API_URL}/api/generations/${gen.parent_id}/image/0`
+        ? `/api/generations/${gen.parent_id}/image/0`
         : undefined,
       ...gen.settings, // Include any additional settings for future compatibility
     }

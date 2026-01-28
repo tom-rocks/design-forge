@@ -55,6 +55,7 @@ interface GenerationResult {
   resolution?: string
   model?: string
   styleImages?: { url: string; name?: string }[]
+  parentId?: string | null // For edit mode - the parent generation that was refined
 }
 
 /* ============================================
@@ -577,8 +578,11 @@ export default function App() {
         detectAndSetAspectRatio(fullUrl)
       }, 100)
     } else {
-      // Clear edit image for create mode
+      // Clear edit image and canvas for create/forge mode
       setEditImage(null)
+      setResult(null)
+      setCanvasMode('forge')
+      setViewingPastWork(false)
     }
     
     setTimeout(() => {
@@ -1070,7 +1074,8 @@ export default function App() {
             aspectRatio: generation.aspect_ratio || '1:1',
             resolution: generation.resolution || '1024',
             model: generation.model,
-            styleImages: generation.settings?.styleImages
+            styleImages: generation.settings?.styleImages,
+            parentId: generation.parent_id
           })
           
           // Auto-switch to refine mode with this image
@@ -1453,6 +1458,10 @@ export default function App() {
                     resolution: result.resolution,
                     aspectRatio: result.aspectRatio,
                     references: result.styleImages,
+                    // For edit mode, include the parent image URL
+                    editImageUrl: result.mode === 'edit' && result.parentId 
+                      ? `/api/generations/${result.parentId}/image/0`
+                      : undefined,
                   })
                 }
               }}
