@@ -563,6 +563,12 @@ export default function App() {
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
+    console.log('[Replay] Config received:', { 
+      mode: config.mode, 
+      editImageUrl: config.editImageUrl,
+      hasReferences: config.references?.length 
+    })
+    
     // Mark that we're replaying to prevent intro animations from interfering
     isReplayingRef.current = true
     
@@ -576,11 +582,13 @@ export default function App() {
     // For edit mode, set the edit image (this derives mode automatically)
     if (config.mode === 'edit' && config.editImageUrl) {
       const fullUrl = `${API_URL}${config.editImageUrl}`
+      console.log('[Replay] Setting edit image for refine replay:', fullUrl)
       setTimeout(() => {
         setEditImage({ url: fullUrl })
         detectAndSetAspectRatio(fullUrl)
       }, 100)
     } else {
+      console.log('[Replay] Clearing for forge mode. mode:', config.mode, 'editImageUrl:', config.editImageUrl)
       // Clear edit image and canvas for create/forge mode
       setEditImage(null)
       setResult(null)
@@ -663,8 +671,9 @@ export default function App() {
     
     // Extract parent generation ID from edit image URL if present
     // URL pattern: .../api/generations/{uuid}/image/{index}
-    const parentIdMatch = genEditImage?.url?.match(/\/api\/generations\/([a-f0-9-]+)\/image\//)
+    const parentIdMatch = genEditImage?.url?.match(/\/api\/generations\/([a-fA-F0-9-]+)\/image\//i)
     const genParentId = parentIdMatch?.[1] || null
+    console.log('[Generate] Edit image URL:', genEditImage?.url, 'Extracted parentId:', genParentId)
     
     // Add to pending generations and auto-select it
     setPendingGenerations(prev => [...prev, {
@@ -741,7 +750,10 @@ export default function App() {
           styleImages: genReferences.map(r => ({ url: r.url, strength: 1 })),
           mode: genMode,
           numImages: genOutputCount,
-          ...(genMode === 'edit' && genEditImage?.url ? { editImage: genEditImage.url } : {}),
+          ...(genMode === 'edit' && genEditImage?.url ? { 
+            editImage: genEditImage.url,
+            parentId: genParentId // Store parent generation for replay functionality
+          } : {}),
         }),
         signal,
       })
@@ -767,6 +779,7 @@ export default function App() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             if (currentEvent === 'complete') {
+              console.log('[Complete] Setting result with mode:', genMode, 'parentId:', genParentId)
               setResult({ 
                 imageUrl: data.imageUrl, 
                 imageUrls: data.imageUrls, 
@@ -1463,6 +1476,11 @@ export default function App() {
               className="canvas-control-btn"
               onClick={() => {
                 if (result) {
+                  console.log('[Replay Button] result state:', {
+                    mode: result.mode,
+                    parentId: result.parentId,
+                    hasStyleImages: result.styleImages?.length
+                  })
                   handleReplay({
                     prompt: result.prompt,
                     mode: result.mode || 'create',
