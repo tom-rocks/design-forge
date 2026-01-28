@@ -1124,12 +1124,14 @@ export default function App() {
       <WorksSidebar
         authenticated={authenticated}
         onSelectImage={(imageUrl, generation) => {
-          // Show in canvas and auto-switch to refine mode
+          const genMode = generation.mode || 'create'
+          
+          // Store result info for reference
           setResult({
             imageUrl: imageUrl,
             imageUrls: generation.imageUrls.map(url => `${API_URL}${url}`),
             prompt: generation.prompt,
-            mode: generation.mode || 'create',
+            mode: genMode,
             aspectRatio: generation.aspect_ratio || '1:1',
             resolution: generation.resolution || '1024',
             model: generation.model,
@@ -1137,14 +1139,34 @@ export default function App() {
             parentId: generation.parent_id
           })
           
-          // Auto-switch to refine mode with this image
-          setEditImage({ url: imageUrl })
+          // Load the generation's prompt
+          setPrompt(generation.prompt || '')
+          
+          // Load alloy references from style_images
+          const styleImages = generation.settings?.styleImages || []
+          const refs: Reference[] = styleImages.map((img, i) => ({
+            id: `ref-${generation.id}-${i}`,
+            url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/')
+              ? img.url 
+              : `${API_URL}${img.url}`,
+            name: img.name,
+            type: 'generation' as const
+          }))
+          setReferences(refs)
+          
+          // Set mode based on original generation type
+          if (genMode === 'edit') {
+            // Refine result: show as edit source for further refinement
+            setEditImage({ url: imageUrl })
+            // canvasMode will be derived from editImage
+          } else {
+            // Forge result: show in forge mode, image visible via result
+            setEditImage(null)
+            setCanvasMode('forge')
+          }
+          
           detectAndSetAspectRatio(imageUrl)
           setViewingPastWork(true)
-          
-          // Clear prompt and references - user will describe what to change
-          setPrompt('')
-          setReferences([])
           setCanvasZoom(100)
           
           // Reset image loading state
