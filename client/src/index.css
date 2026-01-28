@@ -2500,6 +2500,26 @@ textarea.textarea.floating-prompt-input.forging {
   min-height: 250px; /* Consistent height for all panels */
   max-height: 50vh;
   overflow-y: auto;
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.canvas-source-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.canvas-source-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.canvas-source-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.canvas-source-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* When grids are inside canvas source panel, remove their own scrolling */
