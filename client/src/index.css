@@ -920,11 +920,9 @@ textarea.textarea.floating-prompt-input.forging {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 36px;
-  margin: 0 6px 6px 6px;
+  padding: 10px;
   border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
+  background: #e8e4e0;
   color: var(--text-dim);
   font-size: 13px;
   font-weight: 600;
@@ -935,7 +933,7 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-all:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: #dedad6;
   color: var(--text);
 }
 
