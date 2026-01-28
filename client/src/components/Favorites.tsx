@@ -138,6 +138,7 @@ export interface Folder {
 interface Reference {
   id: string
   url: string
+  thumbnailUrl?: string
   name?: string
   type: 'file' | 'highrise' | 'generation'
 }

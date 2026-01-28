@@ -76,6 +76,7 @@ export interface ReplayConfig {
 interface Reference {
   id: string
   url: string
+  thumbnailUrl?: string
   name?: string
   type: 'file' | 'highrise' | 'generation'
 }
