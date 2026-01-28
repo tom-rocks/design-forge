@@ -565,9 +565,8 @@ textarea.textarea.floating-prompt-input.forging {
   position: relative;
 }
 
-/* Tape window effect - inner shadows create "viewing through a slot" illusion */
-.gen-panel-box::before,
-.gen-panel-box::after {
+/* Tape window effect - inner shadow at top creates "viewing through a slot" illusion */
+.gen-panel-box::before {
   content: '';
   position: absolute;
   left: 0;
@@ -575,22 +574,9 @@ textarea.textarea.floating-prompt-input.forging {
   height: 20px;
   pointer-events: none;
   z-index: 10;
-}
-
-.gen-panel-box::before {
   top: 36px; /* Below header */
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.1) 0%,
-    rgba(0, 0, 0, 0.04) 50%,
-    transparent 100%
-  );
-}
-
-.gen-panel-box::after {
-  bottom: 32px; /* Above footer */
-  background: linear-gradient(
-    to top,
     rgba(0, 0, 0, 0.1) 0%,
     rgba(0, 0, 0, 0.04) 50%,
     transparent 100%
