@@ -886,6 +886,25 @@ textarea.textarea.floating-prompt-input.forging {
   }
 }
 
+/* Taller sidebar on larger screens */
+@media (min-height: 800px) {
+  .gen-panel-box {
+    height: 700px;
+  }
+}
+
+@media (min-height: 900px) {
+  .gen-panel-box {
+    height: 780px;
+  }
+}
+
+@media (min-height: 1000px) {
+  .gen-panel-box {
+    height: 860px;
+  }
+}
+
 /* Forge Specs LCD status display */
 .lcd-specs-status {
   justify-content: flex-end;
