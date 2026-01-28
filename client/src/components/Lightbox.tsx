@@ -5,10 +5,10 @@ import { Download, Flame, Hammer, Gem, Plus, RotateCcw, Loader2, Star, ZoomIn, R
 // Track which URLs have been loaded this session (survives component unmount)
 const loadedUrls = new Set<string>()
 
-// Zoom/pan constants
-const MIN_ZOOM = 1
-const MAX_ZOOM = 5
-const ZOOM_STEP = 0.15 // For mouse wheel
+// Zoom/pan constants - matching ImageCanvas
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 4
+const SCROLL_SENSITIVITY = 0.002 // For mouse wheel
 const PINCH_SENSITIVITY = 0.01 // For trackpad pinch
 
 // Helper to get aspect ratio icon dimensions
@@ -64,13 +64,19 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
   const panStart = useRef({ x: 0, y: 0 })
   const panOffset = useRef({ x: 0, y: 0 })
   
+  // Refs for current values (avoid stale closures in event handlers)
+  const zoomRef = useRef(zoom)
+  const panRef = useRef(pan)
+  zoomRef.current = zoom
+  panRef.current = pan
+  
   // Reset zoom/pan when image changes
   useEffect(() => {
     setZoom(1)
     setPan({ x: 0, y: 0 })
   }, [data?.imageUrl])
   
-  // Handle scroll/pinch to zoom - use native event listener for reliable preventDefault
+  // Handle scroll/pinch to zoom - matching ImageCanvas behavior
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -79,45 +85,45 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
       e.preventDefault()
       e.stopPropagation()
       
-      // Trackpad pinch-to-zoom (ctrlKey is set during pinch gesture)
-      if (e.ctrlKey) {
-        const delta = -e.deltaY * PINCH_SENSITIVITY
-        setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)))
-        return
-      }
+      // Mac trackpad pinch-to-zoom sends ctrlKey + wheel events
+      const isPinch = e.ctrlKey
       
-      // Check if zoomed in - use two-finger scroll for panning
-      setZoom(currentZoom => {
-        if (currentZoom > 1) {
-          // Pan with two-finger scroll when zoomed
-          setPan(prev => ({
-            x: prev.x - e.deltaX * 0.5,
-            y: prev.y - e.deltaY * 0.5
-          }))
-          return currentZoom
-        } else {
-          // Mouse wheel zoom when not zoomed (or at 1x)
-          const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-          return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom + delta))
-        }
-      })
+      // Use proportional zoom for smooth experience (matching ImageCanvas)
+      const sensitivity = isPinch ? PINCH_SENSITIVITY : SCROLL_SENSITIVITY
+      const delta = -e.deltaY * sensitivity
+      
+      // Calculate new scale with proportional change
+      const currentZoom = zoomRef.current
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentZoom * (1 + delta)))
+      
+      if (Math.abs(newZoom - currentZoom) > 0.001) {
+        const rect = container.getBoundingClientRect()
+        const mouseX = e.clientX - rect.left - rect.width / 2
+        const mouseY = e.clientY - rect.top - rect.height / 2
+        
+        // Zoom towards cursor position
+        const scaleRatio = newZoom / currentZoom
+        const currentPan = panRef.current
+        const newX = mouseX - (mouseX - currentPan.x) * scaleRatio
+        const newY = mouseY - (mouseY - currentPan.y) * scaleRatio
+        
+        setZoom(newZoom)
+        setPan({ x: newX, y: newY })
+      }
     }
     
     container.addEventListener('wheel', handleWheel, { passive: false })
     return () => container.removeEventListener('wheel', handleWheel)
   }, [data?.imageUrl])
   
-  // Handle mouse pan - left click when zoomed, or middle click anytime
+  // Handle mouse pan - left click always pans (matching ImageCanvas)
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Middle mouse button (button === 1) always pans
-    // Left click (button === 0) pans when zoomed
-    if (e.button === 1 || (e.button === 0 && zoom > 1)) {
-      e.preventDefault()
-      setIsPanning(true)
-      panStart.current = { x: e.clientX, y: e.clientY }
-      panOffset.current = { ...pan }
-    }
-  }, [pan, zoom])
+    if (e.button !== 0) return // Only left click
+    e.preventDefault()
+    setIsPanning(true)
+    panStart.current = { x: e.clientX, y: e.clientY }
+    panOffset.current = { ...pan }
+  }, [pan])
   
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning) return
@@ -131,6 +137,12 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
   
   const handleMouseUp = useCallback(() => {
     setIsPanning(false)
+  }, [])
+  
+  // Double-click/tap to reset to original size and centered (matching ImageCanvas)
+  const handleDoubleClick = useCallback(() => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
   }, [])
   
   // Reset zoom and pan
@@ -195,6 +207,7 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onDoubleClick={handleDoubleClick}
             >
               {!imageLoaded && (
                 <div className="lightbox-image-loading">
@@ -211,7 +224,7 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                 transition={{ duration: 0.2 }}
                 style={{
                   transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                  cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default'
+                  cursor: isPanning ? 'grabbing' : 'grab'
                 }}
                 draggable={false}
               />
@@ -224,10 +237,10 @@ export function Lightbox({ data, onClose, onDownload, onRefine, onReplay, onUseA
                   <RotateCw className="w-4 h-4" />
                 </button>
               )}
-              {zoom === 1 && (
+              {zoom === 1 && pan.x === 0 && pan.y === 0 && (
                 <div className="lightbox-zoom-hint">
                   <ZoomIn className="w-3 h-3" />
-                  <span>Scroll to zoom</span>
+                  <span>Scroll to zoom · Double-click to reset</span>
                 </div>
               )}
             </div>

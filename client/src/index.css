@@ -5832,7 +5832,7 @@ textarea.textarea.floating-prompt-input.forging {
   opacity: 1;
 }
 
-/* Clear all alloy button */
+/* Clear all alloy button - inside thumbs, positioned to left of images */
 .prompt-alloy-clear {
   position: relative;
   width: 32px;
@@ -5849,6 +5849,7 @@ textarea.textarea.floating-prompt-input.forging {
   flex-shrink: 0;
   padding: 4px;
   align-self: center;
+  margin-right: 2px; /* Small gap between trash and first image */
 }
 
 /* Inner pressable button look - no outer ring */
