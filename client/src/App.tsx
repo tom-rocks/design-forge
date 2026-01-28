@@ -334,54 +334,67 @@ export default function App() {
     img.src = imageUrl
   }, [])
   
-  // Track previous editImage to detect mode transitions
-  const wasInRefineRef = useRef(false)
+  // Track previous mode to detect transitions
+  const prevModeRef = useRef<'forge' | 'refine'>('forge')
   const isReplayingRef = useRef(false) // Skip intro animations during replay
   const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
   const [shouldPlayRefineIntro, setShouldPlayRefineIntro] = useState(false)
   const promptRef2 = useRef(prompt) // Track prompt without triggering effect
   promptRef2.current = prompt
   
-  // Trigger glow effect and brief flame animation when switching modes
+  // Flame timer ref - allows clearing on rapid clicks
+  const flameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const glowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  
+  // Robust function to trigger flame animation - always works even with rapid clicks
+  const triggerFlameAnimation = useCallback(() => {
+    // Clear any existing timer
+    if (flameTimerRef.current) {
+      clearTimeout(flameTimerRef.current)
+    }
+    // Start flame animation
+    setModeFlameActive(true)
+    // Set new timer to turn off
+    flameTimerRef.current = setTimeout(() => {
+      setModeFlameActive(false)
+      flameTimerRef.current = null
+    }, 1500)
+  }, [])
+  
+  // Derive current mode from state
+  const currentMode = editImage || canvasMode === 'refine' ? 'refine' : 'forge'
+  
+  // Trigger effects when mode changes
   useEffect(() => {
-    if (editImage) {
-      setRefineGlow(true)
+    const prevMode = prevModeRef.current
+    
+    if (currentMode !== prevMode) {
+      // Mode changed - trigger flame animation
+      triggerFlameAnimation()
       
-      // Only play flame animation when switching from forge to refine, not refine to refine
-      if (!wasInRefineRef.current) {
-        setModeFlameActive(true)
-        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
-        wasInRefineRef.current = true
-        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
-        return () => {
-          clearTimeout(flameTimer)
-          clearTimeout(glowTimer)
-        }
+      if (currentMode === 'refine') {
+        // Switching to refine
+        setRefineGlow(true)
+        if (glowTimerRef.current) clearTimeout(glowTimerRef.current)
+        glowTimerRef.current = setTimeout(() => setRefineGlow(false), 3000)
       } else {
-        // Already in refine mode - turn off any lingering flames and just reset glow timer
-        setModeFlameActive(false)
-        const glowTimer = setTimeout(() => setRefineGlow(false), 3000)
-        return () => clearTimeout(glowTimer)
-      }
-    } else {
-      setRefineGlow(false)
-      
-      // Switching from refine to forge - play flame animation and trigger intro
-      if (wasInRefineRef.current) {
-        setModeFlameActive(true)
-        const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
-        // Trigger forge intro animation (use ref to avoid dependency)
-        // Skip if we're in the middle of a replay (replay has its own typing animation)
+        // Switching to forge
+        setRefineGlow(false)
+        // Trigger forge intro animation if prompt is empty and not replaying
         if (!promptRef2.current.trim() && !isReplayingRef.current) {
           setShouldPlayForgeIntro(true)
         }
-        wasInRefineRef.current = false
-        return () => clearTimeout(flameTimer)
       }
       
-      wasInRefineRef.current = false
+      prevModeRef.current = currentMode
     }
-  }, [editImage]) // Only depend on editImage, not prompt
+    
+    return () => {
+      // Cleanup timers on unmount
+      if (flameTimerRef.current) clearTimeout(flameTimerRef.current)
+      if (glowTimerRef.current) clearTimeout(glowTimerRef.current)
+    }
+  }, [currentMode, triggerFlameAnimation])
   
   // Sync canvasMode with editImage state - only auto-switch TO refine, not back
   // (switching back to forge is handled explicitly by buttons/onNewForge)
