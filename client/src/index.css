@@ -898,16 +898,15 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px;
+  gap: 6px;
+  padding: 10px;
   border: none;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
   background: transparent;
   color: var(--text-dim);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -2616,8 +2615,8 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .canvas-dropzone-icon .btn-icon {
-  width: 56px !important;
-  height: 56px !important;
+  width: 32px !important;
+  height: 32px !important;
 }
 
 .canvas-dropzone-text {
