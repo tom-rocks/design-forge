@@ -697,7 +697,7 @@ export default function HighriseSearch({
                       }}
                       title="View full size"
                     >
-                      <Expand className="w-4 h-4" />
+                      <Expand className="w-3 h-3" />
                     </button>
                   </motion.div>
                 )
@@ -819,7 +819,7 @@ export default function HighriseSearch({
                       }}
                       title="View full size"
                     >
-                      <Expand className="w-4 h-4" />
+                      <Expand className="w-3 h-3" />
                     </button>
                   </motion.div>
                 )

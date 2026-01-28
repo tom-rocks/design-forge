@@ -167,7 +167,7 @@ export function WorksSidebar({
       <div className="gen-panel-box">
         {/* Header */}
         <div className="gen-panel-head">
-          <Box className="w-4 h-4" />
+          <Box className="gen-panel-icon" />
           <span className="gen-panel-label">Works</span>
         </div>
 

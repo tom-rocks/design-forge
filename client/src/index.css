@@ -608,7 +608,8 @@ textarea.textarea.floating-prompt-input.forging {
   flex-shrink: 0;
 }
 
-.gen-panel-head .btn-icon {
+.gen-panel-head .btn-icon,
+.gen-panel-head .gen-panel-icon {
   width: 14px;
   height: 14px;
   opacity: 0.5;

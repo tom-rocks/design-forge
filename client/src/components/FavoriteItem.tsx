@@ -120,7 +120,7 @@ export function FavoriteItem({
         onClick={handleExpand}
         title="View full size"
       >
-        <Expand className="w-4 h-4" />
+        <Expand className="w-3 h-3" />
       </button>
       
       {/* Move to root button - only shown when inside a folder */}
