@@ -329,6 +329,7 @@ export default function App() {
   
   // Track previous editImage to detect mode transitions
   const wasInRefineRef = useRef(false)
+  const isReplayingRef = useRef(false) // Skip intro animations during replay
   const [shouldPlayForgeIntro, setShouldPlayForgeIntro] = useState(false)
   const [shouldPlayRefineIntro, setShouldPlayRefineIntro] = useState(false)
   const promptRef2 = useRef(prompt) // Track prompt without triggering effect
@@ -363,7 +364,8 @@ export default function App() {
         setModeFlameActive(true)
         const flameTimer = setTimeout(() => setModeFlameActive(false), 1500)
         // Trigger forge intro animation (use ref to avoid dependency)
-        if (!promptRef2.current.trim()) {
+        // Skip if we're in the middle of a replay (replay has its own typing animation)
+        if (!promptRef2.current.trim() && !isReplayingRef.current) {
           setShouldPlayForgeIntro(true)
         }
         wasInRefineRef.current = false
@@ -557,6 +559,9 @@ export default function App() {
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
+    // Mark that we're replaying to prevent intro animations from interfering
+    isReplayingRef.current = true
+    
     // Close alloy modal if open
     setAlloyModalOpen(false)
     setRefineExpanded(false)
@@ -600,7 +605,10 @@ export default function App() {
       } else {
         clearInterval(typeInterval)
         // Cool down the prompt (orange → grey transition)
-        setTimeout(() => setPromptHot(false), 200)
+        setTimeout(() => {
+          setPromptHot(false)
+          isReplayingRef.current = false // Done replaying
+        }, 200)
       }
     }, 15) // Fast but visible typing
     
