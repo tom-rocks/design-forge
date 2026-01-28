@@ -3925,6 +3925,7 @@ textarea.textarea.floating-prompt-input.forging {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
 
 .lightbox-image-container:hover .lightbox-zoom-hint {
