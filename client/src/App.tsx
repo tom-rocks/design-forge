@@ -364,6 +364,13 @@ export default function App() {
     }
   }, [editImage]) // Only depend on editImage, not prompt
   
+  // Sync canvasMode with editImage state
+  useEffect(() => {
+    if (editImage) {
+      setCanvasMode('refine')
+    }
+  }, [editImage])
+  
   // Check bridge status (either via server WebSocket or AP iframe context)
   useEffect(() => {
     // First check if we're in AP iframe context
@@ -1168,7 +1175,14 @@ export default function App() {
               <div className="canvas-mode-toggle">
                 <button 
                   className={`canvas-mode-btn ${canvasMode === 'forge' ? 'active' : ''}`}
-                  onClick={() => setCanvasMode('forge')}
+                  onClick={() => {
+                    setCanvasMode('forge')
+                    // Clear edit image to switch prompt bar to Forge mode
+                    if (editImage) {
+                      setEditImage(null)
+                      setResult(null)
+                    }
+                  }}
                 >
                   <Flame className="w-4 h-4" />
                   Forge
@@ -1450,7 +1464,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <svg className="lcd-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 {/* Tomato body */}
@@ -1501,8 +1515,9 @@ export default function App() {
             ))}
             <span className="lcd-spec-sep">│</span>
             <button 
-              className={`lcd-spec-item lcd-mode forge ${!editImage ? 'lit' : ''}`}
+              className={`lcd-spec-item lcd-mode forge ${!editImage && canvasMode === 'forge' ? 'lit' : ''}`}
               onClick={() => {
+                setCanvasMode('forge')
                 if (editImage) {
                   setEditImage(null)
                   setResult(null)
@@ -1513,8 +1528,9 @@ export default function App() {
               Forging
             </button>
             <button 
-              className={`lcd-spec-item lcd-mode refine ${editImage ? 'lit' : ''}`}
+              className={`lcd-spec-item lcd-mode refine ${editImage || canvasMode === 'refine' ? 'lit' : ''}`}
               onClick={() => {
+                setCanvasMode('refine')
                 if (!editImage) {
                   scrollToRefine()
                 }
@@ -1523,7 +1539,7 @@ export default function App() {
               <Hammer className="w-3 h-3" />
               Refining
             </button>
-            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}
