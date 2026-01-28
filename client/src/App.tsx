@@ -1197,55 +1197,6 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Mode toggle */}
-              <div className="canvas-mode-toggle">
-                <button 
-                  className={`canvas-mode-btn ${!editImage && canvasMode === 'forge' ? 'active' : ''}`}
-                  onClick={() => {
-                    // Always set forge mode and trigger effects when switching
-                    if (canvasMode !== 'forge' || editImage) {
-                      setCanvasMode('forge')
-                      // Trigger flame animation for mode switch
-                      setModeFlameActive(true)
-                      setTimeout(() => setModeFlameActive(false), 1500)
-                      // Trigger forge intro animation if prompt is empty
-                      if (!prompt.trim()) {
-                        setShouldPlayForgeIntro(true)
-                      }
-                    }
-                    // Clear edit image to switch prompt bar to Forge mode
-                    if (editImage) {
-                      setEditImage(null)
-                      setResult(null)
-                    }
-                  }}
-                >
-                  <Flame className="w-4 h-4" />
-                  Forge
-                </button>
-                <button 
-                  className={`canvas-mode-btn ${editImage || canvasMode === 'refine' ? 'active' : ''}`}
-                  onClick={() => {
-                    if (canvasMode !== 'refine') {
-                      setCanvasMode('refine')
-                      // Trigger flame animation for mode switch
-                      setModeFlameActive(true)
-                      setTimeout(() => setModeFlameActive(false), 1500)
-                      // Trigger refine intro animation if prompt is empty
-                      if (!prompt.trim()) {
-                        setShouldPlayRefineIntro(true)
-                      }
-                    }
-                    if (!editImage) {
-                      scrollToRefine()
-                    }
-                  }}
-                >
-                  <Hammer className="w-4 h-4" />
-                  Refine
-                </button>
-              </div>
-
               {/* Source tabs */}
               <div className="canvas-source-tabs">
                 <button 
