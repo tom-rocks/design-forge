@@ -3367,8 +3367,8 @@ textarea.textarea.floating-prompt-input.forging {
   background: #ffca28;
 }
 
-/* Delete button on favorites - top right, same style as pin/star */
-.item-delete {
+/* Unfavorite button on favorites - top right */
+.item-unfavorite {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -3390,18 +3390,53 @@ textarea.textarea.floating-prompt-input.forging {
     0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.highrise-item:hover .item-delete,
-.history-item:hover .item-delete {
+.highrise-item:hover .item-unfavorite,
+.history-item:hover .item-unfavorite,
+.favorite-item:hover .item-unfavorite {
   opacity: 1;
 }
 
-.item-delete:hover {
+.item-unfavorite:hover {
   background: #e8e4e0;
   color: var(--text);
 }
 
-/* Expand button on favorites - below delete on right side */
+/* Expand button on favorites - top left */
 .item-expand {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: #ddd9d5;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.highrise-item:hover .item-expand,
+.history-item:hover .item-expand,
+.favorite-item:hover .item-expand {
+  opacity: 1;
+}
+
+.item-expand:hover {
+  background: #e8e4e0;
+  color: var(--text);
+}
+
+/* Move out of folder button - below unfavorite on right side */
+.item-move-out {
   position: absolute;
   top: 32px;
   right: 6px;
@@ -3423,41 +3458,9 @@ textarea.textarea.floating-prompt-input.forging {
     0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.highrise-item:hover .item-expand,
-.history-item:hover .item-expand {
-  opacity: 1;
-}
-
-.item-expand:hover {
-  background: #e8e4e0;
-  color: var(--text);
-}
-
-/* Move out of folder button - below expand on right side */
-.item-move-out {
-  position: absolute;
-  top: 58px;
-  right: 6px;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-sm);
-  background: #ddd9d5;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease;
-  z-index: 2;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
 .highrise-item:hover .item-move-out,
-.history-item:hover .item-move-out {
+.history-item:hover .item-move-out,
+.favorite-item:hover .item-move-out {
   opacity: 1;
 }
 

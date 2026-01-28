@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { X, Expand, FolderOutput } from 'lucide-react'
+import { StarOff, Expand, FolderOutput } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite } from './Favorites'
 import { getFavoriteThumbnailUrl } from './Favorites'
@@ -105,22 +105,22 @@ export function FavoriteItem({
         onError={handleImageError}
       />
       
-      {/* Delete button - top right, shows on hover like pin/star */}
-      <button
-        className="item-delete"
-        onClick={handleDelete}
-        title="Remove from favorites"
-      >
-        <X className="w-3 h-3" />
-      </button>
-      
-      {/* Expand button - below delete, shows on hover */}
+      {/* Expand button - top left, shows on hover */}
       <button
         className="item-expand"
         onClick={handleExpand}
         title="View full size"
       >
         <Expand className="w-3 h-3" />
+      </button>
+      
+      {/* Unfavorite button - top right, shows on hover */}
+      <button
+        className="item-unfavorite"
+        onClick={handleDelete}
+        title="Remove from favorites"
+      >
+        <StarOff className="w-3 h-3" />
       </button>
       
       {/* Move to root button - only shown when inside a folder */}
