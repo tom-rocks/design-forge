@@ -540,6 +540,7 @@ export default function HighriseSearch({
 
   const getRarityColor = (r: string) => {
     switch (r?.toLowerCase()) {
+      case 'mythical': return 'rarity-mythical'
       case 'legendary': return 'rarity-legendary'
       case 'epic': return 'rarity-epic'
       case 'rare': return 'rarity-rare'

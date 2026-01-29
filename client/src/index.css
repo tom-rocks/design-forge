@@ -3222,6 +3222,10 @@ textarea.textarea.floating-prompt-input.forging {
   cursor: not-allowed;
 }
 
+.highrise-item.rarity-mythical {
+  border-color: #00bcd4;
+}
+
 .highrise-item.rarity-legendary {
   border-color: #ffc107;
 }
@@ -3234,6 +3238,7 @@ textarea.textarea.floating-prompt-input.forging {
   border-color: #2196f3;
 }
 
+.highrise-item.selected.rarity-mythical,
 .highrise-item.selected.rarity-legendary,
 .highrise-item.selected.rarity-epic,
 .highrise-item.selected.rarity-rare {
