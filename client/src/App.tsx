@@ -1753,7 +1753,7 @@ export default function App() {
               className="floating-forge-btn"
             >
               {editImage || canvasMode === 'refine' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
-              {editImage || canvasMode === 'refine' ? 'Refine' : 'Forge'}{isGenerating ? ` +${pendingGenerations.length}` : ''}
+              {editImage || canvasMode === 'refine' ? 'Refine' : viewingPastWork ? 'Re-Forge' : 'Forge'}{isGenerating ? ` +${pendingGenerations.length}` : ''}
             </Button>
           </div>
           
