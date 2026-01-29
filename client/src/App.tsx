@@ -1019,14 +1019,34 @@ export default function App() {
     }
   }, [authenticated, starredOutputUrls, prompt])
 
-  // Handle drop on refinement dropzone
+  // Handle drop on canvas - forge mode adds to alloy, refine mode sets edit image
   const handleRefineDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDraggingRefine(false)
     
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
-    if (files.length > 0) {
-      const file = files[0] // Only take first image for refinement
+    if (files.length === 0) return
+    
+    // In forge mode (no editImage and canvasMode is forge), add to alloy
+    if (!editImage && canvasMode === 'forge') {
+      // Add all dropped images as alloy references
+      files.forEach(file => {
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+          const url = ev.target?.result as string
+          const newRef: Reference = {
+            id: `drop-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            url,
+            name: file.name,
+            type: 'file',
+          }
+          setReferences(prev => [...prev.slice(0, 13), newRef]) // Max 14 refs
+        }
+        reader.readAsDataURL(file)
+      })
+    } else {
+      // In refine mode, use first image as edit source
+      const file = files[0]
       const reader = new FileReader()
       reader.onload = (ev) => {
         const url = ev.target?.result as string
@@ -1035,7 +1055,7 @@ export default function App() {
       }
       reader.readAsDataURL(file)
     }
-  }, [])
+  }, [editImage, canvasMode])
 
   // Handle paste from clipboard (Ctrl+V) - goes to active drop target
   useEffect(() => {
