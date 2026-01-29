@@ -1253,24 +1253,38 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className={`canvas-preview-grid preview-${outputCount}`}>
-                {[...Array(outputCount)].map((_, i) => (
+              {/* Preview slot with actual aspect ratio */}
+              {(() => {
+                const pending = pendingGenerations.find(p => p.id === selectedPendingId)
+                const pendingMode = pending?.mode || 'create'
+                // Parse aspect ratio to get actual proportions
+                const [w, h] = aspectRatio.split(':').map(Number)
+                const ratio = w / h
+                return (
                   <motion.div
-                    key={i}
                     className="canvas-preview-slot"
+                    style={{
+                      aspectRatio: `${w} / ${h}`,
+                      width: ratio >= 1 ? 'min(400px, 80vw)' : 'auto',
+                      height: ratio < 1 ? 'min(400px, 60vh)' : 'auto',
+                    }}
                     animate={{
                       opacity: [0.3, 0.6, 0.3],
                     }}
                     transition={{
                       duration: 1.5,
-                      delay: i * (1.5 / outputCount),
                       repeat: Infinity,
                       ease: 'easeInOut'
                     }}
-                  />
-                ))}
-              </div>
-              <p className="canvas-status">Forging...</p>
+                  >
+                    {/* Show mode icon centered */}
+                    {pendingMode === 'edit' 
+                      ? <Hammer className="w-8 h-8" style={{ color: '#f5c518', opacity: 0.6 }} />
+                      : <Flame className="w-8 h-8" style={{ color: '#ff5722', opacity: 0.6 }} />
+                    }
+                  </motion.div>
+                )
+              })()}
             </motion.div>
           ) : validImages.length > 0 ? (
             /* OUTPUT IMAGES - Zoomable Canvas */
@@ -1529,106 +1543,123 @@ export default function App() {
 
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
-        {/* CANVAS CONTROLS BAR - Above prompt, visible when images exist */}
-        {validImages.length > 0 && result && (
+        {/* CANVAS CONTROLS BAR - Above prompt, visible when images exist or generating */}
+        {(validImages.length > 0 && result) || (isGenerating && selectedPendingId) ? (
           <div className="image-canvas-controls">
-            {/* Specs - shows what was used for this generation, not current UI state */}
-            <div className="lightbox-specs" style={{ margin: 0, padding: '6px 10px' }}>
-              {/* Mode */}
-              <span className="lightbox-spec" title={result.mode === 'edit' ? 'Refined' : 'Created'}>
-                {result.mode === 'edit' ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
-              </span>
-              <span className="lightbox-spec-sep">·</span>
-              {/* Model */}
-              <span className="lightbox-spec" title="Pro">
-                <Gem className="w-4 h-4" />
-                Pro
-              </span>
-              <span className="lightbox-spec-sep">·</span>
-              {/* Aspect Ratio */}
-              <span className="lightbox-spec" title={`Ratio ${result.aspectRatio || '1:1'}`}>
-                <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
-                  <rect 
-                    x={(14 - getAspectDimensions(result.aspectRatio || '1:1').w) / 2} 
-                    y={(14 - getAspectDimensions(result.aspectRatio || '1:1').h) / 2} 
-                    width={getAspectDimensions(result.aspectRatio || '1:1').w} 
-                    height={getAspectDimensions(result.aspectRatio || '1:1').h} 
-                    fill="currentColor" 
-                    rx="1" 
-                  />
-                </svg>
-                {result.aspectRatio || '1:1'}
-              </span>
-              <span className="lightbox-spec-sep">·</span>
-              {/* Resolution */}
-              <span className="lightbox-spec" title={`Resolution ${result.resolution || '1024'}`}>
-                {result.resolution || '1K'}
-              </span>
-              <span className="lightbox-spec-sep">·</span>
-              {/* Zoom */}
-              <span className="lightbox-spec" title={`Zoom ${canvasZoom}%`}>
-                <Search className="w-4 h-4" />
-                {canvasZoom}%
-              </span>
-            </div>
+            {/* Specs - shows result specs if available, otherwise current UI settings */}
+            {(() => {
+              const pending = pendingGenerations.find(p => p.id === selectedPendingId)
+              const showMode = result?.mode || pending?.mode || (editImage ? 'edit' : 'create')
+              const showRatio = result?.aspectRatio || aspectRatio
+              const showRes = result?.resolution || resolution
+              const isRefine = showMode === 'edit'
+              return (
+                <div className="lightbox-specs" style={{ margin: 0, padding: '6px 10px' }}>
+                  {/* Mode */}
+                  <span className="lightbox-spec" title={isRefine ? 'Refined' : 'Created'}>
+                    {isRefine ? <Hammer className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+                  </span>
+                  <span className="lightbox-spec-sep">·</span>
+                  {/* Model */}
+                  <span className="lightbox-spec" title="Pro">
+                    <Gem className="w-4 h-4" />
+                    Pro
+                  </span>
+                  <span className="lightbox-spec-sep">·</span>
+                  {/* Aspect Ratio */}
+                  <span className="lightbox-spec" title={`Ratio ${showRatio}`}>
+                    <svg className="lightbox-ratio-icon" viewBox="0 0 14 14" width="14" height="14">
+                      <rect 
+                        x={(14 - getAspectDimensions(showRatio).w) / 2} 
+                        y={(14 - getAspectDimensions(showRatio).h) / 2} 
+                        width={getAspectDimensions(showRatio).w} 
+                        height={getAspectDimensions(showRatio).h} 
+                        fill="currentColor" 
+                        rx="1" 
+                      />
+                    </svg>
+                    {showRatio}
+                  </span>
+                  <span className="lightbox-spec-sep">·</span>
+                  {/* Resolution */}
+                  <span className="lightbox-spec" title={`Resolution ${showRes}`}>
+                    {showRes}
+                  </span>
+                  {validImages.length > 0 && (
+                    <>
+                      <span className="lightbox-spec-sep">·</span>
+                      {/* Zoom - only show when there's an image */}
+                      <span className="lightbox-spec" title={`Zoom ${canvasZoom}%`}>
+                        <Search className="w-4 h-4" />
+                        {canvasZoom}%
+                      </span>
+                    </>
+                  )}
+                </div>
+              )
+            })()}
             
-            {/* Separator */}
-            <div className="canvas-controls-sep" />
-            
-            {/* Image actions */}
-            <button 
-              className={`canvas-control-btn canvas-control-btn-fav ${starredOutputUrls.has(validImages[0]) ? 'active' : ''}`}
-              onClick={() => toggleOutputFavorite(validImages[0])}
-              title={starredOutputUrls.has(validImages[0]) ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <Star className="w-4 h-4" />
-            </button>
-            <button 
-              className="canvas-control-btn"
-              onClick={() => {
-                if (result) {
-                  const editImageUrl = result.mode === 'edit' && result.parentId 
-                    ? `/api/generations/${result.parentId}/image/0`
-                    : undefined
-                  console.log('[Replay Button] Full result:', result)
-                  console.log('[Replay Button] Computed editImageUrl:', editImageUrl)
-                  console.log('[Replay Button] Condition check: mode=', result.mode, 'parentId=', result.parentId)
-                  handleReplay({
-                    prompt: result.prompt,
-                    mode: result.mode || 'create',
-                    model: result.model,
-                    resolution: result.resolution,
-                    aspectRatio: result.aspectRatio,
-                    references: result.styleImages,
-                    editImageUrl,
-                  })
-                }
-              }}
-              title="Replay with same settings"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button 
-              className="canvas-control-btn"
-              onClick={() => {
-                // Set current image as edit source for refinement
-                setEditImage({ url: validImages[0] })
-                setPrompt('')
-                setReferences([])
-              }}
-              title="Refine this image"
-            >
-              <Hammer className="w-4 h-4" />
-            </button>
-            <button 
-              className="canvas-control-btn"
-              onClick={() => downloadOutputImage(validImages[0])}
-              title="Download"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            {/* Image actions - only show when there are actual images */}
+            {validImages.length > 0 && (
+              <>
+                {/* Separator */}
+                <div className="canvas-controls-sep" />
+                
+                <button 
+                  className={`canvas-control-btn canvas-control-btn-fav ${starredOutputUrls.has(validImages[0]) ? 'active' : ''}`}
+                  onClick={() => toggleOutputFavorite(validImages[0])}
+                  title={starredOutputUrls.has(validImages[0]) ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Star className="w-4 h-4" />
+                </button>
+                <button 
+                  className="canvas-control-btn"
+                  onClick={() => {
+                    if (result) {
+                      const editImageUrl = result.mode === 'edit' && result.parentId 
+                        ? `/api/generations/${result.parentId}/image/0`
+                        : undefined
+                      console.log('[Replay Button] Full result:', result)
+                      console.log('[Replay Button] Computed editImageUrl:', editImageUrl)
+                      console.log('[Replay Button] Condition check: mode=', result.mode, 'parentId=', result.parentId)
+                      handleReplay({
+                        prompt: result.prompt,
+                        mode: result.mode || 'create',
+                        model: result.model,
+                        resolution: result.resolution,
+                        aspectRatio: result.aspectRatio,
+                        references: result.styleImages,
+                        editImageUrl,
+                      })
+                    }
+                  }}
+                  title="Replay with same settings"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <button 
+                  className="canvas-control-btn"
+                  onClick={() => {
+                    // Set current image as edit source for refinement
+                    setEditImage({ url: validImages[0] })
+                    setPrompt('')
+                    setReferences([])
+                  }}
+                  title="Refine this image"
+                >
+                  <Hammer className="w-4 h-4" />
+                </button>
+                <button 
+                  className="canvas-control-btn"
+                  onClick={() => downloadOutputImage(validImages[0])}
+                  title="Download"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
-        )}
+        ) : null}
         
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}

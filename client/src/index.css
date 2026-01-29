@@ -2054,10 +2054,12 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .canvas-preview-slot {
-  aspect-ratio: 1;
   border-radius: 8px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   /* Light grey surface */
   background: linear-gradient(145deg, #d8d6d4 0%, #c8c6c4 50%, #b8b6b4 100%);
   box-shadow: 
