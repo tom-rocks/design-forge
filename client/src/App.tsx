@@ -711,15 +711,15 @@ export default function App() {
     const genParentId = parentIdMatch?.[1] || null
     console.log('[Generate] Edit image URL:', genEditImage?.url, 'Extracted parentId:', genParentId)
     
-    // Add to pending generations and auto-select it
-    setPendingGenerations(prev => [...prev, {
+    // Add to pending generations at the top and auto-select it
+    setPendingGenerations(prev => [{
       id: genId,
       prompt: genPrompt,
       outputCount: genOutputCount,
       mode: genMode,
       references: [...genReferences],
       editImageUrl: genEditImage?.url
-    }])
+    }, ...prev])
     setSelectedPendingId(genId)
     
     // Only update UI state if this is the first/only generation
