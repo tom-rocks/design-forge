@@ -790,7 +790,7 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
     
     // If saved to database, return API paths instead of data URLs for better replay support
     const finalImageUrls = savedGeneration 
-      ? imagePaths.map((_, i) => `/api/generations/${savedGeneration.id}/image/${i}`)
+      ? images.map((_, i: number) => `/api/generations/${savedGeneration.id}/image/${i}`)
       : images;
     
     send('complete', {
