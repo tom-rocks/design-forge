@@ -660,8 +660,20 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
           return [];
         }
         
-        // Check for NO_IMAGE finish reason (model refused to generate)
+        // Check for finish reasons that indicate generation failure
         const finishReason = responseData?.candidates?.[0]?.finishReason;
+        
+        // Handle content policy violations (PROHIBITED_CONTENT, SAFETY, etc.)
+        if (finishReason === 'PROHIBITED_CONTENT' || finishReason === 'SAFETY' || finishReason === 'BLOCKLIST') {
+          addLog('info', { 
+            id, 
+            variation: variationIndex + 1, 
+            note: 'Content blocked by safety filters',
+            finishReason
+          });
+          return ['CONTENT_BLOCKED'];
+        }
+        
         if (finishReason === 'NO_IMAGE') {
           addLog('info', { 
             id, 
@@ -701,9 +713,10 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
     // Flatten results and filter out empty arrays
     const allResults = variationResults.flat();
     
-    // Check if model refused to generate (NO_IMAGE)
+    // Check for special markers indicating why generation failed
     const refused = allResults.some(r => r === 'NO_IMAGE_REFUSED');
-    const images = allResults.filter(r => r !== 'NO_IMAGE_REFUSED');
+    const contentBlocked = allResults.some(r => r === 'CONTENT_BLOCKED');
+    const images = allResults.filter(r => r !== 'NO_IMAGE_REFUSED' && r !== 'CONTENT_BLOCKED');
     
     addLog('response', { 
       id, 
@@ -711,10 +724,13 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
       requestedVariations: variationCount,
       successfulImages: images.length,
       refused,
+      contentBlocked,
     });
     
     if (images.length === 0) {
-      if (refused) {
+      if (contentBlocked) {
+        send('error', { error: 'CONTENT_BLOCKED: The image or prompt may contain sensitive content. Try adjusting or covering parts of the source image.', id });
+      } else if (refused) {
         send('error', { error: 'Prompt too vague for image generation. Try a more descriptive prompt.', id });
       } else {
         send('error', { error: 'No images generated from any variation', id });

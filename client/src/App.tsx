@@ -852,7 +852,12 @@ export default function App() {
         removePending()
         return
       }
-      setError(err instanceof Error ? err.message : 'Error')
+      let errorMessage = err instanceof Error ? err.message : 'Error'
+      // Make content blocked errors more user-friendly
+      if (errorMessage.includes('CONTENT_BLOCKED')) {
+        errorMessage = 'Sensitive content detected. Try adjusting your prompt or covering parts of the source image.'
+      }
+      setError(errorMessage)
       removePending()
     } finally {
       // Check if this was the last generation
