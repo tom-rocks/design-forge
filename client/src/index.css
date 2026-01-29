@@ -819,8 +819,8 @@ textarea.textarea.floating-prompt-input.forging {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   z-index: 5;
   opacity: 0.9;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
