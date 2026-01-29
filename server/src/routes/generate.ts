@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
+import crypto from 'crypto';
 import { saveGeneration, getGeneration } from '../db.js';
 import { saveImage, createThumbnails, getImagePath } from '../storage.js';
 import fs from 'fs/promises';
@@ -8,6 +9,61 @@ const router = Router();
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1beta';
+
+// ============================================================================
+// GEMINI FILE UPLOAD CACHE
+// Caches file_uri by content hash to avoid re-uploading identical images
+// Gemini files expire after 48h, so we use 24h TTL for safety
+// ============================================================================
+interface CachedFileUri {
+  fileUri: string;
+  mimeType: string;
+  uploadedAt: number;
+}
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const geminiFileCache = new Map<string, CachedFileUri>();
+
+// Clean up expired cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [hash, entry] of geminiFileCache.entries()) {
+    if (now - entry.uploadedAt > CACHE_TTL_MS) {
+      geminiFileCache.delete(hash);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`[Gemini Cache] Cleaned ${cleaned} expired entries, ${geminiFileCache.size} remaining`);
+  }
+}, 60 * 60 * 1000); // Check every hour
+
+function hashBuffer(buffer: Buffer): string {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+function getCachedFileUri(hash: string): CachedFileUri | null {
+  const cached = geminiFileCache.get(hash);
+  if (!cached) return null;
+  
+  // Check if expired
+  if (Date.now() - cached.uploadedAt > CACHE_TTL_MS) {
+    geminiFileCache.delete(hash);
+    return null;
+  }
+  
+  return cached;
+}
+
+function cacheFileUri(hash: string, fileUri: string, mimeType: string): void {
+  geminiFileCache.set(hash, {
+    fileUri,
+    mimeType,
+    uploadedAt: Date.now(),
+  });
+  console.log(`[Gemini Cache] Cached file URI for hash ${hash.substring(0, 12)}... (${geminiFileCache.size} total cached)`);
+}
 
 // Available Gemini image generation models
 const MODELS = {
@@ -152,9 +208,17 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
     
     const mimeType = 'image/png';
     const numBytes = processedBuffer.byteLength;
-    const displayName = `ref-${Date.now()}`;
     
-    console.log(`[Gemini Files] Uploading ${numBytes} bytes...`);
+    // Check cache by content hash
+    const contentHash = hashBuffer(processedBuffer);
+    const cached = getCachedFileUri(contentHash);
+    if (cached) {
+      console.log(`[Gemini Files] Cache HIT for hash ${contentHash.substring(0, 12)}... -> ${cached.fileUri}`);
+      return { fileUri: cached.fileUri, mimeType: cached.mimeType };
+    }
+    
+    console.log(`[Gemini Files] Cache MISS for hash ${contentHash.substring(0, 12)}..., uploading ${numBytes} bytes...`);
+    const displayName = `ref-${Date.now()}`;
     
     // Step 1: Start resumable upload
     const startResponse = await fetch(`${GEMINI_UPLOAD_BASE}/files`, {
@@ -215,6 +279,9 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
       return null;
     }
     
+    // Cache the successful upload
+    cacheFileUri(contentHash, fileUri, mimeType);
+    
     console.log(`[Gemini Files] Success: ${fileUri}`);
     return { fileUri, mimeType };
   } catch (e) {
@@ -248,9 +315,17 @@ async function uploadBase64ToGeminiFiles(dataUrl: string, apiKey: string): Promi
     
     const mimeType = 'image/png';
     const numBytes = processedBuffer.byteLength;
-    const displayName = `edit-target-${Date.now()}`;
     
-    console.log(`[Gemini Files] Uploading edit target: ${numBytes} bytes...`);
+    // Check cache by content hash
+    const contentHash = hashBuffer(processedBuffer);
+    const cached = getCachedFileUri(contentHash);
+    if (cached) {
+      console.log(`[Gemini Files] Cache HIT for edit target hash ${contentHash.substring(0, 12)}... -> ${cached.fileUri}`);
+      return { fileUri: cached.fileUri, mimeType: cached.mimeType };
+    }
+    
+    console.log(`[Gemini Files] Cache MISS for edit target, uploading ${numBytes} bytes...`);
+    const displayName = `edit-target-${Date.now()}`;
     
     // Step 1: Start resumable upload
     const startResponse = await fetch(`${GEMINI_UPLOAD_BASE}/files`, {
@@ -303,6 +378,9 @@ async function uploadBase64ToGeminiFiles(dataUrl: string, apiKey: string): Promi
       console.log(`[Gemini Files] No file URI in response`);
       return null;
     }
+    
+    // Cache the successful upload
+    cacheFileUri(contentHash, fileUri, mimeType);
     
     console.log(`[Gemini Files] Edit target uploaded: ${fileUri}`);
     return { fileUri, mimeType };
