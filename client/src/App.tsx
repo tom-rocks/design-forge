@@ -1299,8 +1299,8 @@ export default function App() {
                   >
                     {/* Show mode icon centered */}
                     {pendingMode === 'edit' 
-                      ? <Hammer className="w-8 h-8" style={{ color: '#f5c518', opacity: 0.6 }} />
-                      : <Flame className="w-8 h-8" style={{ color: '#ff5722', opacity: 0.6 }} />
+                      ? <Hammer className="w-8 h-8" style={{ color: '#d4a017', opacity: 0.7 }} />
+                      : <Flame className="w-8 h-8" style={{ color: '#ff5722', opacity: 0.7 }} />
                     }
                   </motion.div>
                 )

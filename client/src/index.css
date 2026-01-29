@@ -2015,7 +2015,7 @@ textarea.textarea.floating-prompt-input.forging {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  padding-bottom: 320px; /* Extra space to shift visual center up above prompt */
+  padding-bottom: 240px; /* Space to shift visual center up above prompt */
   min-height: 0;
   overflow-y: auto;
 }
