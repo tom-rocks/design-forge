@@ -1649,8 +1649,7 @@ export default function App() {
               <button 
                 key={ratio} 
                 className={`lcd-spec-item ${aspectRatio === ratio ? 'lit' : ''}`}
-                onClick={() => !isGenerating && setAspectRatio(ratio)}
-                disabled={isGenerating}
+                onClick={() => setAspectRatio(ratio)}
               >
                 <svg className="lcd-ratio-icon" viewBox="0 0 16 16" width="14" height="14">
                   <rect x={(16-w)/2} y={(16-h)/2} width={w} height={h} fill="currentColor" rx="1" />
@@ -1667,8 +1666,7 @@ export default function App() {
               <button 
                 key={res} 
                 className={`lcd-spec-item ${cls} ${resolution === res ? 'lit' : ''}`}
-                onClick={() => !isGenerating && setResolution(res)}
-                disabled={isGenerating}
+                onClick={() => setResolution(res)}
               >
                 {res}
               </button>
@@ -1723,7 +1721,7 @@ export default function App() {
             <div className="floating-prompt-input-wrapper">
               <Textarea
                 ref={promptRef}
-                className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''} ${isGenerating ? 'forging' : ''}`}
+                className={`floating-prompt-input ${promptHot ? 'prompt-hot' : ''} ${isGenerating && selectedPendingId ? 'forging' : ''}`}
                 value={prompt}
                 onChange={e => {
                   if (introAnimating) cancelIntroAnimation()
@@ -1774,7 +1772,6 @@ export default function App() {
                 <button
                   className="prompt-alloy-clear"
                   onClick={() => setReferences([])}
-                  disabled={isGenerating}
                   title="Clear all references"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1813,7 +1810,6 @@ export default function App() {
             <button 
               className={`prompt-alloy-add ${references.length > 0 ? 'has-refs' : ''}`}
               onClick={() => setAlloyModalOpen(true)}
-              disabled={isGenerating}
               title="Add style references"
             >
               <Plus className="w-4 h-4" />
@@ -1831,7 +1827,6 @@ export default function App() {
         onRemoveReference={removeReference}
         onClearAll={() => setReferences([])}
         maxRefs={14}
-        disabled={isGenerating}
         bridgeConnected={bridgeConnected}
         inAPContext={inAPContext}
         authenticated={authenticated}
