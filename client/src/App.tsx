@@ -1689,7 +1689,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <Anvil className="w-3 h-3" />
               V.2.19
@@ -1743,9 +1743,9 @@ export default function App() {
               Forging
             </button>
             <button 
-              className={`lcd-spec-item lcd-mode refine ${editImage ? 'lit' : ''}`}
+              className={`lcd-spec-item lcd-mode refine ${editImage || canvasMode === 'refine' ? 'lit' : ''}`}
               onClick={() => {
-                // Already in refine mode - do nothing
+                // Already in refine mode with image - do nothing
                 if (editImage) return
                 
                 // If we have an image showing on canvas, use it as the edit source
@@ -1755,24 +1755,26 @@ export default function App() {
                   // Clear prompt for new refine instructions
                   setPrompt('')
                   setReferences([])
-                  // Trigger flame animation
-                  setModeFlameActive(true)
-                  if (flameTimerRef.current) clearTimeout(flameTimerRef.current)
-                  flameTimerRef.current = setTimeout(() => setModeFlameActive(false), 1200)
-                  // Trigger intro animation if prompt is empty
-                  if (!promptRef2.current?.trim() && !isReplayingRef.current) {
-                    setShouldPlayRefineIntro(true)
-                  }
-                } else {
-                  // No image - scroll to canvas where user can drop an image
-                  scrollToRefine()
+                }
+                
+                // Switch to refine mode (shows drop zone if no image)
+                setCanvasMode('refine')
+                
+                // Trigger flame animation
+                setModeFlameActive(true)
+                if (flameTimerRef.current) clearTimeout(flameTimerRef.current)
+                flameTimerRef.current = setTimeout(() => setModeFlameActive(false), 1200)
+                
+                // Trigger intro animation if prompt is empty
+                if (!promptRef2.current?.trim() && !isReplayingRef.current) {
+                  setShouldPlayRefineIntro(true)
                 }
               }}
             >
               <Hammer className="w-3 h-3" />
               Refining
             </button>
-            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}
