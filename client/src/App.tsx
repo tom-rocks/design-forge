@@ -117,6 +117,7 @@ export default function App() {
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
+  const [isDraggingAlloy, setIsDraggingAlloy] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
   const [favoritesResetKey, _setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
@@ -1062,6 +1063,35 @@ export default function App() {
     }
   }, [editImage, canvasMode])
 
+  // Handle drop on alloy area - always adds as references
+  const handleAlloyDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingAlloy(false)
+    
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
+    if (files.length === 0) return
+    
+    // Add all dropped images as alloy references (up to max 14)
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const url = ev.target?.result as string
+        const newRef: Reference = {
+          id: `drop-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          url,
+          name: file.name,
+          type: 'file',
+        }
+        setReferences(prev => {
+          if (prev.length >= 14) return prev
+          return [...prev, newRef]
+        })
+      }
+      reader.readAsDataURL(file)
+    })
+  }, [])
+
   // Handle paste from clipboard (Ctrl+V) - goes to active drop target
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -1823,7 +1853,16 @@ export default function App() {
           </div>
           
           {/* Alloy row - shows selected references below prompt */}
-          <div className="prompt-alloy-row">
+          <div 
+            className={`prompt-alloy-row ${isDraggingAlloy ? 'dragging' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingAlloy(true) }}
+            onDragLeave={(e) => { 
+              if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) {
+                setIsDraggingAlloy(false)
+              }
+            }}
+            onDrop={handleAlloyDrop}
+          >
             <div className="prompt-alloy-label">
               <span className="btn-icon icon-alloy" />
               <span className="prompt-alloy-title">Alloy</span>
