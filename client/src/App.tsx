@@ -1025,7 +1025,7 @@ export default function App() {
     }
   }, [authenticated, starredOutputUrls, prompt])
 
-  // Handle drop on canvas - forge mode adds to alloy, refine mode sets edit image
+  // Handle drop on canvas - always sets as refine source (use alloy area for references)
   const handleRefineDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDraggingRefine(false)
@@ -1033,35 +1033,16 @@ export default function App() {
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
     if (files.length === 0) return
     
-    // In forge mode (no editImage and canvasMode is forge), add to alloy
-    if (!editImage && canvasMode === 'forge') {
-      // Add all dropped images as alloy references
-      files.forEach(file => {
-        const reader = new FileReader()
-        reader.onload = (ev) => {
-          const url = ev.target?.result as string
-          const newRef: Reference = {
-            id: `drop-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            url,
-            name: file.name,
-            type: 'file',
-          }
-          setReferences(prev => [...prev.slice(0, 13), newRef]) // Max 14 refs
-        }
-        reader.readAsDataURL(file)
-      })
-    } else {
-      // In refine mode, use first image as edit source
-      const file = files[0]
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const url = ev.target?.result as string
-        setEditImage({ url })
-        detectAndSetAspectRatio(url)
-      }
-      reader.readAsDataURL(file)
+    // Always use first dropped image as edit source for refining
+    const file = files[0]
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string
+      setEditImage({ url })
+      detectAndSetAspectRatio(url)
     }
-  }, [editImage, canvasMode])
+    reader.readAsDataURL(file)
+  }, [])
 
   // Handle drop on alloy area - always adds as references
   const handleAlloyDrop = useCallback((e: React.DragEvent) => {
@@ -1437,14 +1418,12 @@ export default function App() {
                         }
                       </span>
                       <p className="canvas-dropzone-text">
-                        {canvasMode === 'forge' ? 'Drop or paste images for Alloy' : 'Drop or paste an image to refine'}
+                        Drop or paste an image to refine
                       </p>
                       <p className="canvas-dropzone-hint">
                         {activeDropTarget === 'refine' 
                           ? 'Ready to paste - press ⌘V' 
-                          : canvasMode === 'forge' 
-                            ? 'Style references to guide generation' 
-                            : 'Click to select, then paste'}
+                          : 'Click to select, then paste'}
                       </p>
                     </div>
                   </div>
