@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
 import crypto from 'crypto';
+import PQueue from 'p-queue';
 import { saveGeneration, getGeneration } from '../db.js';
 import { saveImage, createThumbnails, getImagePath } from '../storage.js';
 import fs from 'fs/promises';
@@ -9,6 +10,56 @@ const router = Router();
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1beta';
+
+// ============================================================================
+// GEMINI REQUEST QUEUE
+// Limits concurrent API calls to prevent rate limiting (429 errors)
+// - Max 8 concurrent generation calls (leaves headroom under typical limits)
+// - Queues excess requests and processes in order
+// ============================================================================
+const geminiQueue = new PQueue({ 
+  concurrency: 8,  // Max simultaneous Gemini API calls
+  timeout: 120000, // 2 minute timeout per request
+});
+
+// Track queue stats for monitoring
+let queueStats = {
+  totalProcessed: 0,
+  totalQueued: 0,
+  peakConcurrent: 0,
+  rateLimitHits: 0,
+};
+
+// Log queue status periodically
+setInterval(() => {
+  if (geminiQueue.size > 0 || geminiQueue.pending > 0) {
+    console.log(`[Queue] Active: ${geminiQueue.pending}, Waiting: ${geminiQueue.size}, Total processed: ${queueStats.totalProcessed}`);
+  }
+}, 10000);
+
+// Helper: retry with exponential backoff on 429
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries = 3
+): Promise<globalThis.Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+    
+    if (response.status === 429) {
+      queueStats.rateLimitHits++;
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+        console.log(`[Queue] Rate limited (429), retry ${attempt + 1}/${maxRetries} in ${delay}ms`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+    }
+    
+    return response;
+  }
+  throw new Error('Max retries exceeded');
+}
 
 // ============================================================================
 // GEMINI FILE UPLOAD CACHE
@@ -427,6 +478,25 @@ router.delete('/debug/logs', (_req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+// Queue stats endpoint - monitor rate limiting and queue health
+router.get('/debug/queue', (_req: Request, res: Response) => {
+  res.json({
+    current: {
+      pending: geminiQueue.pending,
+      waiting: geminiQueue.size,
+      isPaused: geminiQueue.isPaused,
+    },
+    config: {
+      concurrency: 8,
+      timeoutMs: 120000,
+    },
+    stats: {
+      ...queueStats,
+      uptime: process.uptime(),
+    },
+  });
+});
+
 // Streaming generation endpoint
 router.post('/generate', async (req: Request, res: Response) => {
   const id = `gen-${Date.now().toString(36)}`;
@@ -723,11 +793,14 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
           // Not JSON
         }
         
-        // Retry on 503 (model overloaded)
-        if (response.status === 503 && attempt < maxRetries) {
-          const delay = attempt * 5000; // 5s, 10s, 15s
-          console.log(`[Gen ${id}] 503 overloaded, retry ${attempt}/${maxRetries} in ${delay/1000}s`);
-          send('progress', { status: 'retrying', message: `MODEL BUSY, RETRYING (${attempt}/${maxRetries})...`, progress: 40, id });
+        // Retry on 503 (model overloaded) or 429 (rate limited)
+        if ((response.status === 503 || response.status === 429) && attempt < maxRetries) {
+          const baseDelay = response.status === 429 ? 3000 : 5000; // Shorter for rate limit
+          const delay = attempt * baseDelay;
+          const reason = response.status === 429 ? 'RATE LIMITED' : 'MODEL BUSY';
+          console.log(`[Gen ${id}] ${response.status} ${reason}, retry ${attempt}/${maxRetries} in ${delay/1000}s`);
+          if (response.status === 429) queueStats.rateLimitHits++;
+          send('progress', { status: 'retrying', message: `${reason}, RETRYING (${attempt}/${maxRetries})...`, progress: 40, id });
           await new Promise(r => setTimeout(r, delay));
           continue;
         }
@@ -782,9 +855,41 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
       return [];
     };
     
-    // Run all variations in parallel
-    const variationPromises = Array.from({ length: variationCount }, (_, i) => generateOne(i));
-    const variationResults = await Promise.all(variationPromises);
+    // Run variations through the queue (sequential to avoid rate limits)
+    // Each variation gets queued and executed when a slot is available
+    queueStats.totalQueued += variationCount;
+    const queuePosition = geminiQueue.size;
+    if (queuePosition > 0) {
+      send('progress', { status: 'queued', message: `QUEUED (${queuePosition} ahead)...`, progress: 25, id });
+      console.log(`[Gen ${id}] Queued with ${queuePosition} requests ahead`);
+    }
+    
+    const variationResults: string[][] = [];
+    for (let i = 0; i < variationCount; i++) {
+      try {
+        // Queue each variation through the global limiter
+        const result = await geminiQueue.add(async () => {
+          queueStats.totalProcessed++;
+          const concurrent = geminiQueue.pending;
+          if (concurrent > queueStats.peakConcurrent) queueStats.peakConcurrent = concurrent;
+          return generateOne(i);
+        });
+        variationResults.push(result || []);
+        
+        // Update progress for multi-variation generations
+        if (variationCount > 1 && i < variationCount - 1) {
+          send('progress', { 
+            status: 'generating', 
+            message: `GENERATED ${i + 1}/${variationCount}...`, 
+            progress: 30 + Math.floor((i + 1) / variationCount * 50), 
+            id 
+          });
+        }
+      } catch (err) {
+        console.error(`[Gen ${id}] Variation ${i + 1} queue error:`, err);
+        variationResults.push([]);
+      }
+    }
     
     const elapsed = Math.round((Date.now() - startTime) / 1000);
     
