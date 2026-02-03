@@ -133,7 +133,7 @@ export default function App() {
   const [alloyModalOpen, setAlloyModalOpen] = useState(false)
   
   // Works sidebar state
-  const [generationTrigger, setGenerationTrigger] = useState(0)
+  const [newGenerationId, setNewGenerationId] = useState<string | null>(null)
   const [pendingGenerations, setPendingGenerations] = useState<Array<{
     id: string
     prompt: string
@@ -831,7 +831,10 @@ export default function App() {
               })
               setViewingPastWork(false)
               removePending()
-              setGenerationTrigger(prev => prev + 1)
+              // Tell sidebar about the new generation (by ID for efficient prepend)
+              if (data.generationId) {
+                setNewGenerationId(data.generationId)
+              }
               // Check if more pending after removing this one
               setPendingGenerations(prev => {
                 const remaining = prev.filter(g => g.id !== genId)
@@ -1258,7 +1261,7 @@ export default function App() {
           }
         }}
         onOpenWorksModal={openGallery}
-        newGenerationTrigger={generationTrigger}
+        newGenerationId={newGenerationId}
         pendingGenerations={pendingGenerations}
         onCancelPending={handleCancelPending}
         onSelectPending={handleSelectPending}

@@ -42,7 +42,7 @@ interface WorksSidebarProps {
   authenticated: boolean
   onSelectImage?: (imageUrl: string, generation: Generation) => void
   onOpenWorksModal?: () => void
-  newGenerationTrigger?: number // Increment to trigger refresh
+  newGenerationId?: string | null // ID of newly completed generation to prepend
   pendingGenerations?: PendingGeneration[] // Shows at top while forging
   onCancelPending?: (pendingId: string) => void // Cancel a specific pending generation
   onSelectPending?: (pendingId: string) => void // Select pending to show when complete
@@ -57,7 +57,7 @@ export function WorksSidebar({
   authenticated, 
   onSelectImage,
   onOpenWorksModal,
-  newGenerationTrigger,
+  newGenerationId,
   pendingGenerations = [],
   onCancelPending,
   onSelectPending,
@@ -136,17 +136,37 @@ export function WorksSidebar({
     }
   }, [authenticated]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refresh when new generation is created and scroll to top
+  // Prepend new generation when completed (avoids full refresh)
   useEffect(() => {
-    if (newGenerationTrigger && authenticated) {
-      setOffset(0)
-      fetchGenerations(false)
-      // Scroll to top to show the new generation
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    if (!newGenerationId || !authenticated) return
+    
+    // Check if we already have this generation
+    if (generations.some(g => g.id === newGenerationId)) return
+    
+    // Fetch only this specific generation and prepend
+    const fetchNewGeneration = async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/api/generations/${newGenerationId}`,
+          { credentials: 'include' }
+        )
+        if (!res.ok) return
+        
+        const newGen = await res.json()
+        if (newGen) {
+          setGenerations(prev => [newGen, ...prev])
+          // Scroll to top to show the new generation
+          if (scrollRef.current) {
+            scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch new generation:', err)
       }
     }
-  }, [newGenerationTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
+    
+    fetchNewGeneration()
+  }, [newGenerationId, authenticated, generations])
 
   // Infinite scroll
   const handleScroll = useCallback(() => {
