@@ -2024,6 +2024,38 @@ textarea.textarea.floating-prompt-input.forging {
   background: linear-gradient(135deg, rgba(255, 87, 34, 0.05) 0%, rgba(255, 109, 0, 0.08) 100%);
 }
 
+/* Drop overlay - appears when dragging over canvas with content */
+.canvas-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 87, 34, 0.08);
+  backdrop-filter: blur(4px);
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  margin: 20px;
+  pointer-events: auto;
+}
+
+.canvas-drop-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent);
+}
+
+.canvas-drop-overlay-content p {
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
 /* Canvas states */
 .canvas-generating,
 .canvas-output,

@@ -1278,6 +1278,19 @@ export default function App() {
         }}
         onDrop={handleRefineDrop}
       >
+        {/* Drop overlay - catches drops even when canvas has content */}
+        {isDraggingRefine && (
+          <div 
+            className="canvas-drop-overlay"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleRefineDrop}
+          >
+            <div className="canvas-drop-overlay-content">
+              <span className="btn-icon icon-alloy" style={{ width: 32, height: 32 }} />
+              <p>Drop to refine this image</p>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {/* GENERATING STATE - only when viewing a pending generation, not when on fresh canvas */}
           {isGenerating && !viewingPastWork && !!selectedPendingId ? (
