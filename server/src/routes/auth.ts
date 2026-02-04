@@ -143,9 +143,10 @@ router.get('/google/callback', (req, res, next) => {
 
 // Get current user
 router.get('/me', (req, res) => {
-  console.log(`[Auth] /me check - isAuthenticated: ${req.isAuthenticated()}, hasUser: ${!!req.user}, sessionID: ${req.sessionID}`);
+  const start = Date.now();
+  console.log(`[Auth] /me START - sessionID: ${req.sessionID?.slice(-8)}`);
   if (req.isAuthenticated() && req.user) {
-    console.log(`[Auth] /me returning user: ${req.user.email}`);
+    console.log(`[Auth] /me END ${Date.now() - start}ms - user: ${req.user.email}`);
     res.json({
       authenticated: true,
       user: {
@@ -156,7 +157,7 @@ router.get('/me', (req, res) => {
       },
     });
   } else {
-    console.log(`[Auth] /me returning not authenticated`);
+    console.log(`[Auth] /me END ${Date.now() - start}ms - not authenticated`);
     res.json({ authenticated: false, user: null });
   }
 });

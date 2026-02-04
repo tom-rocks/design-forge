@@ -61,6 +61,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 // List current user's generations (paginated)
 router.get('/my', async (req: Request, res: Response) => {
+  const start = Date.now();
   try {
     if (!req.isAuthenticated() || !req.user) {
       res.status(401).json({ error: 'Not authenticated' });
@@ -70,7 +71,9 @@ router.get('/my', async (req: Request, res: Response) => {
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = parseInt(req.query.offset as string) || 0;
     
+    console.log(`[Generations] /my START - user: ${req.user.email}, limit: ${limit}, offset: ${offset}`);
     const { generations, total } = await getGenerationsByUser(req.user.id, limit, offset);
+    console.log(`[Generations] /my DB ${Date.now() - start}ms - found ${generations.length}/${total}`);
     
     res.json({
       generations: addUrls(generations),
@@ -79,16 +82,19 @@ router.get('/my', async (req: Request, res: Response) => {
       offset,
       hasMore: offset + limit < total,
     });
+    console.log(`[Generations] /my END ${Date.now() - start}ms`);
   } catch (err) {
-    console.error('[Generations] My generations error:', err);
+    console.error(`[Generations] /my ERROR ${Date.now() - start}ms:`, err);
     res.status(500).json({ error: 'Failed to list your generations' });
   }
 });
 
 // Get a single generation
 router.get('/:id', async (req: Request, res: Response) => {
+  const start = Date.now();
   try {
     const gen = await getGeneration(req.params.id);
+    console.log(`[Generations] /:id ${req.params.id.slice(0, 8)} - ${Date.now() - start}ms - ${gen ? 'found' : '404'}`);
     if (!gen) {
       res.status(404).json({ error: 'Generation not found' });
       return;

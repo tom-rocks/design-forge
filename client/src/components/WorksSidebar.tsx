@@ -102,16 +102,20 @@ export function WorksSidebar({
       setLoading(true)
     }
     
+    const start = performance.now()
     try {
       const currentOffset = loadMore ? offset : 0
+      console.log(`[Sidebar] Fetch START - offset: ${currentOffset}`)
       const res = await fetch(
         `${API_URL}/api/generations/my?limit=${LIMIT}&offset=${currentOffset}`,
         { credentials: 'include' }
       )
+      console.log(`[Sidebar] Fetch response ${Math.round(performance.now() - start)}ms - status: ${res.status}`)
       
       if (!res.ok) throw new Error('Failed to fetch')
       
       const data = await res.json()
+      console.log(`[Sidebar] Fetch END ${Math.round(performance.now() - start)}ms - got ${data.generations?.length || 0} items`)
       
       if (loadMore) {
         setGenerations(prev => [...prev, ...data.generations])
@@ -122,7 +126,7 @@ export function WorksSidebar({
       setHasMore(data.hasMore)
       setOffset(currentOffset + data.generations.length)
     } catch (err) {
-      console.error('Failed to fetch generations:', err)
+      console.error(`[Sidebar] Fetch ERROR ${Math.round(performance.now() - start)}ms:`, err)
     } finally {
       setLoading(false)
       setLoadingMore(false)

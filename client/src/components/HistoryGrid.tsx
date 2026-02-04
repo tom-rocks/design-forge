@@ -291,11 +291,15 @@ export default function HistoryGrid({
       setOffset(0)
     }
     
+    const start = performance.now()
     try {
+      console.log(`[HistoryGrid] Fetch START - offset: ${currentOffset}, append: ${append}`)
       const res = await fetch(`${API_URL}/api/generations/my?limit=20&offset=${currentOffset}`, {
         credentials: 'include',
       })
+      console.log(`[HistoryGrid] Fetch response ${Math.round(performance.now() - start)}ms - status: ${res.status}`)
       const data = await res.json()
+      console.log(`[HistoryGrid] Fetch END ${Math.round(performance.now() - start)}ms - got ${data.generations?.length || 0} items`)
       
       if (append) {
         setGenerations(prev => {
@@ -312,7 +316,7 @@ export default function HistoryGrid({
       setHasMore(data.hasMore || false)
       lastFetchRef.current = Date.now()
     } catch (e) {
-      console.error('Failed to fetch history:', e)
+      console.error(`[HistoryGrid] Fetch ERROR ${Math.round(performance.now() - start)}ms:`, e)
     } finally {
       setLoading(false)
       setLoadingMore(false)
