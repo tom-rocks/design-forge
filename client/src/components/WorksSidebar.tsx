@@ -136,6 +136,20 @@ export function WorksSidebar({
     }
   }, [authenticated]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Track pending count to detect new pending generations
+  const prevPendingCountRef = useRef(pendingGenerations.length)
+  
+  // Scroll to top when a new pending generation is added
+  useEffect(() => {
+    if (pendingGenerations.length > prevPendingCountRef.current) {
+      // New pending generation added - scroll to top
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+    prevPendingCountRef.current = pendingGenerations.length
+  }, [pendingGenerations.length])
+
   // Track which generation IDs we've already processed
   const processedIdsRef = useRef<Set<string>>(new Set())
   
