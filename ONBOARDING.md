@@ -726,11 +726,47 @@ CREATE TABLE generations (
   mode VARCHAR(10) DEFAULT 'create',
   parent_id UUID REFERENCES generations(id),  -- For edit chains
   image_paths TEXT[] NOT NULL DEFAULT '{}',
-  thumbnail_path TEXT,
+  thumbnail_paths TEXT[] DEFAULT '{}',
   settings JSONB DEFAULT '{}',
+  status VARCHAR(20) DEFAULT 'complete',      -- 'complete' | 'broken'
+  user_id UUID REFERENCES users(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Key indexes for performance
+CREATE INDEX idx_generations_user_created ON generations(user_id, created_at DESC);
 ```
+
+### Self-Healing Broken Generations
+
+When a generation's image file is missing (404), the system automatically marks it as broken:
+
+```
+User requests image → Server checks file exists → File missing? 
+  → Mark generation status='broken' → Return 404
+```
+
+**How it works:**
+
+1. When `/api/generations/:id/image/:index` returns 404 (file not found on disk)
+2. Server calls `markGenerationBroken(id)` which sets `status = 'broken'`
+3. All list queries (`getGenerationsByUser`, `getGenerations`) exclude `status='broken'`
+4. The generation disappears from sidebar/gallery but data isn't deleted
+
+**Why this approach:**
+- No manual cleanup scripts needed
+- Self-healing: first user to hit a broken image triggers the fix for everyone
+- Data preserved (can be restored if needed)
+- No risk of auto-deleting valid data that just temporarily fails
+
+**Query pattern:**
+```sql
+SELECT ... FROM generations 
+WHERE user_id = $1 AND (status IS NULL OR status = 'complete')
+ORDER BY created_at DESC
+```
+
+**Important:** The `settings` JSONB column is excluded from list queries for performance. Only fetch `settings` when loading a single generation for replay.
 
 ### File Storage
 
@@ -904,6 +940,25 @@ cd microapps && npm run build
 2. Verify `getItemCdnUrl()` constructs correct URLs for `bg-` and `cn-` prefixes
 3. Check `hasValidThumbnail()` isn't filtering them out
 
+#### Generation images returning 404
+
+**Cause**: Image file was deleted from storage but database record still exists.
+
+**How it's handled**: The system automatically marks the generation as `status='broken'` when the image 404s. It will no longer appear in lists.
+
+**If you need to restore**: The database record still exists. You can manually set `status='complete'` if the image is restored, or delete the record entirely.
+
+```sql
+-- View broken generations
+SELECT id, prompt, created_at FROM generations WHERE status = 'broken';
+
+-- Restore a generation (if image was recovered)
+UPDATE generations SET status = 'complete' WHERE id = 'uuid-here';
+
+-- Permanently delete broken generations (optional cleanup)
+DELETE FROM generations WHERE status = 'broken';
+```
+
 #### Generation stuck at "GENERATING..."
 
 **Cause**: Gemini API timeout or overload.
@@ -980,6 +1035,7 @@ npm start
 
 | File | Purpose |
 |------|---------|
+| `server/src/db.ts` | Database layer, self-healing broken generations |
 | `server/src/routes/generate.ts` | Gemini generation logic, data URL handling |
 | `server/src/routes/highrise.ts` | Item search, CDN URL construction, filtering |
 | `server/src/bridge.ts` | WebSocket bridge server |
@@ -1034,4 +1090,4 @@ If you can check all boxes, you're **fully onboarded and ready to work on Design
 
 ---
 
-*Last updated: January 17, 2026*
+*Last updated: February 4, 2026*
