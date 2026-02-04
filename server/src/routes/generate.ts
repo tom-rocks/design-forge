@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
 import crypto from 'crypto';
-import PQueue from 'p-queue';
 import { saveGeneration, getGeneration } from '../db.js';
 import { saveImage, createThumbnails, getImagePath } from '../storage.js';
 import fs from 'fs/promises';
@@ -12,15 +11,33 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1beta';
 
 // ============================================================================
-// GEMINI REQUEST QUEUE
+// SIMPLE REQUEST QUEUE
 // Limits concurrent API calls to prevent rate limiting (429 errors)
-// - Max 8 concurrent generation calls (leaves headroom under typical limits)
-// - Queues excess requests and processes in order
 // ============================================================================
-const geminiQueue = new PQueue({ 
-  concurrency: 8,  // Max simultaneous Gemini API calls
-  timeout: 120000, // 2 minute timeout per request
-});
+const MAX_CONCURRENT = 8;
+let activeTasks = 0;
+const taskQueue: Array<{ task: () => Promise<any>, resolve: (value: any) => void, reject: (err: any) => void }> = [];
+
+async function runQueued<T>(task: () => Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    taskQueue.push({ task, resolve, reject });
+    processQueue();
+  });
+}
+
+function processQueue() {
+  while (activeTasks < MAX_CONCURRENT && taskQueue.length > 0) {
+    const item = taskQueue.shift()!;
+    activeTasks++;
+    item.task()
+      .then(item.resolve)
+      .catch(item.reject)
+      .finally(() => {
+        activeTasks--;
+        processQueue();
+      });
+  }
+}
 
 // Track queue stats for monitoring
 let queueStats = {
@@ -32,8 +49,8 @@ let queueStats = {
 
 // Log queue status periodically
 setInterval(() => {
-  if (geminiQueue.size > 0 || geminiQueue.pending > 0) {
-    console.log(`[Queue] Active: ${geminiQueue.pending}, Waiting: ${geminiQueue.size}, Total processed: ${queueStats.totalProcessed}`);
+  if (taskQueue.length > 0 || activeTasks > 0) {
+    console.log(`[Queue] Active: ${activeTasks}, Waiting: ${taskQueue.length}, Total processed: ${queueStats.totalProcessed}`);
   }
 }, 10000);
 
@@ -574,18 +591,17 @@ router.delete('/debug/logs', (_req: Request, res: Response) => {
 router.get('/debug/queue', (_req: Request, res: Response) => {
   res.json({
     current: {
-      pending: geminiQueue.pending,
-      waiting: geminiQueue.size,
-      isPaused: geminiQueue.isPaused,
+      active: activeTasks,
+      waiting: taskQueue.length,
     },
     config: {
-      concurrency: 8,
-      timeoutMs: 120000,
+      maxConcurrent: MAX_CONCURRENT,
     },
     stats: {
       ...queueStats,
       uptime: process.uptime(),
     },
+    keyPool: getKeyPoolStats(),
   });
 });
 
@@ -955,7 +971,7 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
     // Run variations through the queue (sequential to avoid rate limits)
     // Each variation gets queued and executed when a slot is available
     queueStats.totalQueued += variationCount;
-    const queuePosition = geminiQueue.size;
+    const queuePosition = taskQueue.length;
     if (queuePosition > 0) {
       send('progress', { status: 'queued', message: `QUEUED (${queuePosition} ahead)...`, progress: 25, id });
       console.log(`[Gen ${id}] Queued with ${queuePosition} requests ahead`);
@@ -965,10 +981,9 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
     for (let i = 0; i < variationCount; i++) {
       try {
         // Queue each variation through the global limiter
-        const result = await geminiQueue.add(async () => {
+        const result = await runQueued(async () => {
           queueStats.totalProcessed++;
-          const concurrent = geminiQueue.pending;
-          if (concurrent > queueStats.peakConcurrent) queueStats.peakConcurrent = concurrent;
+          if (activeTasks > queueStats.peakConcurrent) queueStats.peakConcurrent = activeTasks;
           return generateOne(i);
         });
         variationResults.push(result || []);
