@@ -227,10 +227,14 @@ export default function App() {
     setGalleryExpanded(null)
     setGallerySearch('')
     setGalleryLoadedImages(new Set())
+    const start = performance.now()
     try {
+      console.log('[Gallery] Fetch START')
       const res = await fetch(`${API_URL}/api/generations/my`, { credentials: 'include' })
+      console.log(`[Gallery] Fetch response ${Math.round(performance.now() - start)}ms - status: ${res.status}`)
       if (res.ok) {
         const data = await res.json()
+        console.log(`[Gallery] Fetch END ${Math.round(performance.now() - start)}ms - got ${data.generations?.length || 0} items`)
         // Flatten all images from all generations, using thumbnails for grid
         const images: GalleryImage[] = []
         for (const gen of data.generations || []) {

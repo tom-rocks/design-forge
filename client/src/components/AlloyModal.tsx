@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react'
-import { X, Trash2, ArchiveRestore, Swords, Box, Star } from 'lucide-react'
+import { X, Trash2, ArchiveRestore, Swords, Box, Star, Layers } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Thumb } from './Thumb'
 import { API_URL } from '../config'
 import HighriseSearch from './HighriseSearch'
 import HistoryGrid, { type ReplayConfig } from './HistoryGrid'
 import { Favorites } from './Favorites'
+import { SavedAlloys } from './SavedAlloys'
 
 interface Reference {
   id: string
@@ -164,6 +165,13 @@ export function AlloyModal({
                   <Star className="w-4 h-4" />
                   Favorites
                 </button>
+                <button 
+                  className={`btn ${refSource === 'alloys' ? 'btn-accent' : 'btn-dark'}`}
+                  onClick={() => setRefSource('alloys')}
+                >
+                  <Layers className="w-4 h-4" />
+                  Alloys
+                </button>
               </div>
             </div>
 
@@ -226,6 +234,20 @@ export function AlloyModal({
                   disabled={disabled}
                   isActive={refSource === 'favorites'}
                   resetKey={favoritesResetKey + localFavoritesResetKey}
+                />
+              </div>
+
+              {/* Alloys tab */}
+              <div className={`alloy-tab-panel ${refSource === 'alloys' ? 'active' : ''}`}>
+                <SavedAlloys
+                  authenticated={authenticated}
+                  onLogin={onLogin}
+                  onUseAlloy={(refs) => {
+                    // Clear current references and add all from the saved alloy
+                    onClearAll()
+                    refs.forEach(ref => onAddReference(ref))
+                  }}
+                  isActive={refSource === 'alloys'}
                 />
               </div>
             </div>

@@ -317,8 +317,14 @@ export async function getGenerationsByUser(userId: string, limit = 50, offset = 
   const total = parseInt(countResult.rows[0].count, 10);
   const t2 = Date.now();
   
+  // Select only needed columns - exclude large settings JSONB for list views
   const result = await pool.query<Generation>(
-    `SELECT * FROM generations WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+    `SELECT id, prompt, model, resolution, aspect_ratio, mode, parent_id, 
+            image_paths, thumbnail_paths, created_at, user_id
+     FROM generations 
+     WHERE user_id = $1 
+     ORDER BY created_at DESC 
+     LIMIT $2 OFFSET $3`,
     [userId, limit, offset]
   );
   const t3 = Date.now();
