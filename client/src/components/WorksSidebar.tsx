@@ -377,10 +377,10 @@ export function WorksSidebar({
                           onError={() => handleImageError(img.id)}
                         />
                       )}
-                      {/* Delete button - always show for failed images, hover for normal */}
-                      {(isFailed || hoveredImageId === img.id) && onDeleteImage && (
+                      {/* Delete button - always rendered, shown on hover via CSS */}
+                      {onDeleteImage && (
                         <button
-                          className="gen-panel-delete"
+                          className={`gen-panel-delete ${isFailed || hoveredImageId === img.id ? 'visible' : ''}`}
                           onClick={(e) => {
                             e.stopPropagation()
                             if (!confirm('Delete this generation?')) return
