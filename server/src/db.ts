@@ -109,6 +109,9 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_generations_created_at ON generations(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_generations_parent_id ON generations(parent_id);
       CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id);
+      
+      -- Composite index for the common query pattern: user's generations ordered by date
+      CREATE INDEX IF NOT EXISTS idx_generations_user_created ON generations(user_id, created_at DESC);
     `);
     
     // Favorite folders table
@@ -309,13 +312,18 @@ export async function getGenerations(limit = 50, offset = 0): Promise<{ generati
 
 // Get generations by user ID (paginated, newest first)
 export async function getGenerationsByUser(userId: string, limit = 50, offset = 0): Promise<{ generations: Generation[]; total: number }> {
+  const t1 = Date.now();
   const countResult = await pool.query('SELECT COUNT(*) FROM generations WHERE user_id = $1', [userId]);
   const total = parseInt(countResult.rows[0].count, 10);
+  const t2 = Date.now();
   
   const result = await pool.query<Generation>(
     `SELECT * FROM generations WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
     [userId, limit, offset]
   );
+  const t3 = Date.now();
+  
+  console.log(`[DB] getGenerationsByUser: COUNT ${t2-t1}ms, SELECT ${t3-t2}ms, total ${t3-t1}ms`);
   
   return { generations: result.rows, total };
 }
