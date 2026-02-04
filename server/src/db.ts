@@ -302,8 +302,13 @@ export async function getGenerations(limit = 50, offset = 0): Promise<{ generati
   const countResult = await pool.query('SELECT COUNT(*) FROM generations');
   const total = parseInt(countResult.rows[0].count, 10);
   
+  // Select only needed columns - exclude large settings JSONB for list views
   const result = await pool.query<Generation>(
-    `SELECT * FROM generations ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+    `SELECT id, prompt, model, resolution, aspect_ratio, mode, parent_id, 
+            image_paths, thumbnail_paths, created_at, user_id
+     FROM generations 
+     ORDER BY created_at DESC 
+     LIMIT $1 OFFSET $2`,
     [limit, offset]
   );
   
@@ -312,10 +317,8 @@ export async function getGenerations(limit = 50, offset = 0): Promise<{ generati
 
 // Get generations by user ID (paginated, newest first)
 export async function getGenerationsByUser(userId: string, limit = 50, offset = 0): Promise<{ generations: Generation[]; total: number }> {
-  const t1 = Date.now();
   const countResult = await pool.query('SELECT COUNT(*) FROM generations WHERE user_id = $1', [userId]);
   const total = parseInt(countResult.rows[0].count, 10);
-  const t2 = Date.now();
   
   // Select only needed columns - exclude large settings JSONB for list views
   const result = await pool.query<Generation>(
@@ -327,9 +330,6 @@ export async function getGenerationsByUser(userId: string, limit = 50, offset = 
      LIMIT $2 OFFSET $3`,
     [userId, limit, offset]
   );
-  const t3 = Date.now();
-  
-  console.log(`[DB] getGenerationsByUser: COUNT ${t2-t1}ms, SELECT ${t3-t2}ms, total ${t3-t1}ms`);
   
   return { generations: result.rows, total };
 }
@@ -363,11 +363,16 @@ export async function deleteGeneration(id: string): Promise<boolean> {
 
 // Get edit chain (all ancestors of a generation)
 export async function getEditChain(id: string): Promise<Generation[]> {
+  // Select only needed columns - exclude large settings JSONB
   const result = await pool.query<Generation>(
     `WITH RECURSIVE chain AS (
-      SELECT * FROM generations WHERE id = $1
+      SELECT id, prompt, model, resolution, aspect_ratio, mode, parent_id, 
+             image_paths, thumbnail_paths, created_at, user_id
+      FROM generations WHERE id = $1
       UNION ALL
-      SELECT g.* FROM generations g
+      SELECT g.id, g.prompt, g.model, g.resolution, g.aspect_ratio, g.mode, g.parent_id,
+             g.image_paths, g.thumbnail_paths, g.created_at, g.user_id
+      FROM generations g
       JOIN chain c ON g.id = c.parent_id
     )
     SELECT * FROM chain ORDER BY created_at ASC`,

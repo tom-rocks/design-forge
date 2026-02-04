@@ -25,15 +25,11 @@ export function useAuth() {
 
   // Check authentication status
   const checkAuth = useCallback(async () => {
-    const start = performance.now()
     try {
-      console.log('[Auth] checkAuth START')
       const res = await fetch(`${API_URL}/api/auth/me`, {
         credentials: 'include',
       })
-      console.log(`[Auth] checkAuth response ${Math.round(performance.now() - start)}ms - status: ${res.status}`)
       const data = await res.json()
-      console.log(`[Auth] checkAuth END ${Math.round(performance.now() - start)}ms - authenticated: ${data.authenticated}`)
       
       setState({
         loading: false,
@@ -41,7 +37,7 @@ export function useAuth() {
         user: data.user,
       })
     } catch (err) {
-      console.error(`[Auth] checkAuth ERROR ${Math.round(performance.now() - start)}ms:`, err)
+      console.error('Auth check failed:', err)
       setState({
         loading: false,
         authenticated: false,

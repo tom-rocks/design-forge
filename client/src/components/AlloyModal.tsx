@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { X, Trash2, ArchiveRestore, Swords, Box, Star, Layers } from 'lucide-react'
+import { X, Trash2, Swords, Box, Star, Layers, ImagePlus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Thumb } from './Thumb'
 import { API_URL } from '../config'
@@ -15,7 +15,7 @@ interface Reference {
   type: 'file' | 'highrise' | 'generation'
 }
 
-type RefSource = 'drop' | 'items' | 'history' | 'favorites' | 'alloys'
+type RefSource = 'items' | 'history' | 'favorites' | 'alloys'
 
 interface AlloyModalProps {
   isOpen: boolean
@@ -56,7 +56,6 @@ export function AlloyModal({
 }: AlloyModalProps) {
   const [refSource, setRefSource] = useState<RefSource>('items')
   const [isDragging, setIsDragging] = useState(false)
-  const [activeDropTarget, setActiveDropTarget] = useState<'refs' | null>(null)
   const [localFavoritesResetKey, setLocalFavoritesResetKey] = useState(0)
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -131,13 +130,6 @@ export function AlloyModal({
             <div className="alloy-modal-tabs">
               <div className="btn-group">
                 <button 
-                  className={`btn ${refSource === 'drop' ? 'btn-accent' : 'btn-dark'}`}
-                  onClick={() => setRefSource('drop')}
-                >
-                  <ArchiveRestore className="w-4 h-4" />
-                  Drop
-                </button>
-                <button 
                   className={`btn ${refSource === 'items' ? 'btn-accent' : 'btn-dark'}`}
                   onClick={() => setRefSource('items')}
                 >
@@ -177,21 +169,6 @@ export function AlloyModal({
 
             {/* Content - tabs stay mounted to preserve state */}
             <div className="alloy-modal-content">
-              {/* Drop tab */}
-              <div className={`alloy-tab-panel ${refSource === 'drop' ? 'active' : ''}`}>
-                <div 
-                  className={`dropzone dropzone-refs ${isDragging ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'active' : ''}`}
-                  onClick={() => setActiveDropTarget('refs')}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <span className="dropzone-text">
-                    DROP OR PASTE IMAGES
-                  </span>
-                </div>
-              </div>
-
               {/* Items tab */}
               <div className={`alloy-tab-panel ${refSource === 'items' ? 'active' : ''}`}>
                 <HighriseSearch
@@ -252,8 +229,13 @@ export function AlloyModal({
               </div>
             </div>
 
-            {/* Active References Footer */}
-            <div className="alloy-modal-footer">
+            {/* Active References Footer - also accepts drops */}
+            <div 
+              className={`alloy-modal-footer ${isDragging ? 'drop-active' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="alloy-modal-footer-header">
                 <span className={`led ${references.length > 0 ? 'on' : ''}`} />
                 <span>Active ({references.length}/{maxRefs})</span>
@@ -267,7 +249,7 @@ export function AlloyModal({
                   </button>
                 )}
               </div>
-              {references.length > 0 && (
+              {references.length > 0 ? (
                 <div className="thumb-grid">
                   <AnimatePresence mode="popLayout">
                     {references.map((ref) => (
@@ -279,6 +261,11 @@ export function AlloyModal({
                       />
                     ))}
                   </AnimatePresence>
+                </div>
+              ) : (
+                <div className="alloy-drop-hint">
+                  <ImagePlus className="w-4 h-4" />
+                  <span>Drop images here or browse above</span>
                 </div>
               )}
             </div>
