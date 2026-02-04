@@ -15,6 +15,7 @@ const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1b
 // Limits concurrent API calls to prevent rate limiting (429 errors)
 // ============================================================================
 const MAX_CONCURRENT = 8;
+const TASK_TIMEOUT_MS = 120000; // 2 minute timeout per task
 let activeTasks = 0;
 const taskQueue: Array<{ task: () => Promise<any>, resolve: (value: any) => void, reject: (err: any) => void }> = [];
 
@@ -29,9 +30,22 @@ function processQueue() {
   while (activeTasks < MAX_CONCURRENT && taskQueue.length > 0) {
     const item = taskQueue.shift()!;
     activeTasks++;
+    
+    // Add timeout to prevent hung tasks from blocking the queue
+    const timeoutId = setTimeout(() => {
+      console.log('[Queue] Task timed out after 2 minutes');
+      item.reject(new Error('Task timeout'));
+    }, TASK_TIMEOUT_MS);
+    
     item.task()
-      .then(item.resolve)
-      .catch(item.reject)
+      .then((result) => {
+        clearTimeout(timeoutId);
+        item.resolve(result);
+      })
+      .catch((err) => {
+        clearTimeout(timeoutId);
+        item.reject(err);
+      })
       .finally(() => {
         activeTasks--;
         processQueue();
