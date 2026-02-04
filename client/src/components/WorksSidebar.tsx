@@ -36,6 +36,7 @@ interface PendingGeneration {
   mode: 'create' | 'edit'
   references?: Array<{ id: string; url: string; thumbnailUrl?: string; name?: string; type: string }>
   editImageUrl?: string
+  completedId?: string // Server ID once complete - for smooth transition
 }
 
 interface WorksSidebarProps {
@@ -46,6 +47,7 @@ interface WorksSidebarProps {
   pendingGenerations?: PendingGeneration[] // Shows at top while forging
   onCancelPending?: (pendingId: string) => void // Cancel a specific pending generation
   onSelectPending?: (pendingId: string) => void // Select pending to show when complete
+  onPendingComplete?: (pendingId: string) => void // Notify when pending->complete transition done
   selectedPendingId?: string | null // Currently selected pending generation
   onNewForge?: () => void // Start a new forge (clear canvas)
   onDeleteImage?: (generationId: string) => void // Delete a generation
@@ -61,6 +63,7 @@ export function WorksSidebar({
   pendingGenerations = [],
   onCancelPending,
   onSelectPending,
+  onPendingComplete,
   selectedPendingId,
   onNewForge,
   onDeleteImage,
@@ -190,6 +193,17 @@ export function WorksSidebar({
     fetchNewGeneration()
   }, [newGenerationId, authenticated]) // Removed 'generations' dependency
 
+  // Check for pending->complete transitions
+  // When a pending item has completedId and that ID is in generations, remove the pending
+  useEffect(() => {
+    const completedPending = pendingGenerations.filter(p => 
+      p.completedId && generations.some(g => g.id === p.completedId)
+    )
+    completedPending.forEach(p => {
+      onPendingComplete?.(p.id)
+    })
+  }, [generations, pendingGenerations, onPendingComplete])
+
   // Infinite scroll
   const handleScroll = useCallback(() => {
     if (!scrollRef.current || loadingMore || !hasMore) return
@@ -251,17 +265,27 @@ export function WorksSidebar({
                   <Plus style={{ width: 18, height: 18 }} />
                 </motion.button>
                 
-                {/* Pending generation placeholders - show all while forging */}
-                {pendingGenerations.flatMap(pending => 
+                {/* Pending generation placeholders - show until completed item appears in list */}
+                {pendingGenerations
+                  .filter(pending => {
+                    // Hide pending if its completed counterpart is already in the generations list
+                    if (pending.completedId && generations.some(g => g.id === pending.completedId)) {
+                      return false
+                    }
+                    return true
+                  })
+                  .flatMap(pending => 
                   [...Array(pending.outputCount)].map((_, i) => {
                     const isFirst = i === 0 // Only show cancel on first image of each generation
                     const isHovered = hoveredPendingId === pending.id
                     const isSelected = selectedPendingId === pending.id
+                    // Use completedId for layoutId if available, for smooth transition to real item
+                    const layoutKey = pending.completedId ? `${pending.completedId}-${i}` : `pending-${pending.id}-${i}`
                     
                     return (
                       <motion.button
                         key={`pending-${pending.id}-${i}`}
-                        layout="position"
+                        layoutId={layoutKey}
                         className={`gen-panel-thumb forging ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -287,7 +311,7 @@ export function WorksSidebar({
                           }
                         </div>
                         {/* Cancel button - only on first image of each generation, on hover */}
-                        {isFirst && (isHovered || isSelected) && (
+                        {isFirst && (isHovered || isSelected) && !pending.completedId && (
                           <button
                             className="gen-panel-cancel"
                             onClick={(e) => {
@@ -305,20 +329,19 @@ export function WorksSidebar({
                 )}
                 
                 {/* Existing generations */}
-                {displayImages.map((img, index) => {
+                {displayImages.map((img) => {
                   const isFailed = failedImages.has(img.id)
                   const isSelected = selectedImageUrl === `${API_URL}${img.imageUrl}`
                   return (
                     <motion.button
                       key={img.id}
-                      layout="position"
+                      layoutId={img.id}
                       className={`gen-panel-thumb ${isFailed ? 'failed' : ''} ${isSelected ? 'selected' : ''}`}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ 
                         duration: 0.2,
-                        delay: index === 0 ? 0.1 : 0, // Slight delay for newest item
                         ease: [0.4, 0, 0.2, 1],
                         layout: { 
                           type: "spring",

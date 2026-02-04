@@ -141,6 +141,7 @@ export default function App() {
     mode: 'create' | 'edit'
     references: Reference[]
     editImageUrl?: string
+    completedId?: string  // Server ID once complete - used for smooth transition
   }>>([])
   
   
@@ -830,9 +831,11 @@ export default function App() {
                 styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name }))
               })
               setViewingPastWork(false)
-              removePending()
-              // Tell sidebar about the new generation (by ID for efficient prepend)
+              // Mark pending as completed (don't remove yet - sidebar will handle smooth transition)
               if (data.generationId) {
+                setPendingGenerations(prev => prev.map(g => 
+                  g.id === genId ? { ...g, completedId: data.generationId } : g
+                ))
                 setNewGenerationId(data.generationId)
                 
                 // Auto-save alloy if references were used (and user is authenticated)
@@ -851,15 +854,10 @@ export default function App() {
                     }),
                   }).catch(err => console.error('[Alloy] Auto-save failed:', err))
                 }
+              } else {
+                // No server ID (anonymous?) - remove pending immediately
+                removePending()
               }
-              // Check if more pending after removing this one
-              setPendingGenerations(prev => {
-                const remaining = prev.filter(g => g.id !== genId)
-                if (remaining.length === 0) {
-                  setIsGenerating(false)
-                }
-                return remaining
-              })
               return
             } else if (currentEvent === 'error') {
               throw new Error(data.error)
@@ -1309,6 +1307,16 @@ export default function App() {
         pendingGenerations={pendingGenerations}
         onCancelPending={handleCancelPending}
         onSelectPending={handleSelectPending}
+        onPendingComplete={(pendingId) => {
+          // Remove pending item and update isGenerating state
+          setPendingGenerations(prev => {
+            const remaining = prev.filter(g => g.id !== pendingId)
+            if (remaining.length === 0) {
+              setIsGenerating(false)
+            }
+            return remaining
+          })
+        }}
         selectedPendingId={selectedPendingId}
         isNewForgeActive={!result && !editImage && !selectedPendingId && !viewingPastWork && !isGenerating}
         selectedImageUrl={result?.imageUrl}
