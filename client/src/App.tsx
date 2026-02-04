@@ -1052,6 +1052,7 @@ export default function App() {
     e.preventDefault()
     e.stopPropagation()
     setIsDraggingAlloy(false)
+    setIsDraggingRefine(false) // Clear canvas overlay in case user dragged over canvas first
     
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
     if (files.length === 0) return
@@ -1112,7 +1113,20 @@ export default function App() {
     }
     
     document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
+    
+    // Clear drag states when drag ends anywhere (safety net for stuck overlays)
+    const handleDragEnd = () => {
+      setIsDraggingRefine(false)
+      setIsDraggingAlloy(false)
+    }
+    document.addEventListener('dragend', handleDragEnd)
+    document.addEventListener('drop', handleDragEnd) // Also on drop outside our zones
+    
+    return () => {
+      document.removeEventListener('paste', handlePaste)
+      document.removeEventListener('dragend', handleDragEnd)
+      document.removeEventListener('drop', handleDragEnd)
+    }
   }, [references, activeDropTarget])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
