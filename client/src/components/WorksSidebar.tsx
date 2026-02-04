@@ -136,12 +136,16 @@ export function WorksSidebar({
     }
   }, [authenticated]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Track which generation IDs we've already processed
+  const processedIdsRef = useRef<Set<string>>(new Set())
+  
   // Prepend new generation when completed (avoids full refresh)
   useEffect(() => {
     if (!newGenerationId || !authenticated) return
     
-    // Check if we already have this generation
-    if (generations.some(g => g.id === newGenerationId)) return
+    // Skip if we've already processed this ID
+    if (processedIdsRef.current.has(newGenerationId)) return
+    processedIdsRef.current.add(newGenerationId)
     
     // Fetch only this specific generation and prepend
     const fetchNewGeneration = async () => {
@@ -154,7 +158,11 @@ export function WorksSidebar({
         
         const newGen = await res.json()
         if (newGen) {
-          setGenerations(prev => [newGen, ...prev])
+          setGenerations(prev => {
+            // Double-check we don't already have it
+            if (prev.some(g => g.id === newGen.id)) return prev
+            return [newGen, ...prev]
+          })
           // Scroll to top to show the new generation
           if (scrollRef.current) {
             scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
@@ -166,7 +174,7 @@ export function WorksSidebar({
     }
     
     fetchNewGeneration()
-  }, [newGenerationId, authenticated, generations])
+  }, [newGenerationId, authenticated]) // Removed 'generations' dependency
 
   // Infinite scroll
   const handleScroll = useCallback(() => {

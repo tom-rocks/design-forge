@@ -834,6 +834,23 @@ export default function App() {
               // Tell sidebar about the new generation (by ID for efficient prepend)
               if (data.generationId) {
                 setNewGenerationId(data.generationId)
+                
+                // Auto-save alloy if references were used (and user is authenticated)
+                if (genReferences.length > 0 && authenticated) {
+                  const alloyItems = genReferences.map(ref => ({ url: ref.url, name: ref.name }))
+                  // Create name from prompt (first 40 chars) or fallback
+                  const alloyName = genPrompt.slice(0, 40).trim() || `Alloy ${new Date().toLocaleDateString()}`
+                  fetch(`${API_URL}/api/alloys`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                      name: alloyName,
+                      items: alloyItems,
+                      generationId: data.generationId,
+                    }),
+                  }).catch(err => console.error('[Alloy] Auto-save failed:', err))
+                }
               }
               // Check if more pending after removing this one
               setPendingGenerations(prev => {

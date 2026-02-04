@@ -165,6 +165,24 @@ export async function initDatabase() {
     `);
     console.log('[DB] Favorites migration complete');
     
+    // Saved Alloys table - stores alloy combinations for reuse
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS saved_alloys (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        items JSONB NOT NULL DEFAULT '[]',
+        generation_id UUID REFERENCES generations(id) ON DELETE SET NULL,
+        pinned BOOLEAN DEFAULT FALSE,
+        last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_saved_alloys_user_id ON saved_alloys(user_id);
+      CREATE INDEX IF NOT EXISTS idx_saved_alloys_last_used ON saved_alloys(last_used_at DESC);
+    `);
+    console.log('[DB] Saved alloys table ready');
+    
     console.log('[DB] Database schema initialized');
   } catch (err) {
     console.error('[DB] Failed to initialize schema:', err);
@@ -649,6 +667,119 @@ export async function repairFavoriteItemIds(userId: string): Promise<{ fixed: nu
   }
   
   return { fixed, failed, total: result.rows.length };
+}
+
+// ============================================
+// SAVED ALLOYS
+// ============================================
+
+export interface SavedAlloy {
+  id: string;
+  user_id: string;
+  name: string;
+  items: { url: string; name?: string }[];
+  generation_id: string | null;
+  pinned: boolean;
+  last_used_at: Date;
+  created_at: Date;
+}
+
+// Get all saved alloys for a user (pinned first, then by last_used)
+export async function getSavedAlloys(userId: string): Promise<SavedAlloy[]> {
+  const result = await pool.query<SavedAlloy>(
+    `SELECT * FROM saved_alloys WHERE user_id = $1 
+     ORDER BY pinned DESC, last_used_at DESC`,
+    [userId]
+  );
+  return result.rows;
+}
+
+// Save a new alloy (called when generation completes with styleImages)
+export async function saveAlloy(params: {
+  userId: string;
+  name: string;
+  items: { url: string; name?: string }[];
+  generationId?: string;
+}): Promise<SavedAlloy> {
+  const { userId, name, items, generationId } = params;
+  
+  // Check for duplicate (same items in same order)
+  const itemsJson = JSON.stringify(items);
+  const existing = await pool.query<SavedAlloy>(
+    `SELECT * FROM saved_alloys WHERE user_id = $1 AND items::text = $2`,
+    [userId, itemsJson]
+  );
+  
+  if (existing.rows[0]) {
+    // Update last_used_at for existing alloy
+    const updated = await pool.query<SavedAlloy>(
+      `UPDATE saved_alloys SET last_used_at = NOW() WHERE id = $1 RETURNING *`,
+      [existing.rows[0].id]
+    );
+    return updated.rows[0];
+  }
+  
+  // Create new alloy
+  const result = await pool.query<SavedAlloy>(
+    `INSERT INTO saved_alloys (user_id, name, items, generation_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [userId, name, items, generationId || null]
+  );
+  
+  console.log(`[DB] Saved new alloy ${result.rows[0].id} for user ${userId}`);
+  return result.rows[0];
+}
+
+// Update an alloy (rename, pin/unpin)
+export async function updateAlloy(id: string, userId: string, updates: {
+  name?: string;
+  pinned?: boolean;
+}): Promise<SavedAlloy | null> {
+  const setClauses: string[] = [];
+  const values: any[] = [];
+  let paramIndex = 1;
+  
+  if (updates.name !== undefined) {
+    setClauses.push(`name = $${paramIndex++}`);
+    values.push(updates.name);
+  }
+  if (updates.pinned !== undefined) {
+    setClauses.push(`pinned = $${paramIndex++}`);
+    values.push(updates.pinned);
+  }
+  
+  if (setClauses.length === 0) return null;
+  
+  values.push(id, userId);
+  const result = await pool.query<SavedAlloy>(
+    `UPDATE saved_alloys SET ${setClauses.join(', ')} 
+     WHERE id = $${paramIndex++} AND user_id = $${paramIndex} 
+     RETURNING *`,
+    values
+  );
+  
+  return result.rows[0] || null;
+}
+
+// Mark alloy as used (updates last_used_at)
+export async function useAlloy(id: string, userId: string): Promise<SavedAlloy | null> {
+  const result = await pool.query<SavedAlloy>(
+    `UPDATE saved_alloys SET last_used_at = NOW() 
+     WHERE id = $1 AND user_id = $2 
+     RETURNING *`,
+    [id, userId]
+  );
+  return result.rows[0] || null;
+}
+
+// Delete an alloy
+export async function deleteAlloy(id: string, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    'DELETE FROM saved_alloys WHERE id = $1 AND user_id = $2 RETURNING id',
+    [id, userId]
+  );
+  return result.rowCount !== null && result.rowCount > 0;
 }
 
 export default pool;

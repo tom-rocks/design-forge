@@ -14,7 +14,7 @@ interface Reference {
   type: 'file' | 'highrise' | 'generation'
 }
 
-type RefSource = 'drop' | 'items' | 'history' | 'favorites'
+type RefSource = 'drop' | 'items' | 'history' | 'favorites' | 'alloys'
 
 interface AlloyModalProps {
   isOpen: boolean
