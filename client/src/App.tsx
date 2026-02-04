@@ -1210,20 +1210,33 @@ export default function App() {
       {/* WORKS SIDEBAR - Left side works list */}
       <WorksSidebar
         authenticated={authenticated}
-        onSelectImage={(imageUrl, generation) => {
+        onSelectImage={async (imageUrl, generation) => {
           const genMode = generation.mode || 'create'
+          
+          // Fetch full generation data including settings (excluded from list queries for performance)
+          let fullGeneration = generation
+          if (!generation.settings) {
+            try {
+              const res = await fetch(`${API_URL}/api/generations/${generation.id}`, { credentials: 'include' })
+              if (res.ok) {
+                fullGeneration = await res.json()
+              }
+            } catch (e) {
+              console.error('Failed to fetch full generation:', e)
+            }
+          }
           
           // Store result info for reference (used by Replay button)
           setResult({
             imageUrl: imageUrl,
-            imageUrls: generation.imageUrls.map(url => `${API_URL}${url}`),
-            prompt: generation.prompt,
+            imageUrls: fullGeneration.imageUrls?.map((url: string) => `${API_URL}${url}`) || generation.imageUrls.map(url => `${API_URL}${url}`),
+            prompt: fullGeneration.prompt,
             mode: genMode,
-            aspectRatio: generation.aspect_ratio || '1:1',
-            resolution: generation.resolution || '1024',
-            model: generation.model,
-            styleImages: generation.settings?.styleImages,
-            parentId: generation.parent_id
+            aspectRatio: fullGeneration.aspect_ratio || '1:1',
+            resolution: fullGeneration.resolution || '1024',
+            model: fullGeneration.model,
+            styleImages: fullGeneration.settings?.styleImages,
+            parentId: fullGeneration.parent_id
           })
           
           // Set mode and load data based on original generation type
@@ -1236,12 +1249,12 @@ export default function App() {
             // canvasMode will be derived from editImage
           } else {
             // Forge result: load prompt + alloys, ready to forge again
-            setPrompt(generation.prompt || '')
+            setPrompt(fullGeneration.prompt || '')
             
             // Load alloy references from style_images
-            const styleImages = generation.settings?.styleImages || []
-            const refs: Reference[] = styleImages.map((img, i) => ({
-              id: `ref-${generation.id}-${i}`,
+            const styleImages = fullGeneration.settings?.styleImages || []
+            const refs: Reference[] = styleImages.map((img: { url: string; name?: string }, i: number) => ({
+              id: `ref-${fullGeneration.id}-${i}`,
               url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/')
                 ? img.url 
                 : `${API_URL}${img.url}`,
@@ -2018,15 +2031,29 @@ export default function App() {
                 setGalleryExpanded(null)
                 setTimeout(scrollToRefine, 100)
               }}
-              onReplay={() => {
+              onReplay={async () => {
                 if (galleryExpanded) {
+                  // Fetch full generation data if settings not available
+                  let settings = galleryExpanded.settings
+                  if (!settings) {
+                    try {
+                      const res = await fetch(`${API_URL}/api/generations/${galleryExpanded.generationId}`, { credentials: 'include' })
+                      if (res.ok) {
+                        const fullGen = await res.json()
+                        settings = fullGen.settings
+                      }
+                    } catch (e) {
+                      console.error('Failed to fetch full generation for replay:', e)
+                    }
+                  }
+                  
                   handleReplay({
                     prompt: galleryExpanded.prompt,
                     mode: galleryExpanded.mode,
                     model: galleryExpanded.model,
                     resolution: galleryExpanded.resolution,
                     aspectRatio: galleryExpanded.aspectRatio,
-                    references: galleryExpanded.settings?.styleImages,
+                    references: settings?.styleImages,
                     // For edit mode, include the parent image URL
                     editImageUrl: galleryExpanded.mode === 'edit' && galleryExpanded.parentId
                       ? `/api/generations/${galleryExpanded.parentId}/image/0`

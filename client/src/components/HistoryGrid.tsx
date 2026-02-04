@@ -438,24 +438,37 @@ export default function HistoryGrid({
   }
   
   // Replay generation - restore all settings
-  const replayGeneration = (gen: Generation) => {
+  const replayGeneration = async (gen: Generation) => {
     if (!onReplay) return
+    
+    // Fetch full generation data if settings not available (excluded from list queries)
+    let fullGen = gen
+    if (!gen.settings) {
+      try {
+        const res = await fetch(`${API_URL}/api/generations/${gen.id}`, { credentials: 'include' })
+        if (res.ok) {
+          fullGen = await res.json()
+        }
+      } catch (e) {
+        console.error('Failed to fetch full generation for replay:', e)
+      }
+    }
     
     // Build replay config from stored generation data
     // Future-proof: spread settings so new params auto-included
     const config: ReplayConfig = {
-      prompt: gen.prompt,
-      mode: gen.mode || 'create',
-      model: gen.model,
-      resolution: gen.resolution,
-      aspectRatio: gen.aspect_ratio,
-      numImages: gen.settings?.numImages,
-      references: gen.settings?.styleImages,
+      prompt: fullGen.prompt,
+      mode: fullGen.mode || 'create',
+      model: fullGen.model,
+      resolution: fullGen.resolution,
+      aspectRatio: fullGen.aspect_ratio,
+      numImages: fullGen.settings?.numImages,
+      references: fullGen.settings?.styleImages,
       // For edit mode, include the parent image URL (path only - API_URL added by handleReplay)
-      editImageUrl: gen.mode === 'edit' && gen.parent_id 
-        ? `/api/generations/${gen.parent_id}/image/0`
+      editImageUrl: fullGen.mode === 'edit' && fullGen.parent_id 
+        ? `/api/generations/${fullGen.parent_id}/image/0`
         : undefined,
-      ...gen.settings, // Include any additional settings for future compatibility
+      ...fullGen.settings, // Include any additional settings for future compatibility
     }
     
     onReplay(config)
@@ -463,12 +476,27 @@ export default function HistoryGrid({
   }
   
   // Use alloy - add all style references from a generation
-  const useAlloy = (gen: Generation) => {
-    if (!onUseAlloy || !gen.settings?.styleImages?.length) return
+  const useAlloy = async (gen: Generation) => {
+    if (!onUseAlloy) return
+    
+    // Fetch full generation data if settings not available
+    let fullGen = gen
+    if (!gen.settings) {
+      try {
+        const res = await fetch(`${API_URL}/api/generations/${gen.id}`, { credentials: 'include' })
+        if (res.ok) {
+          fullGen = await res.json()
+        }
+      } catch (e) {
+        console.error('Failed to fetch full generation for alloy:', e)
+      }
+    }
+    
+    if (!fullGen.settings?.styleImages?.length) return
     
     // Convert styleImages to Reference format
-    const refs: Reference[] = gen.settings.styleImages.map((img, i) => ({
-      id: `alloy-${gen.id}-${i}-${Date.now()}`,
+    const refs: Reference[] = fullGen.settings.styleImages.map((img, i) => ({
+      id: `alloy-${fullGen.id}-${i}-${Date.now()}`,
       url: img.url.startsWith('http') || img.url.startsWith('data:') || img.url.startsWith('/') 
         ? img.url 
         : `${API_URL}${img.url}`,
@@ -635,7 +663,7 @@ export default function HistoryGrid({
         onReplay={onReplay && lightbox ? () => {
           replayGeneration(lightbox.generation)
         } : undefined}
-        onUseAlloy={onUseAlloy && lightbox?.generation.settings?.styleImages ? () => {
+        onUseAlloy={onUseAlloy && lightbox ? () => {
           useAlloy(lightbox.generation)
         } : undefined}
         onFavorite={lightbox ? () => {
