@@ -37,6 +37,98 @@ setInterval(() => {
   }
 }, 10000);
 
+// ============================================================================
+// API KEY POOL
+// Rotates between multiple Gemini accounts to multiply rate limits
+// - Round-robin distribution across available keys
+// - Tracks rate-limited keys and skips them temporarily
+// ============================================================================
+interface KeyStatus {
+  rateLimitedUntil: number;
+  requestCount: number;
+  lastUsed: number;
+}
+
+const API_KEYS: string[] = [
+  process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3,
+  process.env.GEMINI_API_KEY_4,
+].filter((key): key is string => !!key && key.length > 0);
+
+const keyStatus = new Map<string, KeyStatus>();
+let keyIndex = 0;
+
+// Initialize key status
+API_KEYS.forEach(key => {
+  keyStatus.set(key, { rateLimitedUntil: 0, requestCount: 0, lastUsed: 0 });
+});
+
+console.log(`[KeyPool] Initialized with ${API_KEYS.length} API key(s)`);
+
+// Get the next available API key (round-robin, skipping rate-limited)
+function getApiKey(): string {
+  const now = Date.now();
+  
+  // Try each key in round-robin order
+  for (let i = 0; i < API_KEYS.length; i++) {
+    const idx = (keyIndex + i) % API_KEYS.length;
+    const key = API_KEYS[idx];
+    const status = keyStatus.get(key)!;
+    
+    // Skip if currently rate-limited
+    if (status.rateLimitedUntil > now) {
+      continue;
+    }
+    
+    // Use this key
+    keyIndex = (idx + 1) % API_KEYS.length;
+    status.requestCount++;
+    status.lastUsed = now;
+    return key;
+  }
+  
+  // All keys rate-limited - return the one that will be available soonest
+  let soonestKey = API_KEYS[0];
+  let soonestTime = Infinity;
+  for (const key of API_KEYS) {
+    const status = keyStatus.get(key)!;
+    if (status.rateLimitedUntil < soonestTime) {
+      soonestTime = status.rateLimitedUntil;
+      soonestKey = key;
+    }
+  }
+  console.log(`[KeyPool] All keys rate-limited, using key ending ...${soonestKey.slice(-4)} (available in ${Math.ceil((soonestTime - now) / 1000)}s)`);
+  return soonestKey;
+}
+
+// Mark a key as rate-limited (called when we get a 429)
+function markKeyRateLimited(key: string, retryAfterMs = 60000) {
+  const status = keyStatus.get(key);
+  if (status) {
+    status.rateLimitedUntil = Date.now() + retryAfterMs;
+    console.log(`[KeyPool] Key ...${key.slice(-4)} rate-limited for ${retryAfterMs / 1000}s`);
+  }
+}
+
+// Get pool stats for monitoring
+function getKeyPoolStats() {
+  const now = Date.now();
+  return {
+    totalKeys: API_KEYS.length,
+    availableKeys: API_KEYS.filter(k => (keyStatus.get(k)?.rateLimitedUntil || 0) <= now).length,
+    keys: API_KEYS.map(k => {
+      const status = keyStatus.get(k)!;
+      return {
+        suffix: `...${k.slice(-4)}`,
+        requestCount: status.requestCount,
+        rateLimited: status.rateLimitedUntil > now,
+        rateLimitedFor: status.rateLimitedUntil > now ? Math.ceil((status.rateLimitedUntil - now) / 1000) : 0,
+      };
+    }),
+  };
+}
+
 // Helper: retry with exponential backoff on 429
 async function fetchWithRetry(
   url: string, 
@@ -468,7 +560,7 @@ function extractImagesFromResponse(responseData: any): string[] {
 router.get('/debug/logs', (_req: Request, res: Response) => {
   res.json({
     logs: debugLogs,
-    geminiKey: process.env.GEMINI_API_KEY ? `${process.env.GEMINI_API_KEY.slice(0, 10)}...` : 'NOT SET',
+    keyPool: getKeyPoolStats(),
     models: MODELS,
   });
 });
@@ -538,9 +630,10 @@ router.post('/generate', async (req: Request, res: Response) => {
     hasEditImage: !!editImage,
   });
   
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Get API key from pool (round-robin across accounts)
+  const apiKey = getApiKey();
   if (!apiKey) {
-    send('error', { error: 'GEMINI_API_KEY not configured', id });
+    send('error', { error: 'No GEMINI_API_KEY configured', id });
     res.end();
     return;
   }
@@ -799,7 +892,11 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
           const delay = attempt * baseDelay;
           const reason = response.status === 429 ? 'RATE LIMITED' : 'MODEL BUSY';
           console.log(`[Gen ${id}] ${response.status} ${reason}, retry ${attempt}/${maxRetries} in ${delay/1000}s`);
-          if (response.status === 429) queueStats.rateLimitHits++;
+          if (response.status === 429) {
+            queueStats.rateLimitHits++;
+            // Mark this key as rate-limited so we use a different one
+            markKeyRateLimited(apiKey, 60000); // 60 second cooldown
+          }
           send('progress', { status: 'retrying', message: `${reason}, RETRYING (${attempt}/${maxRetries})...`, progress: 40, id });
           await new Promise(r => setTimeout(r, delay));
           continue;
