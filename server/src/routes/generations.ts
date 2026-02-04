@@ -75,14 +75,16 @@ router.get('/my', async (req: Request, res: Response) => {
     const { generations, total } = await getGenerationsByUser(req.user.id, limit, offset);
     console.log(`[Generations] /my DB ${Date.now() - start}ms - found ${generations.length}/${total}`);
     
-    res.json({
+    const response = {
       generations: addUrls(generations),
       total,
       limit,
       offset,
       hasMore: offset + limit < total,
-    });
-    console.log(`[Generations] /my END ${Date.now() - start}ms`);
+    };
+    const jsonStr = JSON.stringify(response);
+    console.log(`[Generations] /my END ${Date.now() - start}ms - response size: ${(jsonStr.length / 1024).toFixed(1)} KB`);
+    res.json(response);
   } catch (err) {
     console.error(`[Generations] /my ERROR ${Date.now() - start}ms:`, err);
     res.status(500).json({ error: 'Failed to list your generations' });

@@ -298,7 +298,9 @@ export default function HistoryGrid({
         credentials: 'include',
       })
       console.log(`[HistoryGrid] Fetch response ${Math.round(performance.now() - start)}ms - status: ${res.status}`)
-      const data = await res.json()
+      const text = await res.text()
+      console.log(`[HistoryGrid] Response size: ${(text.length / 1024).toFixed(1)} KB`)
+      const data = JSON.parse(text)
       console.log(`[HistoryGrid] Fetch END ${Math.round(performance.now() - start)}ms - got ${data.generations?.length || 0} items`)
       
       if (append) {

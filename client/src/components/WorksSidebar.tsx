@@ -114,7 +114,9 @@ export function WorksSidebar({
       
       if (!res.ok) throw new Error('Failed to fetch')
       
-      const data = await res.json()
+      const text = await res.text()
+      console.log(`[Sidebar] Response size: ${(text.length / 1024).toFixed(1)} KB`)
+      const data = JSON.parse(text)
       console.log(`[Sidebar] Fetch END ${Math.round(performance.now() - start)}ms - got ${data.generations?.length || 0} items`)
       
       if (loadMore) {
