@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { StarOff, Expand, FolderOutput } from 'lucide-react'
+import { StarOff, Expand, FolderOutput, ImageOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Favorite } from './Favorites'
 import { getFavoriteThumbnailUrl } from './Favorites'
@@ -77,10 +77,7 @@ export function FavoriteItem({
     onImageFailed?.(favorite.id)
   }
   
-  // Hide failed images - with correct URL storage, failures should be rare
-  if (imageFailed) {
-    return null
-  }
+  // Show placeholder for failed images so user can delete them
   
   return (
     <motion.div
@@ -96,14 +93,20 @@ export function FavoriteItem({
       exit={{ opacity: 0 }}
       title={favorite.item_data.name || 'Favorite'}
     >
-      <img 
-        src={getFavoriteThumbnailUrl(favorite)} 
-        alt={favorite.item_data.name || ''} 
-        loading="lazy"
-        className={imageLoaded ? 'loaded' : ''}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-      />
+      {imageFailed ? (
+        <div className="favorite-failed">
+          <ImageOff className="w-5 h-5" />
+        </div>
+      ) : (
+        <img 
+          src={getFavoriteThumbnailUrl(favorite)} 
+          alt={favorite.item_data.name || ''} 
+          loading="lazy"
+          className={imageLoaded ? 'loaded' : ''}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+      )}
       
       {/* Expand button - top left, shows on hover */}
       <button

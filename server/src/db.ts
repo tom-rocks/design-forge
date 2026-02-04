@@ -102,6 +102,18 @@ export async function initDatabase() {
         END IF;
       END $$;
     `);
+    // Add status column for tracking broken/orphaned generations
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'generations' AND column_name = 'status'
+        ) THEN
+          ALTER TABLE generations ADD COLUMN status VARCHAR(20) DEFAULT 'complete';
+        END IF;
+      END $$;
+    `);
     console.log('[DB] Generations table ready');
     
     // Create indexes
@@ -299,7 +311,8 @@ export async function saveGeneration(params: SaveGenerationParams): Promise<Gene
 
 // Get all generations (paginated, newest first)
 export async function getGenerations(limit = 50, offset = 0): Promise<{ generations: Generation[]; total: number }> {
-  const countResult = await pool.query('SELECT COUNT(*) FROM generations');
+  // Exclude broken/orphaned generations
+  const countResult = await pool.query("SELECT COUNT(*) FROM generations WHERE status IS NULL OR status = 'complete'");
   const total = parseInt(countResult.rows[0].count, 10);
   
   // Select only needed columns - exclude large settings JSONB for list views
@@ -307,6 +320,7 @@ export async function getGenerations(limit = 50, offset = 0): Promise<{ generati
     `SELECT id, prompt, model, resolution, aspect_ratio, mode, parent_id, 
             image_paths, thumbnail_paths, created_at, user_id
      FROM generations 
+     WHERE status IS NULL OR status = 'complete'
      ORDER BY created_at DESC 
      LIMIT $1 OFFSET $2`,
     [limit, offset]
@@ -317,7 +331,11 @@ export async function getGenerations(limit = 50, offset = 0): Promise<{ generati
 
 // Get generations by user ID (paginated, newest first)
 export async function getGenerationsByUser(userId: string, limit = 50, offset = 0): Promise<{ generations: Generation[]; total: number }> {
-  const countResult = await pool.query('SELECT COUNT(*) FROM generations WHERE user_id = $1', [userId]);
+  // Exclude broken/orphaned generations from counts and results
+  const countResult = await pool.query(
+    "SELECT COUNT(*) FROM generations WHERE user_id = $1 AND (status IS NULL OR status = 'complete')", 
+    [userId]
+  );
   const total = parseInt(countResult.rows[0].count, 10);
   
   // Select only needed columns - exclude large settings JSONB for list views
@@ -325,7 +343,7 @@ export async function getGenerationsByUser(userId: string, limit = 50, offset = 
     `SELECT id, prompt, model, resolution, aspect_ratio, mode, parent_id, 
             image_paths, thumbnail_paths, created_at, user_id
      FROM generations 
-     WHERE user_id = $1 
+     WHERE user_id = $1 AND (status IS NULL OR status = 'complete')
      ORDER BY created_at DESC 
      LIMIT $2 OFFSET $3`,
     [userId, limit, offset]
@@ -358,6 +376,18 @@ export async function deleteGeneration(id: string): Promise<boolean> {
     'DELETE FROM generations WHERE id = $1 RETURNING id',
     [id]
   );
+  return result.rowCount !== null && result.rowCount > 0;
+}
+
+// Mark a generation as broken (missing images) - excludes from list queries
+export async function markGenerationBroken(id: string): Promise<boolean> {
+  const result = await pool.query(
+    "UPDATE generations SET status = 'broken' WHERE id = $1 RETURNING id",
+    [id]
+  );
+  // Clear from cache if it was cached
+  generationCache.delete(id);
+  console.log(`[DB] Marked generation ${id} as broken`);
   return result.rowCount !== null && result.rowCount > 0;
 }
 

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getGenerations, getGenerationsByUser, getGeneration, deleteGeneration, getEditChain } from '../db.js';
+import { getGenerations, getGenerationsByUser, getGeneration, deleteGeneration, getEditChain, markGenerationBroken } from '../db.js';
 import { getImagePath, getThumbnailPath, fileExists, deleteImages, readImageAsBase64 } from '../storage.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -156,6 +156,8 @@ router.get('/:id/image/:index', async (req: Request, res: Response) => {
     const exists = await fileExists(imagePath);
     if (!exists) {
       log('error', `[${reqId}] File not found on disk: ${imagePath}`);
+      // Auto-mark generation as broken so it doesn't appear in future lists
+      await markGenerationBroken(req.params.id);
       res.status(404).json({ error: 'Image file not found', path: imagePath });
       return;
     }
