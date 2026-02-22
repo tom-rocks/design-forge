@@ -120,9 +120,9 @@ export function ImageCanvas({ images, onZoomChange, onImageError }: ImageCanvasP
               <motion.div
                 key={url}
                 className="image-canvas-item"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.08, duration: 0.3, ease: 'easeOut' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
               >
                 <img src={url} alt={`Output ${i + 1}`} draggable={false} onError={onImageError} />
               </motion.div>
