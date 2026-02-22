@@ -156,6 +156,9 @@ body {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   -webkit-font-smoothing: antialiased;
+  /* Prevent accidental text selection on UI elements */
+  user-select: none;
+  -webkit-user-select: none;
   min-height: 100vh;
 }
 
@@ -472,6 +475,9 @@ textarea.textarea.floating-prompt-input {
   transition: color 0.15s ease-out, text-shadow 0.15s ease-out;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  min-height: 100px;
+  max-height: 300px;
+  resize: vertical;
 }
 
 textarea.textarea.floating-prompt-input::-webkit-scrollbar {
@@ -552,16 +558,16 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-box {
-  width: 104px;
-  height: 600px;
+  width: 102px;
+  height: 480px;
   pointer-events: auto;
   background-color: #e8e4e0;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   border: 1px solid #d0ccc8;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   position: relative;
 }
 
@@ -572,13 +578,13 @@ textarea.textarea.floating-prompt-input.forging {
   position: absolute;
   left: 0;
   right: 0;
-  height: 20px;
+  height: 16px;
   pointer-events: none;
   z-index: 10;
 }
 
 .gen-panel-box::before {
-  top: 40px; /* Below header */
+  top: 32px; /* Below header */
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.1) 0%,
@@ -588,7 +594,7 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-box::after {
-  bottom: 40px; /* Above footer */
+  bottom: 32px; /* Above footer */
   background: linear-gradient(
     to top,
     rgba(0, 0, 0, 0.1) 0%,
@@ -601,21 +607,21 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 40px;
+  gap: 5px;
+  height: 32px;
   background-color: #e8e4e0;
   flex-shrink: 0;
 }
 
 .gen-panel-head .btn-icon,
 .gen-panel-head .gen-panel-icon {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   opacity: 0.7;
 }
 
 .gen-panel-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -626,8 +632,8 @@ textarea.textarea.floating-prompt-input.forging {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px 10px 6px 10px;
-  padding-right: 14px; /* Extra padding for scrollbar space */
+  padding: 5px 8px 5px 8px;
+  padding-right: 11px; /* Extra padding for scrollbar space */
   background-color: #e8e4e0;
   scrollbar-width: none; /* Hide Firefox scrollbar */
 }
@@ -651,14 +657,14 @@ textarea.textarea.floating-prompt-input.forging {
 .gen-panel-items {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .gen-panel-thumb {
   position: relative;
-  width: 108px;
-  height: 108px;
-  border-radius: 5px;
+  width: 86px;
+  height: 86px;
+  border-radius: 4px;
   overflow: hidden;
   background-color: #c8c4c0;
   border: none;
@@ -714,7 +720,7 @@ textarea.textarea.floating-prompt-input.forging {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 5px;
+  border-radius: 4px;
   padding: 2px;
   background: linear-gradient(
     135deg,
@@ -771,6 +777,32 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .gen-panel-cancel:hover {
+  opacity: 1;
+  background: var(--accent);
+  transform: scale(1.1);
+}
+
+/* Replay button on pending generations */
+.gen-panel-replay {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0.8;
+  transition: opacity 0.15s, background 0.15s, transform 0.15s;
+}
+
+.gen-panel-replay:hover {
   opacity: 1;
   background: var(--accent);
   transform: scale(1.1);
@@ -925,12 +957,12 @@ textarea.textarea.floating-prompt-input.forging {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 40px;
+  gap: 5px;
+  height: 32px;
   border: none;
   background: #e8e4e0;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -953,19 +985,19 @@ textarea.textarea.floating-prompt-input.forging {
 /* Taller sidebar on larger screens */
 @media (min-height: 800px) {
   .gen-panel-box {
-    height: 700px;
+    height: 560px;
   }
 }
 
 @media (min-height: 900px) {
   .gen-panel-box {
-    height: 780px;
+    height: 624px;
   }
 }
 
 @media (min-height: 1000px) {
   .gen-panel-box {
-    height: 860px;
+    height: 688px;
   }
 }
 
@@ -1508,6 +1540,9 @@ textarea.textarea.floating-prompt-input.forging {
     inset 0 2px 4px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(0, 0, 0, 0.06);
   transition: all 0.15s ease;
+  /* Re-enable text selection for inputs */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .input:focus, .textarea:focus {
@@ -1523,8 +1558,9 @@ textarea.textarea.floating-prompt-input.forging {
 }
 
 .textarea {
-  resize: none;
+  resize: vertical;
   line-height: 1.5;
+  min-height: 80px;
 }
 
 /* Hot prompt effect during replay - kept for backwards compatibility */
@@ -4530,6 +4566,13 @@ textarea.textarea.floating-prompt-input.forging {
   gap: 8px;
 }
 
+.gallery-loading-more {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
 .gallery-preview {
   display: flex;
   align-items: center;
@@ -5738,6 +5781,15 @@ textarea.textarea.floating-prompt-input.forging {
   text-transform: uppercase;
 }
 
+.alloy-modal-paste-hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-left: auto;
+  margin-right: 12px;
+  opacity: 0.8;
+}
+
 .alloy-modal-close {
   margin-left: auto;
   width: 36px;
@@ -5862,6 +5914,20 @@ textarea.textarea.floating-prompt-input.forging {
 .prompt-alloy-row.dragging {
   background: rgba(255, 87, 34, 0.06);
   border-top-color: var(--accent);
+}
+
+.prompt-alloy-row.paste-active {
+  background: rgba(255, 87, 34, 0.08);
+  border-top-color: var(--accent);
+  cursor: pointer;
+}
+
+.prompt-alloy-row.paste-active .prompt-alloy-label::after {
+  content: '⌘V to paste';
+  font-size: 10px;
+  color: var(--accent);
+  margin-left: 8px;
+  font-weight: 500;
 }
 
 .prompt-alloy-label {

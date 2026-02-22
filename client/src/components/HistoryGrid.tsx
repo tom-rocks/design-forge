@@ -455,7 +455,21 @@ export default function HistoryGrid({
     }
     
     // Build replay config from stored generation data
-    // Future-proof: spread settings so new params auto-included
+    // For edit mode: try parent_id first, then saved editImageUrl, then fall back to result
+    let editImageUrl: string | undefined
+    if (fullGen.mode === 'edit') {
+      if (fullGen.parent_id) {
+        // Has parent generation - use it as the original source
+        editImageUrl = `/api/generations/${fullGen.parent_id}/image/0`
+      } else if (fullGen.settings?.editImageUrl) {
+        // Has saved editImageUrl from settings (e.g., asset or external URL)
+        editImageUrl = fullGen.settings.editImageUrl
+      } else {
+        // Last resort: use result image for continued refinement
+        editImageUrl = fullGen.imageUrls?.[0]
+      }
+    }
+    
     const config: ReplayConfig = {
       prompt: fullGen.prompt,
       mode: fullGen.mode || 'create',
@@ -465,9 +479,7 @@ export default function HistoryGrid({
       numImages: fullGen.settings?.numImages,
       references: fullGen.settings?.styleImages,
       // For edit mode, include the parent image URL (path only - API_URL added by handleReplay)
-      editImageUrl: fullGen.mode === 'edit' && fullGen.parent_id 
-        ? `/api/generations/${fullGen.parent_id}/image/0`
-        : undefined,
+      editImageUrl,
       ...fullGen.settings, // Include any additional settings for future compatibility
     }
     

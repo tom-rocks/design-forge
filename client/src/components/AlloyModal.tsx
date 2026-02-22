@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { X, Trash2, Swords, Box, Star, Layers, ImagePlus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Thumb } from './Thumb'
 import { API_URL } from '../config'
+import { uploadAsset } from '../lib/assets'
 import HighriseSearch from './HighriseSearch'
 import HistoryGrid, { type ReplayConfig } from './HistoryGrid'
 import { Favorites } from './Favorites'
@@ -58,6 +59,41 @@ export function AlloyModal({
   const [isDragging, setIsDragging] = useState(false)
   const [localFavoritesResetKey, setLocalFavoritesResetKey] = useState(0)
 
+  // Handle paste when modal is open
+  useEffect(() => {
+    if (!isOpen) return
+    
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault()
+          const file = item.getAsFile()
+          if (!file) continue
+          
+          const reader = new FileReader()
+          reader.onload = async (ev) => {
+            const dataUrl = ev.target?.result as string
+            const url = await uploadAsset(dataUrl)
+            onAddReference({
+              id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              url,
+              name: 'Pasted image',
+              type: 'file'
+            })
+          }
+          reader.readAsDataURL(file)
+          break
+        }
+      }
+    }
+    
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [isOpen, onAddReference])
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -83,8 +119,10 @@ export function AlloyModal({
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
     files.forEach(file => {
       const reader = new FileReader()
-      reader.onload = (ev) => {
-        const url = ev.target?.result as string
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target?.result as string
+        // Upload to server for efficient reuse
+        const url = await uploadAsset(dataUrl)
         onAddReference({
           id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           url,
@@ -121,6 +159,7 @@ export function AlloyModal({
               <span className="panel-icon icon-alloy" />
               <span className="alloy-modal-title">Alloy</span>
               <span className="alloy-modal-subtitle">image references</span>
+              <span className="alloy-modal-paste-hint">⌘V to paste image</span>
               <button className="alloy-modal-close" onClick={onClose}>
                 <X className="w-5 h-5" />
               </button>

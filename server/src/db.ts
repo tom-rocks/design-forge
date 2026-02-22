@@ -771,9 +771,9 @@ export async function saveAlloy(params: {
   // Create new alloy
   const result = await pool.query<SavedAlloy>(
     `INSERT INTO saved_alloys (user_id, name, items, generation_id)
-     VALUES ($1, $2, $3, $4)
+     VALUES ($1, $2, $3::jsonb, $4)
      RETURNING *`,
-    [userId, name, items, generationId || null]
+    [userId, name, JSON.stringify(items), generationId || null]
   );
   
   console.log(`[DB] Saved new alloy ${result.rows[0].id} for user ${userId}`);

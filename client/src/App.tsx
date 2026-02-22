@@ -3,6 +3,7 @@ import { LogIn, Plus, X, Search, Trash2, Star, Download, Flame, Hammer, Gem, Rot
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from './config'
 import { useAuth } from './hooks/useAuth'
+import { uploadAsset } from './lib/assets'
 import { checkAPContext, waitForAP } from './lib/ap-bridge'
 import { 
   Button, 
@@ -57,6 +58,7 @@ interface GenerationResult {
   model?: string
   styleImages?: { url: string; name?: string }[]
   parentId?: string | null // For edit mode - the parent generation that was refined
+  editImageUrl?: string // For replay when parentId is null (e.g., asset or external URL)
 }
 
 /* ============================================
@@ -142,6 +144,8 @@ export default function App() {
     references: Reference[]
     editImageUrl?: string
     completedId?: string  // Server ID once complete - used for smooth transition
+    aspectRatio?: string  // For replay
+    resolution?: string   // For replay
   }>>([])
   
   
@@ -182,14 +186,19 @@ export default function App() {
     settings?: {
       styleImages?: { url: string; name?: string }[]
       negativePrompt?: string
+      editImageUrl?: string // For replay when parentId is null
     }
   }
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
+  const [galleryLoadingMore, setGalleryLoadingMore] = useState(false)
+  const [galleryHasMore, setGalleryHasMore] = useState(false)
+  const [galleryOffset, setGalleryOffset] = useState(0)
   const [galleryExpanded, setGalleryExpanded] = useState<GalleryImage | null>(null)
   const [gallerySearch, setGallerySearch] = useState('')
   const [galleryLoadedImages, setGalleryLoadedImages] = useState<Set<string>>(new Set())
+  const galleryGridRef = useRef<HTMLDivElement>(null)
   
   // Abort controllers for cancelling generations (keyed by generation ID)
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
@@ -221,48 +230,93 @@ export default function App() {
     refineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
   
-  // Open works gallery (kept for potential future use)
-  const openGallery = useCallback(async () => {
-    setGalleryOpen(true)
-    setGalleryLoading(true)
-    setGalleryExpanded(null)
-    setGallerySearch('')
-    setGalleryLoadedImages(new Set())
+  // Helper to convert generations to gallery images
+  const generationsToGalleryImages = useCallback((generations: any[]): GalleryImage[] => {
+    const images: GalleryImage[] = []
+    for (const gen of generations || []) {
+      const thumbBase = gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : null
+      for (let i = 0; i < gen.imageUrls.length; i++) {
+        const fullUrl = `${API_URL}${gen.imageUrls[i]}`
+        images.push({
+          url: fullUrl,
+          thumbUrl: i === 0 && thumbBase ? thumbBase : fullUrl,
+          prompt: gen.prompt,
+          id: `${gen.id}-${i}`,
+          generationId: gen.id,
+          mode: gen.mode || 'create',
+          model: gen.model,
+          resolution: gen.resolution,
+          aspectRatio: gen.aspect_ratio,
+          parentId: gen.parent_id,
+          settings: gen.settings
+        })
+      }
+    }
+    return images
+  }, [])
+
+  // Fetch gallery with pagination
+  const fetchGallery = useCallback(async (append = false) => {
+    const currentOffset = append ? galleryOffset + 50 : 0
+    
+    if (append) {
+      setGalleryLoadingMore(true)
+    } else {
+      setGalleryLoading(true)
+      setGalleryImages([])
+    }
+    
     try {
-      const res = await fetch(`${API_URL}/api/generations/my`, { credentials: 'include' })
+      const res = await fetch(`${API_URL}/api/generations/my?limit=50&offset=${currentOffset}`, { 
+        credentials: 'include' 
+      })
       if (res.ok) {
         const data = await res.json()
-        // Flatten all images from all generations, using thumbnails for grid
-        const images: GalleryImage[] = []
-        for (const gen of data.generations || []) {
-          // Use generation thumbnail for first image, fall back to full URL
-          const thumbBase = gen.thumbnailUrl ? `${API_URL}${gen.thumbnailUrl}` : null
-          for (let i = 0; i < gen.imageUrls.length; i++) {
-            const fullUrl = `${API_URL}${gen.imageUrls[i]}`
-            images.push({
-              url: fullUrl,
-              thumbUrl: i === 0 && thumbBase ? thumbBase : fullUrl,
-              prompt: gen.prompt,
-              id: `${gen.id}-${i}`,
-              generationId: gen.id, // Store actual UUID for API calls
-              mode: gen.mode || 'create',
-              model: gen.model,
-              resolution: gen.resolution,
-              aspectRatio: gen.aspect_ratio,
-              parentId: gen.parent_id,
-              settings: gen.settings
-            })
-          }
+        const newImages = generationsToGalleryImages(data.generations)
+        
+        if (append) {
+          setGalleryImages(prev => [...prev, ...newImages])
+        } else {
+          setGalleryImages(newImages)
         }
-        setGalleryImages(images)
+        
+        setGalleryOffset(currentOffset)
+        setGalleryHasMore(data.hasMore || false)
       }
     } catch (e) {
       console.error('Failed to load gallery:', e)
     } finally {
       setGalleryLoading(false)
+      setGalleryLoadingMore(false)
     }
-  }, [])
-  void openGallery // Suppress unused warning - gallery still rendered, just no UI trigger currently
+  }, [galleryOffset, generationsToGalleryImages])
+
+  // Open works gallery
+  const openGallery = useCallback(async () => {
+    setGalleryOpen(true)
+    setGalleryExpanded(null)
+    setGallerySearch('')
+    setGalleryLoadedImages(new Set())
+    setGalleryOffset(0)
+    fetchGallery(false)
+  }, [fetchGallery])
+  
+  // Gallery infinite scroll
+  useEffect(() => {
+    if (!galleryOpen) return
+    const grid = galleryGridRef.current
+    if (!grid) return
+    
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = grid
+      if (scrollHeight - scrollTop - clientHeight < 200 && galleryHasMore && !galleryLoadingMore) {
+        fetchGallery(true)
+      }
+    }
+    
+    grid.addEventListener('scroll', handleScroll)
+    return () => grid.removeEventListener('scroll', handleScroll)
+  }, [galleryOpen, galleryHasMore, galleryLoadingMore, fetchGallery])
   
   // Memoized filtered gallery images - prevents recomputation on every render
   const filteredGalleryImages = useMemo(() => {
@@ -585,12 +639,6 @@ export default function App() {
   
   // Replay a previous generation's settings with visual feedback
   const handleReplay = useCallback((config: ReplayConfig) => {
-    console.log('[Replay] Config received:', { 
-      mode: config.mode, 
-      editImageUrl: config.editImageUrl,
-      hasReferences: config.references?.length 
-    })
-    
     // Mark that we're replaying to prevent intro animations from interfering
     isReplayingRef.current = true
     
@@ -604,7 +652,6 @@ export default function App() {
     // For edit mode, set the edit image (this derives mode automatically)
     if (config.mode === 'edit' && config.editImageUrl) {
       const fullUrl = `${API_URL}${config.editImageUrl}`
-      console.log('[Replay] Setting edit image for refine replay:', fullUrl)
       
       // First clear everything to force AnimatePresence to see a proper exit
       setResult(null)
@@ -614,19 +661,19 @@ export default function App() {
       // Preload the image before showing it, so animation plays with visible content
       const img = new Image()
       img.onload = () => {
-        console.log('[Replay] Parent image preloaded, now showing')
+        // Clear result again in case something set it during preload (race condition fix)
+        setResult(null)
         setEditImage({ url: fullUrl })
         detectAndSetAspectRatio(fullUrl)
       }
       img.onerror = () => {
         // Still show even if preload fails (might work via ImageCanvas)
-        console.log('[Replay] Preload failed, showing anyway')
+        setResult(null)
         setEditImage({ url: fullUrl })
         detectAndSetAspectRatio(fullUrl)
       }
       img.src = fullUrl
     } else {
-      console.log('[Replay] Clearing for forge mode. mode:', config.mode, 'editImageUrl:', config.editImageUrl)
       // Clear edit image and canvas for create/forge mode
       setEditImage(null)
       setResult(null)
@@ -709,9 +756,13 @@ export default function App() {
     
     // Extract parent generation ID from edit image URL if present
     // URL pattern: .../api/generations/{uuid}/image/{index}
-    const parentIdMatch = genEditImage?.url?.match(/\/api\/generations\/([a-fA-F0-9-]+)\/image\//i)
+    const editUrl = genEditImage?.url || ''
+    const parentIdMatch = editUrl.match(/\/api\/generations\/([a-fA-F0-9-]+)\/image\//i)
     const genParentId = parentIdMatch?.[1] || null
-    console.log('[Generate] Edit image URL:', genEditImage?.url, 'Extracted parentId:', genParentId)
+    console.log('[Generate] Edit image URL:', editUrl)
+    console.log('[Generate] URL length:', editUrl.length, 'starts with data:', editUrl.startsWith('data:'), 'starts with blob:', editUrl.startsWith('blob:'))
+    console.log('[Generate] Regex match result:', parentIdMatch)
+    console.log('[Generate] Extracted parentId:', genParentId)
     
     // Add to pending generations at the top and auto-select it
     setPendingGenerations(prev => [{
@@ -720,7 +771,9 @@ export default function App() {
       outputCount: genOutputCount,
       mode: genMode,
       references: [...genReferences],
-      editImageUrl: genEditImage?.url
+      editImageUrl: genEditImage?.url,
+      aspectRatio: genAspectRatio,
+      resolution: genResolution
     }, ...prev])
     setSelectedPendingId(genId)
     
@@ -770,6 +823,54 @@ export default function App() {
     }
 
     try {
+      // Ensure asset URLs are fresh (re-upload if needed, since assets are in-memory and may expire)
+      let finalEditImageUrl = genEditImage?.url
+      if (finalEditImageUrl?.includes('/api/assets/')) {
+        try {
+          // Fetch the image (browser may have it cached)
+          const imgResponse = await fetch(`${API_URL}${finalEditImageUrl}`)
+          if (!imgResponse.ok) {
+            // Asset expired - try to get from canvas and re-upload
+            const blob = await new Promise<Blob | null>((resolve) => {
+              const img = new Image()
+              img.crossOrigin = 'anonymous'
+              img.onload = () => {
+                const canvas = document.createElement('canvas')
+                canvas.width = img.naturalWidth
+                canvas.height = img.naturalHeight
+                const ctx = canvas.getContext('2d')
+                ctx?.drawImage(img, 0, 0)
+                canvas.toBlob(resolve, 'image/png')
+              }
+              img.onerror = () => resolve(null)
+              img.src = `${API_URL}${finalEditImageUrl}`
+            })
+            
+            if (blob) {
+              const reader = new FileReader()
+              const dataUrl = await new Promise<string>((resolve) => {
+                reader.onload = () => resolve(reader.result as string)
+                reader.readAsDataURL(blob)
+              })
+              // Re-upload the image
+              const uploadRes = await fetch(`${API_URL}/api/assets/upload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ data: dataUrl }),
+              })
+              if (uploadRes.ok) {
+                const { assetId } = await uploadRes.json()
+                finalEditImageUrl = `/api/assets/${assetId}`
+                console.log('[Generate] Re-uploaded expired asset:', finalEditImageUrl)
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[Generate] Failed to refresh asset:', e)
+        }
+      }
+      
       console.log('[Generate] Sending request:', { 
         genId,
         mode: genMode, 
@@ -790,8 +891,9 @@ export default function App() {
           styleImages: genReferences.map(r => ({ url: r.url, strength: 1 })),
           mode: genMode,
           numImages: genOutputCount,
-          ...(genMode === 'edit' && genEditImage?.url ? { 
-            editImage: genEditImage.url,
+          ...(genMode === 'edit' && finalEditImageUrl ? { 
+            editImage: finalEditImageUrl,
+            editImageUrl: finalEditImageUrl, // Save URL for replay (separate from content)
             parentId: genParentId // Store parent generation for replay functionality
           } : {}),
         }),
@@ -819,7 +921,6 @@ export default function App() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             if (currentEvent === 'complete') {
-              console.log('[Complete] Setting result with mode:', genMode, 'parentId:', genParentId)
               setResult({ 
                 imageUrl: data.imageUrl, 
                 imageUrls: data.imageUrls, 
@@ -828,7 +929,8 @@ export default function App() {
                 aspectRatio: genAspectRatio,
                 resolution: genResolution,
                 parentId: genParentId,
-                styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name }))
+                styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name })),
+                editImageUrl: finalEditImageUrl // For replay - the original image that was refined
               })
               setViewingPastWork(false)
               // Mark pending as completed (don't remove yet - sidebar will handle smooth transition)
@@ -843,6 +945,7 @@ export default function App() {
                   const alloyItems = genReferences.map(ref => ({ url: ref.url, name: ref.name }))
                   // Create name from prompt (first 40 chars) or fallback
                   const alloyName = genPrompt.slice(0, 40).trim() || `Alloy ${new Date().toLocaleDateString()}`
+                  console.log('[Alloy] Auto-saving:', { name: alloyName, itemCount: alloyItems.length })
                   fetch(`${API_URL}/api/alloys`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -852,7 +955,17 @@ export default function App() {
                       items: alloyItems,
                       generationId: data.generationId,
                     }),
-                  }).catch(err => console.error('[Alloy] Auto-save failed:', err))
+                  })
+                    .then(res => {
+                      if (!res.ok) {
+                        console.error('[Alloy] Auto-save response not ok:', res.status)
+                        return res.text().then(t => console.error('[Alloy] Response:', t))
+                      }
+                      console.log('[Alloy] Auto-saved successfully')
+                    })
+                    .catch(err => console.error('[Alloy] Auto-save failed:', err))
+                } else {
+                  console.log('[Alloy] Skipping auto-save:', { refs: genReferences.length, authenticated })
                 }
               } else {
                 // No server ID (anonymous?) - remove pending immediately
@@ -921,18 +1034,21 @@ export default function App() {
     }
   }, [selectedPendingId])
   
-  // Select a pending generation - navigate to it and restore its setup
+  // Select a pending generation - navigate to it and restore its setup for replay
   const handleSelectPending = useCallback((pendingId: string) => {
     setSelectedPendingId(pendingId)
     // Clear current result to show the generating view for this pending item
     setResult(null)
     setViewingPastWork(false)
     
-    // Find the pending generation and restore its setup
+    // Find the pending generation and restore its full setup (enables replay)
     const pending = pendingGenerations.find(p => p.id === pendingId)
     if (pending) {
       setPrompt(pending.prompt)
-      setReferences(pending.references)
+      setReferences(pending.references || [])
+      // Restore aspect ratio and resolution for replay
+      if (pending.aspectRatio) setAspectRatio(pending.aspectRatio)
+      if (pending.resolution) setResolution(pending.resolution)
       if (pending.mode === 'edit' && pending.editImageUrl) {
         setEditImage({ url: pending.editImageUrl })
       } else {
@@ -943,6 +1059,37 @@ export default function App() {
       setEditImage(null)
     }
   }, [pendingGenerations])
+
+  // Replay a pending generation - starts a new generation with same settings
+  const handleReplayPending = useCallback((pending: {
+    id: string
+    prompt: string
+    mode: 'create' | 'edit'
+    references?: Reference[]
+    editImageUrl?: string
+    aspectRatio?: string
+    resolution?: string
+  }) => {
+    // Load settings from pending generation
+    setPrompt(pending.prompt)
+    setReferences(pending.references || [])
+    if (pending.aspectRatio) setAspectRatio(pending.aspectRatio)
+    if (pending.resolution) setResolution(pending.resolution)
+    if (pending.mode === 'edit' && pending.editImageUrl) {
+      setEditImage({ url: pending.editImageUrl })
+    } else {
+      setEditImage(null)
+      setCanvasMode('forge')
+    }
+    // Clear result and viewing state to show fresh canvas
+    setResult(null)
+    setViewingPastWork(false)
+    setSelectedPendingId(null)
+    // Trigger generation after a brief delay to let state settle
+    setTimeout(() => {
+      handleGenerate()
+    }, 50)
+  }, [handleGenerate])
 
   const addReference = (ref: Reference) => {
     setReferences(prev => {
@@ -1054,8 +1201,13 @@ export default function App() {
     // Always use first dropped image as edit source for refining
     const file = files[0]
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      const url = ev.target?.result as string
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string
+      // Upload to server for efficient reuse
+      const url = await uploadAsset(dataUrl)
+      // Clear result so canvas shows the new edit image instead of old output
+      setResult(null)
+      setViewingPastWork(false)
       setEditImage({ url })
       detectAndSetAspectRatio(url)
     }
@@ -1075,8 +1227,10 @@ export default function App() {
     // Add all dropped images as alloy references (up to max 14)
     files.forEach(file => {
       const reader = new FileReader()
-      reader.onload = (ev) => {
-        const url = ev.target?.result as string
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target?.result as string
+        // Upload to server for efficient reuse (avoids sending base64 on every generation)
+        const url = await uploadAsset(dataUrl)
         const newRef: Reference = {
           id: `drop-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           url,
@@ -1104,8 +1258,10 @@ export default function App() {
           if (!file) continue
           
           const reader = new FileReader()
-          reader.onload = (ev) => {
-            const url = ev.target?.result as string
+          reader.onload = async (ev) => {
+            const dataUrl = ev.target?.result as string
+            // Upload to server for efficient reuse
+            const url = await uploadAsset(dataUrl)
             
             if (activeDropTarget === 'refine') {
               // Paste to refinement
@@ -1209,6 +1365,12 @@ export default function App() {
       <WorksSidebar
         authenticated={authenticated}
         onSelectImage={async (imageUrl, generation) => {
+          console.log('[SelectImage] Initial generation:', { 
+            id: generation.id, 
+            mode: generation.mode, 
+            parent_id: generation.parent_id 
+          })
+          
           const genMode = generation.mode || 'create'
           
           // Fetch full generation data including settings (excluded from list queries for performance)
@@ -1218,27 +1380,37 @@ export default function App() {
               const res = await fetch(`${API_URL}/api/generations/${generation.id}`, { credentials: 'include' })
               if (res.ok) {
                 fullGeneration = await res.json()
+                console.log('[SelectImage] Fetched full generation:', { 
+                  id: fullGeneration.id, 
+                  mode: fullGeneration.mode, 
+                  parent_id: fullGeneration.parent_id 
+                })
               }
             } catch (e) {
               console.error('Failed to fetch full generation:', e)
             }
           }
           
+          // Use mode from fetched data if available (more reliable than list query)
+          const finalMode = fullGeneration.mode || genMode
+          console.log('[SelectImage] Setting result with mode:', finalMode, 'parentId:', fullGeneration.parent_id)
+          
           // Store result info for reference (used by Replay button)
           setResult({
             imageUrl: imageUrl,
             imageUrls: fullGeneration.imageUrls?.map((url: string) => `${API_URL}${url}`) || generation.imageUrls.map(url => `${API_URL}${url}`),
             prompt: fullGeneration.prompt,
-            mode: genMode,
+            mode: finalMode,
             aspectRatio: fullGeneration.aspect_ratio || '1:1',
             resolution: fullGeneration.resolution || '1024',
             model: fullGeneration.model,
             styleImages: fullGeneration.settings?.styleImages,
-            parentId: fullGeneration.parent_id
+            parentId: fullGeneration.parent_id,
+            editImageUrl: fullGeneration.settings?.editImageUrl // For replay when parent_id is null
           })
           
           // Set mode and load data based on original generation type
-          if (genMode === 'edit') {
+          if (finalMode === 'edit') {
             // Refine result: show as edit source for further refinement
             // Clear prompt and alloys - user will give NEW instructions
             setPrompt('')
@@ -1307,6 +1479,7 @@ export default function App() {
         pendingGenerations={pendingGenerations}
         onCancelPending={handleCancelPending}
         onSelectPending={handleSelectPending}
+        onReplayPending={handleReplayPending}
         onPendingComplete={(pendingId) => {
           // Remove pending item and update isGenerating state
           setPendingGenerations(prev => {
@@ -1718,12 +1891,20 @@ export default function App() {
                   className="canvas-control-btn"
                   onClick={() => {
                     if (result) {
-                      const editImageUrl = result.mode === 'edit' && result.parentId 
-                        ? `/api/generations/${result.parentId}/image/0`
-                        : undefined
-                      console.log('[Replay Button] Full result:', result)
-                      console.log('[Replay Button] Computed editImageUrl:', editImageUrl)
-                      console.log('[Replay Button] Condition check: mode=', result.mode, 'parentId=', result.parentId)
+                      // For edit mode: try parent_id first, then saved editImageUrl, then fall back to result
+                      let editImageUrl: string | undefined
+                      if (result.mode === 'edit') {
+                        if (result.parentId) {
+                          // Has parent generation - use it as the original source
+                          editImageUrl = `/api/generations/${result.parentId}/image/0`
+                        } else if (result.editImageUrl) {
+                          // Has saved editImageUrl from settings (e.g., asset or external URL)
+                          editImageUrl = result.editImageUrl
+                        } else {
+                          // Last resort: use result image for continued refinement
+                          editImageUrl = result.imageUrl
+                        }
+                      }
                       handleReplay({
                         prompt: result.prompt,
                         mode: result.mode || 'create',
@@ -1901,7 +2082,8 @@ export default function App() {
           
           {/* Alloy row - shows selected references below prompt */}
           <div 
-            className={`prompt-alloy-row ${isDraggingAlloy ? 'dragging' : ''}`}
+            className={`prompt-alloy-row ${isDraggingAlloy ? 'dragging' : ''} ${activeDropTarget === 'refs' ? 'paste-active' : ''}`}
+            onClick={() => setActiveDropTarget(activeDropTarget === 'refs' ? null : 'refs')}
             onDragOver={(e) => { e.preventDefault(); setIsDraggingAlloy(true) }}
             onDragLeave={(e) => { 
               if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -2055,6 +2237,20 @@ export default function App() {
                     }
                   }
                   
+                  // For edit mode: try parentId first, then saved editImageUrl, then fall back to result
+                  let editImageUrl: string | undefined
+                  if (galleryExpanded.mode === 'edit') {
+                    if (galleryExpanded.parentId) {
+                      editImageUrl = `/api/generations/${galleryExpanded.parentId}/image/0`
+                    } else if (settings?.editImageUrl) {
+                      // Has saved editImageUrl from settings (e.g., asset or external URL)
+                      editImageUrl = settings.editImageUrl
+                    } else {
+                      // Last resort: use result image for continued refinement
+                      editImageUrl = galleryExpanded.url
+                    }
+                  }
+                  
                   handleReplay({
                     prompt: galleryExpanded.prompt,
                     mode: galleryExpanded.mode,
@@ -2062,10 +2258,7 @@ export default function App() {
                     resolution: galleryExpanded.resolution,
                     aspectRatio: galleryExpanded.aspectRatio,
                     references: settings?.styleImages,
-                    // For edit mode, include the parent image URL
-                    editImageUrl: galleryExpanded.mode === 'edit' && galleryExpanded.parentId
-                      ? `/api/generations/${galleryExpanded.parentId}/image/0`
-                      : undefined,
+                    editImageUrl,
                   })
                   setGalleryExpanded(null)
                   setGalleryOpen(false)
@@ -2127,7 +2320,7 @@ export default function App() {
                     />
                   </div>
                 </div>
-                <div className="gallery-content">
+                <div className="gallery-content" ref={galleryGridRef}>
                   {galleryLoading ? (
                     <div className="gallery-loading">Loading your works...</div>
                   ) : galleryImages.length === 0 ? (
@@ -2135,33 +2328,38 @@ export default function App() {
                   ) : filteredGalleryImages.length === 0 ? (
                     <div className="gallery-empty">No works match your search</div>
                   ) : (
-                    <div className="gallery-grid">
-                      {filteredGalleryImages.map((img) => (
-                        <div
-                          key={img.id}
-                          className="gallery-item"
-                          onClick={() => setGalleryExpanded(img)}
-                        >
-                          {!galleryLoadedImages.has(img.id) && (
-                            <div className="gallery-item-skeleton" />
-                          )}
-                          <img 
-                            src={img.thumbUrl} 
-                            alt={img.prompt} 
-                            loading="lazy"
-                            className={galleryLoadedImages.has(img.id) ? 'loaded' : ''}
-                            onLoad={() => handleGalleryImageLoad(img.id)}
-                          />
-                          <button
-                            className="gallery-item-delete"
-                            onClick={(e) => deleteGalleryImage(img, e)}
-                            title="Delete"
+                    <>
+                      <div className="gallery-grid">
+                        {filteredGalleryImages.map((img) => (
+                          <div
+                            key={img.id}
+                            className="gallery-item"
+                            onClick={() => setGalleryExpanded(img)}
                           >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                            {!galleryLoadedImages.has(img.id) && (
+                              <div className="gallery-item-skeleton" />
+                            )}
+                            <img 
+                              src={img.thumbUrl} 
+                              alt={img.prompt} 
+                              loading="lazy"
+                              className={galleryLoadedImages.has(img.id) ? 'loaded' : ''}
+                              onLoad={() => handleGalleryImageLoad(img.id)}
+                            />
+                            <button
+                              className="gallery-item-delete"
+                              onClick={(e) => deleteGalleryImage(img, e)}
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {galleryLoadingMore && (
+                        <div className="gallery-loading-more">Loading more...</div>
+                      )}
+                    </>
                   )}
                 </div>
               </motion.div>

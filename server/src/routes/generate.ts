@@ -15,7 +15,7 @@ const GEMINI_UPLOAD_BASE = 'https://generativelanguage.googleapis.com/upload/v1b
 // Limits concurrent API calls to prevent rate limiting (429 errors)
 // ============================================================================
 const MAX_CONCURRENT = 8;
-const TASK_TIMEOUT_MS = 120000; // 2 minute timeout per task
+const TASK_TIMEOUT_MS = 180000; // 3 minute timeout per task
 let activeTasks = 0;
 const taskQueue: Array<{ task: () => Promise<any>, resolve: (value: any) => void, reject: (err: any) => void }> = [];
 
@@ -33,7 +33,7 @@ function processQueue() {
     
     // Add timeout to prevent hung tasks from blocking the queue
     const timeoutId = setTimeout(() => {
-      console.log('[Queue] Task timed out after 2 minutes');
+      console.log('[Queue] Task timed out after 3 minutes');
       item.reject(new Error('Task timeout'));
     }, TASK_TIMEOUT_MS);
     
@@ -270,7 +270,8 @@ interface GenerateRequest {
   negativePrompt?: string;
   seed?: string;
   mode?: 'create' | 'edit';
-  editImage?: string; // base64 data URL of image to edit
+  editImage?: string; // base64 data URL or URL of image to edit
+  editImageUrl?: string; // Original URL of edit image (for replay - separate from content)
   parentId?: string; // ID of parent generation (for edit chains)
 }
 
@@ -370,6 +371,26 @@ async function uploadToGeminiFiles(url: string, apiKey: string): Promise<{ fileU
         console.log(`[Gemini Files] Failed to read local file: ${err}`);
         return null;
       }
+    }
+    // Handle asset URLs (uploaded temp files)
+    else if (url.includes('/api/assets/')) {
+      const match = url.match(/\/api\/assets\/([a-f0-9-]+)/i);
+      if (!match) {
+        console.log(`[Gemini Files] Could not parse asset URL: ${url}`);
+        return null;
+      }
+      const assetId = match[1];
+      
+      // Import dynamically to avoid circular deps
+      const { getAssetBuffer } = await import('./assets.js');
+      const asset = await getAssetBuffer(assetId);
+      if (!asset) {
+        console.log(`[Gemini Files] Asset not found on disk: ${assetId}`);
+        return null;
+      }
+      
+      console.log(`[Gemini Files] Using asset ${assetId}: ${asset.buffer.byteLength} bytes`);
+      buffer = asset.buffer;
     }
     else {
       // Fetch from external URL
@@ -641,6 +662,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     seed,
     mode = 'create',
     editImage,
+    editImageUrl,
     parentId,
   } = req.body as GenerateRequest;
   
@@ -1095,6 +1117,8 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
             styleImages: styleImages?.map(s => ({ url: s.url, name: s.name })),
             negativePrompt,
             numImages: numImages || 1,
+            // Save edit image URL for replay (when parent_id isn't available)
+            ...(mode === 'edit' && editImageUrl ? { editImageUrl } : {}),
           },
         });
         

@@ -18,6 +18,7 @@ import authRouter, { setupPassport } from './routes/auth.js';
 import dashboardRouter from './routes/dashboard.js';
 import favoritesRouter from './routes/favorites.js';
 import alloysRouter from './routes/alloys.js';
+import assetsRouter from './routes/assets.js';
 import migrateThumbnailsRouter from './routes/migrate-thumbnails.js';
 import { initBridgeServer, isBridgeConnected } from './bridge.js';
 import pool, { initDatabase } from './db.js';
@@ -148,6 +149,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/favorites', favoritesRouter);
 app.use('/api/alloys', alloysRouter);
+app.use('/api/assets', assetsRouter);
 app.use('/api/admin', migrateThumbnailsRouter);
 
 // Health check with bridge status

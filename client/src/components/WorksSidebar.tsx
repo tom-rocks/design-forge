@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, ImageOff, X, Plus, Trash2, Flame, Hammer, Box, Boxes } from 'lucide-react'
+import { Loader2, ImageOff, X, Plus, Trash2, Flame, Hammer, Box, Boxes, RotateCcw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API_URL } from '../config'
 
@@ -34,9 +34,11 @@ interface PendingGeneration {
   prompt: string
   outputCount: number
   mode: 'create' | 'edit'
-  references?: Array<{ id: string; url: string; thumbnailUrl?: string; name?: string; type: string }>
+  references?: Array<{ id: string; url: string; thumbnailUrl?: string; name?: string; type: 'file' | 'highrise' | 'generation' }>
   editImageUrl?: string
   completedId?: string // Server ID once complete - for smooth transition
+  aspectRatio?: string // For replay
+  resolution?: string // For replay
 }
 
 interface WorksSidebarProps {
@@ -47,6 +49,7 @@ interface WorksSidebarProps {
   pendingGenerations?: PendingGeneration[] // Shows at top while forging
   onCancelPending?: (pendingId: string) => void // Cancel a specific pending generation
   onSelectPending?: (pendingId: string) => void // Select pending to show when complete
+  onReplayPending?: (pending: PendingGeneration) => void // Replay a pending generation with same settings
   onPendingComplete?: (pendingId: string) => void // Notify when pending->complete transition done
   selectedPendingId?: string | null // Currently selected pending generation
   onNewForge?: () => void // Start a new forge (clear canvas)
@@ -63,6 +66,7 @@ export function WorksSidebar({
   pendingGenerations = [],
   onCancelPending,
   onSelectPending,
+  onReplayPending,
   onPendingComplete,
   selectedPendingId,
   onNewForge,
@@ -310,18 +314,32 @@ export function WorksSidebar({
                             : <Flame className="forging-icon forging-icon-forge" />
                           }
                         </div>
-                        {/* Cancel button - only on first image of each generation, on hover */}
+                        {/* Action buttons - only on first image of each generation, on hover */}
                         {isFirst && (isHovered || isSelected) && !pending.completedId && (
-                          <button
-                            className="gen-panel-cancel"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onCancelPending?.(pending.id)
-                            }}
-                            title="Cancel generation"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                          <>
+                            {/* Replay button */}
+                            <button
+                              className="gen-panel-replay"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onReplayPending?.(pending)
+                              }}
+                              title="Replay with same settings"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
+                            {/* Cancel button */}
+                            <button
+                              className="gen-panel-cancel"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onCancelPending?.(pending.id)
+                              }}
+                              title="Cancel generation"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </>
                         )}
                       </motion.button>
                     )
