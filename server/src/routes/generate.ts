@@ -650,6 +650,12 @@ router.get('/debug/queue', (_req: Request, res: Response) => {
 
 // Streaming generation endpoint
 router.post('/generate', async (req: Request, res: Response) => {
+  // Require authentication to prevent orphaned generations (null user_id)
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: 'Not authenticated. Please log in again.' });
+    return;
+  }
+  
   const id = `gen-${Date.now().toString(36)}`;
   const { 
     prompt, 
@@ -1082,28 +1088,30 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
     
     send('progress', { status: 'complete', message: 'GENERATION COMPLETE', progress: 95, id, elapsed });
     
-    // Save to database if configured
+    // Save to database - retry once on failure since this is critical for persistence
     let savedGeneration: { id: string } | null = null;
+    let saveError: string | null = null;
+    
     if (process.env.DATABASE_URL) {
-      try {
+      const userId = req.user?.id;
+      if (!userId) {
+        console.error(`[Gen ${id}] CRITICAL: req.user.id is undefined despite auth check passing`);
+      }
+      
+      const doSave = async () => {
         send('progress', { status: 'saving', message: 'SAVING TO HISTORY...', progress: 97, id, elapsed });
         
-        // Generate a unique ID for this generation
         const genId = `gen-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
         
-        // Save images to storage
         const imagePaths: string[] = [];
         for (let i = 0; i < images.length; i++) {
           const imagePath = await saveImage(images[i], genId, i);
           imagePaths.push(imagePath);
         }
         
-        // Create thumbnails for all images (faster grid loading)
         const thumbnailPaths = await createThumbnails(imagePaths, genId);
         
-        // Save to database (include user ID if authenticated)
-        const userId = req.user?.id;
-        savedGeneration = await saveGeneration({
+        return saveGeneration({
           userId,
           prompt,
           model: modelType,
@@ -1117,19 +1125,32 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
             styleImages: styleImages?.map(s => ({ url: s.url, name: s.name })),
             negativePrompt,
             numImages: numImages || 1,
-            // Save edit image URL for replay (when parent_id isn't available)
             ...(mode === 'edit' && editImageUrl ? { editImageUrl } : {}),
           },
         });
-        
+      };
+      
+      // Attempt 1
+      try {
+        savedGeneration = await doSave();
         console.log(`[Gen ${id}] Saved to database as ${savedGeneration.id}`);
-      } catch (saveErr) {
-        console.error(`[Gen ${id}] Failed to save to database:`, saveErr);
-        // Don't fail the request, just log
+      } catch (err1) {
+        console.error(`[Gen ${id}] Save attempt 1 failed:`, err1);
+        // Retry once after a brief pause
+        try {
+          await new Promise(r => setTimeout(r, 500));
+          savedGeneration = await doSave();
+          console.log(`[Gen ${id}] Saved on retry as ${savedGeneration.id}`);
+        } catch (err2) {
+          console.error(`[Gen ${id}] Save attempt 2 failed:`, err2);
+          saveError = err2 instanceof Error ? err2.message : 'Unknown save error';
+        }
       }
+    } else {
+      saveError = 'No database configured';
+      console.error(`[Gen ${id}] DATABASE_URL not set - generation will not be persisted!`);
     }
     
-    // If saved to database, return API paths instead of data URLs for better replay support
     const finalImageUrls = savedGeneration 
       ? images.map((_, i: number) => `/api/generations/${savedGeneration.id}/image/${i}`)
       : images;
@@ -1140,6 +1161,8 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
       imageUrls: finalImageUrls,
       id,
       generationId: savedGeneration?.id,
+      saved: !!savedGeneration,
+      ...(saveError ? { saveError } : {}),
       model: modelType,
       elapsed,
       variations: images.length,

@@ -883,6 +883,7 @@ export default function App() {
       const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           prompt: genPrompt,
           model: 'pro',
@@ -893,12 +894,17 @@ export default function App() {
           numImages: genOutputCount,
           ...(genMode === 'edit' && finalEditImageUrl ? { 
             editImage: finalEditImageUrl,
-            editImageUrl: finalEditImageUrl, // Save URL for replay (separate from content)
-            parentId: genParentId // Store parent generation for replay functionality
+            editImageUrl: finalEditImageUrl,
+            parentId: genParentId
           } : {}),
         }),
         signal,
       })
+
+      // Handle auth failure (session expired)
+      if (response.status === 401) {
+        throw new Error('Session expired. Please refresh the page and log in again.')
+      }
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response')
@@ -921,6 +927,12 @@ export default function App() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             if (currentEvent === 'complete') {
+              // Warn if generation wasn't persisted
+              if (data.saved === false) {
+                console.error('[Generate] Server failed to save generation:', data.saveError)
+                setError(`Generation complete but failed to save to history: ${data.saveError || 'unknown error'}. Right-click the image to save it manually.`)
+              }
+              
               setResult({ 
                 imageUrl: data.imageUrl, 
                 imageUrls: data.imageUrls, 
@@ -930,20 +942,17 @@ export default function App() {
                 resolution: genResolution,
                 parentId: genParentId,
                 styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name })),
-                editImageUrl: finalEditImageUrl // For replay - the original image that was refined
+                editImageUrl: finalEditImageUrl
               })
               setViewingPastWork(false)
-              // Mark pending as completed (don't remove yet - sidebar will handle smooth transition)
               if (data.generationId) {
                 setPendingGenerations(prev => prev.map(g => 
                   g.id === genId ? { ...g, completedId: data.generationId } : g
                 ))
                 setNewGenerationId(data.generationId)
                 
-                // Auto-save alloy if references were used (and user is authenticated)
                 if (genReferences.length > 0 && authenticated) {
                   const alloyItems = genReferences.map(ref => ({ url: ref.url, name: ref.name }))
-                  // Create name from prompt (first 40 chars) or fallback
                   const alloyName = genPrompt.slice(0, 40).trim() || `Alloy ${new Date().toLocaleDateString()}`
                   console.log('[Alloy] Auto-saving:', { name: alloyName, itemCount: alloyItems.length })
                   fetch(`${API_URL}/api/alloys`, {
@@ -968,7 +977,6 @@ export default function App() {
                   console.log('[Alloy] Skipping auto-save:', { refs: genReferences.length, authenticated })
                 }
               } else {
-                // No server ID (anonymous?) - remove pending immediately
                 removePending()
               }
               return
