@@ -411,23 +411,29 @@ body {
   flex-shrink: 0;
 }
 
-/* Fire grids at edges of floating LCD - push to edges */
+/* Fire grids at edges of floating LCD - push to edges, shrink if needed */
 .lcd-fire-left {
-  flex-shrink: 0;
-  margin-right: auto; /* Push content after it to the right */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  margin-right: auto;
 }
 
 .lcd-fire-right {
-  flex-shrink: 0;
-  margin-left: auto; /* Push content before it to the left */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  margin-left: auto;
 }
 
 .lcd-floating {
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   margin: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  gap: 10px;
+  gap: 6px;
+  overflow: hidden;
+  flex-wrap: nowrap;
 }
 
 .floating-prompt-row {
@@ -1047,6 +1053,8 @@ textarea.textarea.floating-prompt-input.forging {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .lcd-icon {
@@ -1102,16 +1110,19 @@ textarea.textarea.floating-prompt-input.forging {
   color: #3a3835;
   font-size: 10px;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* Interactive LCD - buttons */
 .lcd-interactive button.lcd-spec-item {
   background: none;
   border: none;
-  padding: 4px 6px;
-  margin: -4px -2px;
+  padding: 4px 4px;
+  margin: -4px -1px;
   cursor: pointer;
   transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 
