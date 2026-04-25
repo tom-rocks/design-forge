@@ -2013,7 +2013,7 @@ export default function App() {
         <div className="floating-prompt-inner">
           {/* LCD status display - interactive with fire grids inside */}
           <div className="lcd-screen lcd-floating lcd-interactive">
-            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={7} rows={3} dotSize={4} gap={1} className="lcd-fire-left" spreadDirection="left" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
             <span className="lcd-spec-item lcd-pro lit">
               <Anvil className="w-3 h-3" />
               V.2.19
@@ -2104,7 +2104,7 @@ export default function App() {
             >
               HR
             </button>
-            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
+            <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={7} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
           </div>
           
           {/* Main input row with logo */}
