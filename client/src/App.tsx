@@ -121,6 +121,7 @@ export default function App() {
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [isDraggingAlloy, setIsDraggingAlloy] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
+  const [uploadingCount, setUploadingCount] = useState(0)
   const [favoritesResetKey, _setFavoritesResetKey] = useState(0)
   const [refineSource, setRefineSource] = useState<RefSource>('drop')
   const [canvasMode, setCanvasMode] = useState<'forge' | 'refine'>('forge')
@@ -131,11 +132,20 @@ export default function App() {
   const [outputCount, setOutputCount] = useState<1 | 2 | 4>(1)
   void setOutputCount // Output count UI removed, keeping state for generation logic
   
+  // HR style toggle (controls server-side Highrise style wrapping)
+  const [hrStyle, setHrStyle] = useState(true)
+  
   // Alloy modal state
   const [alloyModalOpen, setAlloyModalOpen] = useState(false)
   
   // Works sidebar state
   const [newGenerationId, setNewGenerationId] = useState<string | null>(null)
+  const [seenGenerationIds, setSeenGenerationIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('df-seen-generations')
+      return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch { return new Set() }
+  })
   const [pendingGenerations, setPendingGenerations] = useState<Array<{
     id: string
     prompt: string
@@ -146,9 +156,29 @@ export default function App() {
     completedId?: string  // Server ID once complete - used for smooth transition
     aspectRatio?: string  // For replay
     resolution?: string   // For replay
+    startedAt: number     // Timestamp for timeout detection
+    timedOut?: boolean    // True when client-side timeout reached
   }>>([])
   
   
+  // Client-side timeout for stuck pending generations (120s)
+  useEffect(() => {
+    if (pendingGenerations.length === 0) return
+    const interval = setInterval(() => {
+      const now = Date.now()
+      setPendingGenerations(prev => {
+        const updated = prev.map(g => {
+          if (!g.completedId && !g.timedOut && now - g.startedAt > 120000) {
+            return { ...g, timedOut: true }
+          }
+          return g
+        })
+        return updated.some((g, i) => g !== prev[i]) ? updated : prev
+      })
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [pendingGenerations.length])
+
   // Track image loading states
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
@@ -205,6 +235,8 @@ export default function App() {
   
   // Track which pending generation is selected (shows in canvas when complete)
   const [selectedPendingId, setSelectedPendingId] = useState<string | null>(null)
+  const selectedPendingIdRef = useRef<string | null>(null)
+  selectedPendingIdRef.current = selectedPendingId
   
   // Ref for prompt textarea
   const promptRef = useRef<HTMLTextAreaElement>(null)
@@ -530,10 +562,8 @@ export default function App() {
   
   // Cancel intro animation immediately
   const cancelIntroAnimation = useCallback(() => {
-    // Clear all timers - always clear even if not animating
     if (introTimersRef.current.start) clearTimeout(introTimersRef.current.start)
     if (introTimersRef.current.type) {
-      // Could be setInterval OR requestAnimationFrame ID
       clearInterval(introTimersRef.current.type)
       cancelAnimationFrame(introTimersRef.current.type as unknown as number)
     }
@@ -541,12 +571,13 @@ export default function App() {
     if (introTimersRef.current.clear) clearTimeout(introTimersRef.current.clear)
     introTimersRef.current = {}
     
-    // Clear prompt first (removes text), then hot state, to avoid color flash
-    setPrompt('')
+    // Only clear prompt if it's still showing animated text (hot state), not user-typed text
+    if (introAnimating) {
+      setPrompt('')
+    }
     setIntroAnimating(false)
-    // Delay hot state reset slightly to avoid visual glitch
     setTimeout(() => setPromptHot(false), 0)
-  }, [])
+  }, [introAnimating])
   
   // Play intro animation with custom text - smooth character reveal
   const playIntroAnimation = useCallback((text: string, delay = 500) => {
@@ -607,33 +638,32 @@ export default function App() {
     
     // Check if we just switched TO refine mode (but NOT during replay)
     if (currentMode === 'edit' && lastModeRef.current === 'create' && !isReplayingRef.current) {
-      // Cancel any existing animation first
-      cancelIntroAnimation()
-      // Clear existing prompt and play the refine intro animation
-      setPrompt('')
-      playIntroAnimation("Describe what you want to change...", 300)
+      if (!promptRef2.current.trim()) {
+        cancelIntroAnimation()
+        playIntroAnimation("Describe what you want to change...", 300)
+      }
     }
     
     lastModeRef.current = currentMode
   }, [editImage, playIntroAnimation, cancelIntroAnimation])
   
-  // Play intro animation when switching from refine to forge
   useEffect(() => {
     if (shouldPlayForgeIntro) {
-      // Cancel any existing animation first
-      cancelIntroAnimation()
-      playIntroAnimation("Describe what you want to create...", 300)
       setShouldPlayForgeIntro(false)
+      if (!promptRef2.current.trim()) {
+        cancelIntroAnimation()
+        playIntroAnimation("Describe what you want to create...", 300)
+      }
     }
   }, [shouldPlayForgeIntro, playIntroAnimation, cancelIntroAnimation])
   
-  // Play intro animation when switching to refine mode
   useEffect(() => {
     if (shouldPlayRefineIntro) {
-      // Cancel any existing animation first
-      cancelIntroAnimation()
-      playIntroAnimation("Describe what you want to change...", 300)
       setShouldPlayRefineIntro(false)
+      if (!promptRef2.current.trim()) {
+        cancelIntroAnimation()
+        playIntroAnimation("Describe what you want to change...", 300)
+      }
     }
   }, [shouldPlayRefineIntro, playIntroAnimation, cancelIntroAnimation])
   
@@ -732,6 +762,17 @@ export default function App() {
     }, 200)
   }, [])
 
+  const markGenerationSeen = useCallback((generationId: string) => {
+    setSeenGenerationIds(prev => {
+      const next = new Set(prev)
+      next.add(generationId)
+      const arr = [...next]
+      const trimmed = arr.length > 500 ? new Set(arr.slice(-500)) : next
+      try { localStorage.setItem('df-seen-generations', JSON.stringify([...trimmed])) } catch {}
+      return trimmed
+    })
+  }, [])
+
   const handleGenerate = useCallback(async () => {
     if (!canGenerate) return
     
@@ -773,7 +814,8 @@ export default function App() {
       references: [...genReferences],
       editImageUrl: genEditImage?.url,
       aspectRatio: genAspectRatio,
-      resolution: genResolution
+      resolution: genResolution,
+      startedAt: Date.now(),
     }, ...prev])
     setSelectedPendingId(genId)
     
@@ -892,6 +934,7 @@ export default function App() {
           styleImages: genReferences.map(r => ({ url: r.url, strength: 1 })),
           mode: genMode,
           numImages: genOutputCount,
+          hrStyle,
           ...(genMode === 'edit' && finalEditImageUrl ? { 
             editImage: finalEditImageUrl,
             editImageUrl: finalEditImageUrl,
@@ -927,29 +970,35 @@ export default function App() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             if (currentEvent === 'complete') {
-              // Warn if generation wasn't persisted
               if (data.saved === false) {
                 console.error('[Generate] Server failed to save generation:', data.saveError)
                 setError(`Generation complete but failed to save to history: ${data.saveError || 'unknown error'}. Right-click the image to save it manually.`)
               }
               
-              setResult({ 
-                imageUrl: data.imageUrl, 
-                imageUrls: data.imageUrls, 
-                prompt: genPrompt,
-                mode: genMode,
-                aspectRatio: genAspectRatio,
-                resolution: genResolution,
-                parentId: genParentId,
-                styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name })),
-                editImageUrl: finalEditImageUrl
-              })
-              setViewingPastWork(false)
+              // Only show result on canvas if user is still watching this generation
+              const isWatching = selectedPendingIdRef.current === genId
+              if (isWatching) {
+                setResult({ 
+                  imageUrl: data.imageUrl, 
+                  imageUrls: data.imageUrls, 
+                  prompt: genPrompt,
+                  mode: genMode,
+                  aspectRatio: genAspectRatio,
+                  resolution: genResolution,
+                  parentId: genParentId,
+                  styleImages: genReferences.map(ref => ({ url: ref.url, name: ref.name })),
+                  editImageUrl: finalEditImageUrl
+                })
+                setViewingPastWork(false)
+              }
               if (data.generationId) {
                 setPendingGenerations(prev => prev.map(g => 
                   g.id === genId ? { ...g, completedId: data.generationId } : g
                 ))
                 setNewGenerationId(data.generationId)
+                if (isWatching) {
+                  markGenerationSeen(data.generationId)
+                }
                 
                 if (genReferences.length > 0 && authenticated) {
                   const alloyItems = genReferences.map(ref => ({ url: ref.url, name: ref.name }))
@@ -1008,7 +1057,7 @@ export default function App() {
         return prev
       })
     }
-  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount])
+  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount, hrStyle])
 
   // Cancel all pending generations
   const handleCancelAll = useCallback(() => {
@@ -1211,13 +1260,16 @@ export default function App() {
     const reader = new FileReader()
     reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string
-      // Upload to server for efficient reuse
-      const url = await uploadAsset(dataUrl)
-      // Clear result so canvas shows the new edit image instead of old output
-      setResult(null)
-      setViewingPastWork(false)
-      setEditImage({ url })
-      detectAndSetAspectRatio(url)
+      setUploadingCount(c => c + 1)
+      try {
+        const url = await uploadAsset(dataUrl)
+        setResult(null)
+        setViewingPastWork(false)
+        setEditImage({ url })
+        detectAndSetAspectRatio(url)
+      } finally {
+        setUploadingCount(c => c - 1)
+      }
     }
     reader.readAsDataURL(file)
   }, [])
@@ -1237,18 +1289,22 @@ export default function App() {
       const reader = new FileReader()
       reader.onload = async (ev) => {
         const dataUrl = ev.target?.result as string
-        // Upload to server for efficient reuse (avoids sending base64 on every generation)
-        const url = await uploadAsset(dataUrl)
-        const newRef: Reference = {
-          id: `drop-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url,
-          name: file.name,
-          type: 'file',
+        setUploadingCount(c => c + 1)
+        try {
+          const url = await uploadAsset(dataUrl)
+          const newRef: Reference = {
+            id: `drop-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            url,
+            name: file.name,
+            type: 'file',
+          }
+          setReferences(prev => {
+            if (prev.length >= 14) return prev
+            return [...prev, newRef]
+          })
+        } finally {
+          setUploadingCount(c => c - 1)
         }
-        setReferences(prev => {
-          if (prev.length >= 14) return prev
-          return [...prev, newRef]
-        })
       }
       reader.readAsDataURL(file)
     })
@@ -1268,21 +1324,22 @@ export default function App() {
           const reader = new FileReader()
           reader.onload = async (ev) => {
             const dataUrl = ev.target?.result as string
-            // Upload to server for efficient reuse
-            const url = await uploadAsset(dataUrl)
-            
-            if (activeDropTarget === 'refine') {
-              // Paste to refinement
-              setEditImage({ url })
-              detectAndSetAspectRatio(url)
-            } else {
-              // Paste to references
-              addReference({
-                id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                url,
-                name: `Pasted image`,
-                type: 'file'
-              })
+            setUploadingCount(c => c + 1)
+            try {
+              const url = await uploadAsset(dataUrl)
+              if (activeDropTarget === 'refine') {
+                setEditImage({ url })
+                detectAndSetAspectRatio(url)
+              } else {
+                addReference({
+                  id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  url,
+                  name: `Pasted image`,
+                  type: 'file'
+                })
+              }
+            } finally {
+              setUploadingCount(c => c - 1)
             }
           }
           reader.readAsDataURL(file)
@@ -1373,11 +1430,7 @@ export default function App() {
       <WorksSidebar
         authenticated={authenticated}
         onSelectImage={async (imageUrl, generation) => {
-          console.log('[SelectImage] Initial generation:', { 
-            id: generation.id, 
-            mode: generation.mode, 
-            parent_id: generation.parent_id 
-          })
+          markGenerationSeen(generation.id)
           
           const genMode = generation.mode || 'create'
           
@@ -1501,6 +1554,7 @@ export default function App() {
         selectedPendingId={selectedPendingId}
         isNewForgeActive={!result && !editImage && !selectedPendingId && !viewingPastWork && !isGenerating}
         selectedImageUrl={result?.imageUrl}
+        seenGenerationIds={seenGenerationIds}
       />
 
       {/* MAIN CANVAS - Clean, centered workspace */}
@@ -1693,7 +1747,6 @@ export default function App() {
                         onRefine={(url) => {
                           setEditImage({ url })
                           detectAndSetAspectRatio(url)
-                          setPrompt('')
                           setReferences([])
                         }}
                       />
@@ -1710,7 +1763,6 @@ export default function App() {
                         onRefine={(url) => {
                           setEditImage({ url })
                           detectAndSetAspectRatio(url)
-                          setPrompt('')
                           setReferences([])
                         }}
                       />
@@ -1765,7 +1817,6 @@ export default function App() {
                         onRefine={(url) => {
                           setEditImage({ url })
                           detectAndSetAspectRatio(url)
-                          setPrompt('')
                           setReferences([])
                         }}
                       />
@@ -1797,7 +1848,6 @@ export default function App() {
                         onRefine={(url) => {
                           setEditImage({ url })
                           detectAndSetAspectRatio(url)
-                          setPrompt('')
                           setReferences([])
                         }}
                       />
@@ -1823,6 +1873,14 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Upload indicator */}
+      {uploadingCount > 0 && (
+        <div className="upload-indicator">
+          <div className="upload-indicator-pulse" />
+          Uploading image{uploadingCount > 1 ? 's' : ''}...
+        </div>
+      )}
 
       {/* FLOATING PROMPT - Sticky at bottom */}
       <div className="floating-prompt-container">
@@ -2018,8 +2076,6 @@ export default function App() {
                 const displayedImage = validImages[0]
                 if (displayedImage) {
                   setEditImage({ url: displayedImage })
-                  // Clear prompt for new refine instructions
-                  setPrompt('')
                   setReferences([])
                 }
                 
@@ -2039,6 +2095,14 @@ export default function App() {
             >
               <Hammer className="w-3 h-3" />
               Refining
+            </button>
+            <span className="lcd-spec-sep">│</span>
+            <button
+              className={`lcd-spec-item lcd-hr ${hrStyle ? 'lit' : ''}`}
+              onClick={() => setHrStyle(!hrStyle)}
+              title={hrStyle ? 'HR style active - click to use raw prompt' : 'HR style off - click to enable Highrise style wrapping'}
+            >
+              HR
             </button>
             <LCDFireGrid active={(isGenerating && !!selectedPendingId) || modeFlameActive} cols={11} rows={3} dotSize={4} gap={1} className="lcd-fire-right" spreadDirection="right" mode={editImage || canvasMode === 'refine' ? 'refine' : 'forge'} />
           </div>
@@ -2183,6 +2247,8 @@ export default function App() {
         }}
         onUseAlloy={addAlloyReferences}
         favoritesResetKey={favoritesResetKey}
+        onUploadStart={() => setUploadingCount(c => c + 1)}
+        onUploadEnd={() => setUploadingCount(c => c - 1)}
       />
 
       {/* Output Lightbox */}

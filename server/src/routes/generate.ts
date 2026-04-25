@@ -273,6 +273,7 @@ interface GenerateRequest {
   editImage?: string; // base64 data URL or URL of image to edit
   editImageUrl?: string; // Original URL of edit image (for replay - separate from content)
   parentId?: string; // ID of parent generation (for edit chains)
+  hrStyle?: boolean; // When false, skip Highrise style wrapping and use raw prompt
 }
 
 interface DebugLog {
@@ -670,6 +671,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     editImage,
     editImageUrl,
     parentId,
+    hrStyle = true,
   } = req.body as GenerateRequest;
   
   // Set up SSE headers
@@ -803,34 +805,36 @@ router.post('/generate', async (req: Request, res: Response) => {
     // Build the prompt text based on mode
     let fullPrompt = prompt;
     
-    if (mode === 'edit') {
-      // EDIT MODE: Modify the uploaded image
+    if (!hrStyle) {
+      // Raw mode: use prompt as-is, only add minimal context for edit mode
+      if (mode === 'edit') {
+        fullPrompt = imageParts.length > 0
+          ? `Edit the first image: ${prompt}\nUse the reference image${imageParts.length > 1 ? 's' : ''} for guidance.`
+          : `Edit this image: ${prompt}`;
+      }
+    } else if (mode === 'edit') {
+      // EDIT MODE with HR style: Modify the uploaded image
       if (imageParts.length > 0) {
-        // Check what types of references we have
         const hasAvatarItems = effectiveStyleImages.some(img => 
           img.url.includes('avataritem') || 
           img.url.includes('/api/highrise/proxy/') && !img.url.includes('bg-') && !img.url.includes('cn-')
         );
         
-        // Build style description based on reference types
         const styleDesc = hasAvatarItems 
           ? 'NO outlines, soft gradient shading, 3/4 perspective angle, stylized proportions'
           : 'NO outlines, soft gradient shading, flat 2D composition';
         
-        // Edit with style references
         fullPrompt = `Edit the first image according to this instruction: ${prompt}
 
 Use the style from the ${imageParts.length} reference image${imageParts.length > 1 ? 's' : ''} (digital art assets with ${styleDesc}).
 
 Output a modified version of the first image that follows the instruction while matching the reference style.`;
       } else {
-        // Simple edit without style references
         fullPrompt = `Edit this image: ${prompt}`;
       }
     } else {
-      // CREATE MODE: Generate new image
+      // CREATE MODE with HR style: Generate new image
       if (imageParts.length > 0) {
-        // Check what types of references we have
         const hasAvatarItems = effectiveStyleImages.some(img => 
           img.url.includes('avataritem') || 
           img.url.includes('/api/highrise/proxy/') && !img.url.includes('bg-') && !img.url.includes('cn-')
@@ -839,22 +843,18 @@ Output a modified version of the first image that follows the instruction while 
           img.url.includes('/background/') || img.url.includes('bg-')
         );
         
-        // Build style description based on reference types
         let styleDesc = `- NO outlines or black lines
 - Soft gradient shading`;
         
         if (hasAvatarItems && !hasBackgrounds) {
-          // Only items: include 3/4 perspective
           styleDesc += `
 - A specific 3/4 perspective angle
 - Stylized proportions`;
         } else if (hasBackgrounds && !hasAvatarItems) {
-          // Only backgrounds: flat perspective
           styleDesc += `
 - Flat 2D composition
 - Environmental/scene design`;
         } else if (hasAvatarItems && hasBackgrounds) {
-          // Mixed: mention both
           styleDesc += `
 - Items use 3/4 perspective angle
 - Backgrounds are flat 2D compositions`;

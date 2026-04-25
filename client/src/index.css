@@ -817,6 +817,35 @@ textarea.textarea.floating-prompt-input.forging {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Unseen (new) generation - subtle orange outline */
+.gen-panel-thumb.unseen:not(.forging):not(.selected) {
+  box-shadow: 0 0 0 2px rgba(255, 87, 34, 0.5);
+}
+
+/* Timed out generation */
+.gen-panel-thumb.timed-out {
+  background: rgba(200, 30, 30, 0.15) !important;
+  border: 2px solid rgba(200, 30, 30, 0.4);
+}
+
+.gen-panel-thumb-timeout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: rgba(200, 80, 80, 0.8);
+  width: 100%;
+  height: 100%;
+}
+
+.gen-panel-thumb-timeout span {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Refine mode forging - gold/yellow colors */
 .gen-panel-thumb.forging.forging-refine .gen-panel-thumb-forging::before {
   background: linear-gradient(
@@ -1187,6 +1216,17 @@ textarea.textarea.floating-prompt-input.forging {
 
 .lcd-interactive button.lcd-mode.refine.lit:hover {
   filter: brightness(1.15);
+}
+
+/* HR style toggle */
+.lcd-interactive button.lcd-hr {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.lcd-interactive button.lcd-hr.lit {
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
 }
 
 /* Specs panel header */
@@ -2064,6 +2104,48 @@ textarea.textarea.floating-prompt-input.forging {
 
 .forge-canvas.dragging {
   background: linear-gradient(135deg, rgba(255, 87, 34, 0.05) 0%, rgba(255, 109, 0, 0.08) 100%);
+}
+
+/* Upload indicator */
+.upload-indicator {
+  position: fixed;
+  bottom: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(26, 25, 24, 0.9);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: upload-fade-in 0.15s ease;
+}
+
+.upload-indicator-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: upload-pulse 1s ease-in-out infinite;
+}
+
+@keyframes upload-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes upload-fade-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* Drop overlay - appears when dragging over canvas with content */

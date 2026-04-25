@@ -35,6 +35,8 @@ interface AlloyModalProps {
   onRefine?: (url: string) => void
   onUseAlloy?: (refs: Reference[]) => void
   favoritesResetKey?: number
+  onUploadStart?: () => void
+  onUploadEnd?: () => void
 }
 
 export function AlloyModal({
@@ -54,6 +56,8 @@ export function AlloyModal({
   onRefine,
   onUseAlloy,
   favoritesResetKey = 0,
+  onUploadStart,
+  onUploadEnd,
 }: AlloyModalProps) {
   const [refSource, setRefSource] = useState<RefSource>('items')
   const [isDragging, setIsDragging] = useState(false)
@@ -76,13 +80,18 @@ export function AlloyModal({
           const reader = new FileReader()
           reader.onload = async (ev) => {
             const dataUrl = ev.target?.result as string
-            const url = await uploadAsset(dataUrl)
-            onAddReference({
-              id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              url,
-              name: 'Pasted image',
-              type: 'file'
-            })
+            onUploadStart?.()
+            try {
+              const url = await uploadAsset(dataUrl)
+              onAddReference({
+                id: `paste-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                url,
+                name: 'Pasted image',
+                type: 'file'
+              })
+            } finally {
+              onUploadEnd?.()
+            }
           }
           reader.readAsDataURL(file)
           break
@@ -121,14 +130,18 @@ export function AlloyModal({
       const reader = new FileReader()
       reader.onload = async (ev) => {
         const dataUrl = ev.target?.result as string
-        // Upload to server for efficient reuse
-        const url = await uploadAsset(dataUrl)
-        onAddReference({
-          id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url,
-          name: file.name,
-          type: 'file'
-        })
+        onUploadStart?.()
+        try {
+          const url = await uploadAsset(dataUrl)
+          onAddReference({
+            id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            url,
+            name: file.name,
+            type: 'file'
+          })
+        } finally {
+          onUploadEnd?.()
+        }
       }
       reader.readAsDataURL(file)
     })

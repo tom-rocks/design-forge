@@ -36,9 +36,11 @@ interface PendingGeneration {
   mode: 'create' | 'edit'
   references?: Array<{ id: string; url: string; thumbnailUrl?: string; name?: string; type: 'file' | 'highrise' | 'generation' }>
   editImageUrl?: string
-  completedId?: string // Server ID once complete - for smooth transition
-  aspectRatio?: string // For replay
-  resolution?: string // For replay
+  completedId?: string
+  aspectRatio?: string
+  resolution?: string
+  startedAt: number
+  timedOut?: boolean
 }
 
 interface WorksSidebarProps {
@@ -56,6 +58,7 @@ interface WorksSidebarProps {
   onDeleteImage?: (generationId: string) => void // Delete a generation
   isNewForgeActive?: boolean // True when canvas is fresh/empty (we're "in" new forge)
   selectedImageUrl?: string | null // Currently selected/viewed image URL
+  seenGenerationIds?: Set<string>
 }
 
 export function WorksSidebar({ 
@@ -72,7 +75,8 @@ export function WorksSidebar({
   onNewForge,
   onDeleteImage,
   isNewForgeActive = false,
-  selectedImageUrl
+  selectedImageUrl,
+  seenGenerationIds,
 }: WorksSidebarProps) {
   const [hoveredPendingId, setHoveredPendingId] = useState<string | null>(null)
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
@@ -180,14 +184,9 @@ export function WorksSidebar({
         const newGen = await res.json()
         if (newGen) {
           setGenerations(prev => {
-            // Double-check we don't already have it
             if (prev.some(g => g.id === newGen.id)) return prev
             return [newGen, ...prev]
           })
-          // Scroll to top to show the new generation
-          if (scrollRef.current) {
-            scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-          }
         }
       } catch (err) {
         console.error('Failed to fetch new generation:', err)
@@ -290,7 +289,7 @@ export function WorksSidebar({
                       <motion.button
                         key={`pending-${pending.id}-${i}`}
                         layoutId={layoutKey}
-                        className={`gen-panel-thumb forging ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
+                        className={`gen-panel-thumb ${pending.timedOut ? 'timed-out' : 'forging'} ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -303,39 +302,48 @@ export function WorksSidebar({
                             damping: 30
                           }
                         }}
-                        title={`${pending.mode === 'edit' ? 'Refining' : 'Forging'}: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`}
-                        onClick={() => onSelectPending?.(pending.id)}
+                        title={pending.timedOut 
+                          ? `Generation timed out: ${pending.prompt?.slice(0, 50) || ''}...\nClick X to dismiss`
+                          : `${pending.mode === 'edit' ? 'Refining' : 'Forging'}: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`
+                        }
+                        onClick={() => !pending.timedOut && onSelectPending?.(pending.id)}
                         onMouseEnter={() => setHoveredPendingId(pending.id)}
                         onMouseLeave={() => setHoveredPendingId(null)}
                       >
-                        <div className="gen-panel-thumb-forging">
-                          {pending.mode === 'edit' 
-                            ? <Hammer className="forging-icon forging-icon-refine" />
-                            : <Flame className="forging-icon forging-icon-forge" />
-                          }
-                        </div>
-                        {/* Action buttons - only on first image of each generation, on hover */}
+                        {pending.timedOut ? (
+                          <div className="gen-panel-thumb-timeout">
+                            <X className="w-4 h-4" />
+                            <span>Failed</span>
+                          </div>
+                        ) : (
+                          <div className="gen-panel-thumb-forging">
+                            {pending.mode === 'edit' 
+                              ? <Hammer className="forging-icon forging-icon-refine" />
+                              : <Flame className="forging-icon forging-icon-forge" />
+                            }
+                          </div>
+                        )}
                         {isFirst && (isHovered || isSelected) && !pending.completedId && (
                           <>
-                            {/* Replay button */}
-                            <button
-                              className="gen-panel-replay"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onReplayPending?.(pending)
-                              }}
-                              title="Replay with same settings"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                            </button>
-                            {/* Cancel button */}
+                            {!pending.timedOut && (
+                              <button
+                                className="gen-panel-replay"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onReplayPending?.(pending)
+                                }}
+                                title="Replay with same settings"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                              </button>
+                            )}
                             <button
                               className="gen-panel-cancel"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onCancelPending?.(pending.id)
                               }}
-                              title="Cancel generation"
+                              title={pending.timedOut ? "Dismiss" : "Cancel generation"}
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -350,11 +358,12 @@ export function WorksSidebar({
                 {displayImages.map((img) => {
                   const isFailed = failedImages.has(img.id)
                   const isSelected = selectedImageUrl === `${API_URL}${img.imageUrl}`
+                  const isUnseen = seenGenerationIds && !seenGenerationIds.has(img.generation.id)
                   return (
                     <motion.button
                       key={img.id}
                       layoutId={img.id}
-                      className={`gen-panel-thumb ${isFailed ? 'failed' : ''} ${isSelected ? 'selected' : ''}`}
+                      className={`gen-panel-thumb ${isFailed ? 'failed' : ''} ${isSelected ? 'selected' : ''} ${isUnseen ? 'unseen' : ''}`}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
