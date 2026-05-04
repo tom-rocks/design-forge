@@ -1371,6 +1371,13 @@ export default function App() {
     }
   }, [references, activeDropTarget])
 
+  // Auto-dismiss errors after 5 seconds
+  useEffect(() => {
+    if (!error) return
+    const timer = setTimeout(() => setError(null), 5000)
+    return () => clearTimeout(timer)
+  }, [error])
+
   // Unlock shortcut: Ctrl+Shift+A prompts for password
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1881,19 +1888,6 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* ERROR */}
-        <AnimatePresence>
-          {error && (
-            <motion.div 
-              className="canvas-error"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
 
       {/* Upload indicator */}
@@ -2459,6 +2453,20 @@ export default function App() {
                   )}
                 </div>
               </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error toast - at root level for true viewport centering */}
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            className="canvas-error"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {error}
           </motion.div>
         )}
       </AnimatePresence>
