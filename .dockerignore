@@ -3,9 +3,8 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
-# Build outputs - rebuilt during build
-client/dist/
-server/dist/
+# Build outputs are rebuilt during Railway build, but must not be excluded
+# because Nixpacks final COPY step overwrites the build directory
 
 # Development files
 *.log
