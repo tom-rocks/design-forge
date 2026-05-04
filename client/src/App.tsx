@@ -118,6 +118,7 @@ export default function App() {
   const [viewingPastWork, setViewingPastWork] = useState(false) // True when viewing past work during generation
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [forgeUnlocked, setForgeUnlocked] = useState(false)
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [isDraggingAlloy, setIsDraggingAlloy] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
@@ -776,6 +777,11 @@ export default function App() {
   const handleGenerate = useCallback(async () => {
     if (!canGenerate) return
     
+    if (!forgeUnlocked) {
+      setError('Out of usage credits. Please contact your administrator to add more credits to your account.')
+      return
+    }
+    
     // Create unique ID for this generation
     const genId = `pending-${Date.now()}`
     
@@ -1057,7 +1063,7 @@ export default function App() {
         return prev
       })
     }
-  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount, hrStyle])
+  }, [prompt, references, editImage, canGenerate, isGenerating, resolution, aspectRatio, outputCount, hrStyle, forgeUnlocked])
 
   // Cancel all pending generations
   const handleCancelAll = useCallback(() => {
@@ -1364,6 +1370,22 @@ export default function App() {
       document.removeEventListener('drop', handleDragEnd)
     }
   }, [references, activeDropTarget])
+
+  // Unlock shortcut: Ctrl+Shift+A prompts for password
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault()
+        const pw = window.prompt('Enter access code:')
+        if (pw === 'forgemaster') {
+          setForgeUnlocked(true)
+          setError(null)
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
