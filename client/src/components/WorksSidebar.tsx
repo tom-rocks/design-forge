@@ -328,16 +328,18 @@ export function WorksSidebar({
                         )}
                         {isFirst && (isHovered || isSelected) && !pending.completedId && (
                           <>
-                            <button
-                              className="gen-panel-replay"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onReplayPending?.(pending)
-                              }}
-                              title="Replay with same settings"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                            </button>
+                            {isFailed && (
+                              <button
+                                className="gen-panel-replay"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onReplayPending?.(pending)
+                                }}
+                                title="Retry this generation"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                              </button>
+                            )}
                             <button
                               className="gen-panel-cancel"
                               onClick={(e) => {
