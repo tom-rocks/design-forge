@@ -23,11 +23,9 @@ export function setupPassport() {
   return true;
 }
 
-// The known user's Google ID (used to find the account in the DB)
-const OWNER_GOOGLE_ID = '113838337580596527498';
 const AUTH_PASSWORD = process.env.FORGE_PASSWORD || 'forgemaster';
 
-// Password login - finds the owner account and creates a session
+// Password login - finds the owner account (first user) and creates a session
 router.post('/login', async (req: Request, res: Response) => {
   const { password } = req.body;
   
@@ -37,17 +35,20 @@ router.post('/login', async (req: Request, res: Response) => {
   }
   
   try {
-    // Find the existing user account by google_id
-    const result = await pool.query<User>(
-      'SELECT * FROM users WHERE google_id = $1',
-      [OWNER_GOOGLE_ID]
+    // Find the first user account (the owner)
+    let result = await pool.query<User>(
+      'SELECT * FROM users ORDER BY created_at ASC LIMIT 1'
     );
     
-    const user = result.rows[0];
-    if (!user) {
-      res.status(404).json({ error: 'User account not found' });
-      return;
+    // If no users exist yet, create one
+    if (!result.rows[0]) {
+      result = await pool.query<User>(
+        `INSERT INTO users (google_id, email, name) VALUES ($1, $2, $3) RETURNING *`,
+        ['owner', 'owner@designforge.app', 'Forge Owner']
+      );
     }
+    
+    const user = result.rows[0];
     
     // Update last login
     await pool.query(
