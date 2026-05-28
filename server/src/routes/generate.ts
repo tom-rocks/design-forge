@@ -98,7 +98,7 @@ API_KEYS.forEach(key => {
 console.log(`[KeyPool] Initialized with ${API_KEYS.length} API key(s)`);
 
 // Get the next available API key (round-robin, skipping rate-limited)
-function getApiKey(): string {
+function getApiKey(): string | null {
   const now = Date.now();
   
   // Try each key in round-robin order
@@ -119,7 +119,29 @@ function getApiKey(): string {
     return key;
   }
   
-  // All keys rate-limited - return the one that will be available soonest
+  // All keys rate-limited - return null to signal caller should wait
+  return null;
+}
+
+// Wait for an available key, up to maxWaitMs
+async function waitForApiKey(maxWaitMs = 90000): Promise<string> {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    const key = getApiKey();
+    if (key) return key;
+    
+    // Find soonest available key and wait for it
+    let soonestWait = Infinity;
+    for (const k of API_KEYS) {
+      const status = keyStatus.get(k)!;
+      const wait = status.rateLimitedUntil - Date.now();
+      if (wait < soonestWait) soonestWait = wait;
+    }
+    const waitMs = Math.min(Math.max(soonestWait + 500, 1000), 15000);
+    console.log(`[KeyPool] All keys rate-limited, waiting ${Math.ceil(waitMs / 1000)}s...`);
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  // Fallback: force return the least-limited key
   let soonestKey = API_KEYS[0];
   let soonestTime = Infinity;
   for (const key of API_KEYS) {
@@ -129,7 +151,6 @@ function getApiKey(): string {
       soonestKey = key;
     }
   }
-  console.log(`[KeyPool] All keys rate-limited, using key ending ...${soonestKey.slice(-4)} (available in ${Math.ceil((soonestTime - now) / 1000)}s)`);
   return soonestKey;
 }
 
@@ -698,13 +719,13 @@ router.post('/generate', async (req: Request, res: Response) => {
     hasEditImage: !!editImage,
   });
   
-  // Get API key from pool (round-robin across accounts)
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  // Get API key from pool (waits if all keys are rate-limited)
+  if (API_KEYS.length === 0) {
     send('error', { error: 'No GEMINI_API_KEY configured', id });
     res.end();
     return;
   }
+  const apiKey = await waitForApiKey();
   
   if (!prompt || prompt.length < 3) {
     send('error', { error: 'Prompt must be at least 3 characters', id });
@@ -928,17 +949,19 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
     
     const startTime = Date.now();
     
-    // Make API call with retry for 503 errors
+    // Make API call with retry - gets a fresh key per attempt
     const generateOne = async (variationIndex: number): Promise<string[]> => {
-      const maxRetries = 3;
-      let lastError = '';
+      const maxRetries = 5;
       
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        // Get a fresh key for each attempt (may wait if all are rate-limited)
+        const attemptKey = attempt === 1 ? apiKey : await waitForApiKey(60000);
+        
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
+            'x-goog-api-key': attemptKey,
           },
           body: JSON.stringify(payload),
         });
@@ -954,15 +977,14 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
         
         // Retry on 503 (model overloaded) or 429 (rate limited)
         if ((response.status === 503 || response.status === 429) && attempt < maxRetries) {
-          const baseDelay = response.status === 429 ? 3000 : 5000; // Shorter for rate limit
-          const delay = attempt * baseDelay;
           const reason = response.status === 429 ? 'RATE LIMITED' : 'MODEL BUSY';
-          console.log(`[Gen ${id}] ${response.status} ${reason}, retry ${attempt}/${maxRetries} in ${delay/1000}s`);
+          console.log(`[Gen ${id}] ${response.status} ${reason}, retry ${attempt}/${maxRetries}`);
           if (response.status === 429) {
             queueStats.rateLimitHits++;
-            // Mark this key as rate-limited so we use a different one
-            markKeyRateLimited(apiKey, 60000); // 60 second cooldown
+            markKeyRateLimited(attemptKey, 60000);
           }
+          // Exponential backoff: 3s, 6s, 12s, 24s
+          const delay = Math.min(3000 * Math.pow(2, attempt - 1), 30000);
           send('progress', { status: 'retrying', message: `${reason}, RETRYING (${attempt}/${maxRetries})...`, progress: 40, id });
           await new Promise(r => setTimeout(r, delay));
           continue;
@@ -971,6 +993,12 @@ CRITICAL: Match the EXACT same style. No outlines. Same shading technique.`;
         if (!response.ok) {
           console.error(`[Gen ${id}] Variation ${variationIndex + 1} failed: ${response.status}`);
           addLog('error', { id, variation: variationIndex + 1, status: response.status, response: responseText.slice(0, 500) });
+          if (attempt < maxRetries) {
+            const delay = 2000 * attempt;
+            send('progress', { status: 'retrying', message: `ERROR ${response.status}, RETRYING (${attempt}/${maxRetries})...`, progress: 40, id });
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
           return [];
         }
         

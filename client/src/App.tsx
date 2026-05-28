@@ -164,6 +164,8 @@ export default function App() {
     resolution?: string   // For replay
     startedAt: number     // Timestamp for timeout detection
     timedOut?: boolean    // True when client-side timeout reached
+    failed?: boolean      // True when generation errored
+    errorMessage?: string // Error description for display
   }>>([])
   
   
@@ -1053,12 +1055,15 @@ export default function App() {
         return
       }
       let errorMessage = err instanceof Error ? err.message : 'Error'
-      // Make content blocked errors more user-friendly
       if (errorMessage.includes('CONTENT_BLOCKED')) {
         errorMessage = 'Sensitive content detected. Try adjusting your prompt or covering parts of the source image.'
       }
       setError(errorMessage)
-      removePending()
+      // Mark as failed instead of removing - user can replay or dismiss
+      setPendingGenerations(prev => prev.map(g =>
+        g.id === genId ? { ...g, failed: true, errorMessage } : g
+      ))
+      abortControllersRef.current.delete(genId)
     } finally {
       // Check if this was the last generation
       setPendingGenerations(prev => {

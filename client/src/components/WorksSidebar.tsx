@@ -41,6 +41,8 @@ interface PendingGeneration {
   resolution?: string
   startedAt: number
   timedOut?: boolean
+  failed?: boolean
+  errorMessage?: string
 }
 
 interface WorksSidebarProps {
@@ -285,11 +287,12 @@ export function WorksSidebar({
                     // Use completedId for layoutId if available, for smooth transition to real item
                     const layoutKey = pending.completedId ? `${pending.completedId}-${i}` : `pending-${pending.id}-${i}`
                     
+                    const isFailed = pending.timedOut || pending.failed
                     return (
                       <motion.button
                         key={`pending-${pending.id}-${i}`}
                         layoutId={layoutKey}
-                        className={`gen-panel-thumb ${pending.timedOut ? 'timed-out' : 'forging'} ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
+                        className={`gen-panel-thumb ${isFailed ? 'timed-out' : 'forging'} ${pending.mode === 'edit' ? 'forging-refine' : ''} ${isSelected ? 'selected' : ''}`}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -302,15 +305,15 @@ export function WorksSidebar({
                             damping: 30
                           }
                         }}
-                        title={pending.timedOut 
-                          ? `Generation timed out: ${pending.prompt?.slice(0, 50) || ''}...\nClick X to dismiss`
+                        title={isFailed
+                          ? `Failed: ${pending.errorMessage || 'Timed out'}\n↻ Replay  ✕ Dismiss`
                           : `${pending.mode === 'edit' ? 'Refining' : 'Forging'}: ${pending.prompt?.slice(0, 50) || ''}...\nClick to select, X to cancel`
                         }
-                        onClick={() => !pending.timedOut && onSelectPending?.(pending.id)}
+                        onClick={() => !isFailed && onSelectPending?.(pending.id)}
                         onMouseEnter={() => setHoveredPendingId(pending.id)}
                         onMouseLeave={() => setHoveredPendingId(null)}
                       >
-                        {pending.timedOut ? (
+                        {isFailed ? (
                           <div className="gen-panel-thumb-timeout">
                             <X className="w-4 h-4" />
                             <span>Failed</span>
@@ -325,25 +328,23 @@ export function WorksSidebar({
                         )}
                         {isFirst && (isHovered || isSelected) && !pending.completedId && (
                           <>
-                            {!pending.timedOut && (
-                              <button
-                                className="gen-panel-replay"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onReplayPending?.(pending)
-                                }}
-                                title="Replay with same settings"
-                              >
-                                <RotateCcw className="w-3 h-3" />
-                              </button>
-                            )}
+                            <button
+                              className="gen-panel-replay"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onReplayPending?.(pending)
+                              }}
+                              title="Replay with same settings"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
                             <button
                               className="gen-panel-cancel"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onCancelPending?.(pending.id)
                               }}
-                              title={pending.timedOut ? "Dismiss" : "Cancel generation"}
+                              title={isFailed ? "Dismiss" : "Cancel generation"}
                             >
                               <X className="w-3 h-3" />
                             </button>
