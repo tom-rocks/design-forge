@@ -139,7 +139,7 @@ export default function App() {
   void setOutputCount // Output count UI removed, keeping state for generation logic
   
   // HR style toggle (controls server-side Highrise style wrapping)
-  const [hrStyle, setHrStyle] = useState(true)
+  const [hrStyle, setHrStyle] = useState(false)
   
   // Alloy modal state
   const [alloyModalOpen, setAlloyModalOpen] = useState(false)
