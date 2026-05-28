@@ -119,6 +119,11 @@ export default function App() {
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [forgeUnlocked, setForgeUnlocked] = useState(false)
+  
+  // Auto-unlock when authenticated session is restored
+  useEffect(() => {
+    if (authenticated) setForgeUnlocked(true)
+  }, [authenticated])
   const [isDraggingRefine, setIsDraggingRefine] = useState(false)
   const [isDraggingAlloy, setIsDraggingAlloy] = useState(false)
   const [activeDropTarget, setActiveDropTarget] = useState<'refine' | 'refs' | null>(null) // Which dropzone receives paste
@@ -1378,13 +1383,13 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [error])
 
-  // Unlock shortcut: Ctrl+Shift+A prompts for password
+  // Unlock shortcut: Ctrl+Shift+A prompts for password and logs in
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
         e.preventDefault()
-        const pw = window.prompt('Enter access code:')
-        if (pw === 'forgemaster') {
+        const success = await login()
+        if (success) {
           setForgeUnlocked(true)
           setError(null)
         }
@@ -1392,7 +1397,7 @@ export default function App() {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [login])
 
   const images = result?.imageUrls?.length ? result.imageUrls : result?.imageUrl ? [result.imageUrl] : []
   const validImages = images.filter(url => !failedImages.has(url))
@@ -1438,11 +1443,11 @@ export default function App() {
         <div className="login-card">
           <img src="/forge_logo.svg" alt="Design Forge" className="login-logo" />
           <p className="login-subtitle">Asset creation and refinement for Highrise</p>
-          <button onClick={login} className="btn btn-accent login-btn">
+          <button onClick={() => login()} className="btn btn-accent login-btn">
             <LogIn className="w-5 h-5" />
-            Sign in with Google
+            Sign in
           </button>
-          <p className="login-note">Highrise team members only</p>
+          <p className="login-note">Enter access code to continue</p>
         </div>
       </div>
     )

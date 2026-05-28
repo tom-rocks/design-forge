@@ -1,7 +1,6 @@
-import { Router } from 'express';
-import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { findOrCreateUser, getUserById, User } from '../db.js';
+import { Router, Request, Response } from 'express';
+import { getUserById, User } from '../db.js';
+import pool from '../db.js';
 
 const router = Router();
 
@@ -18,149 +17,104 @@ declare global {
   }
 }
 
-// Configure Google OAuth strategy
+// No-op for backwards compatibility (called from index.ts)
 export function setupPassport() {
-  const clientID = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback';
-
-  if (!clientID || !clientSecret) {
-    console.warn('⚠️ Google OAuth not configured - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET required');
-    return false;
-  }
-
-  passport.use(new GoogleStrategy({
-    clientID,
-    clientSecret,
-    callbackURL,
-  }, async (_accessToken, _refreshToken, profile, done) => {
-    try {
-      const email = profile.emails?.[0]?.value;
-      if (!email) {
-        return done(new Error('No email found in Google profile'), undefined);
-      }
-
-      const user = await findOrCreateUser({
-        googleId: profile.id,
-        email,
-        name: profile.displayName,
-        avatarUrl: profile.photos?.[0]?.value,
-      });
-
-      done(null, user);
-    } catch (err) {
-      done(err as Error, undefined);
-    }
-  }));
-
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: string, done) => {
-    try {
-      const user = await getUserById(id);
-      done(null, user);
-    } catch (err) {
-      done(err, null);
-    }
-  });
-
-  console.log('✅ Google OAuth configured');
+  console.log('🔐 Password-based auth configured (Google OAuth removed)');
   return true;
 }
 
-// Start Google OAuth flow
-router.get('/google', (req, res, next) => {
-  const isPopup = req.query.popup === 'true';
+// The known user's Google ID (used to find the account in the DB)
+const OWNER_GOOGLE_ID = '113838337580596527498';
+const AUTH_PASSWORD = process.env.FORGE_PASSWORD || 'forgemaster';
+
+// Password login - finds the owner account and creates a session
+router.post('/login', async (req: Request, res: Response) => {
+  const { password } = req.body;
   
-  // Use state parameter to pass popup flag through OAuth flow
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    state: isPopup ? 'popup' : undefined,
-  })(req, res, next);
-});
-
-// Google OAuth callback
-router.get('/google/callback', (req, res, next) => {
-  passport.authenticate('google', {
-    failureRedirect: '/?auth=failed',
-  })(req, res, (err: Error | null) => {
-    if (err) return next(err);
+  if (!password || password !== AUTH_PASSWORD) {
+    res.status(401).json({ error: 'Invalid password' });
+    return;
+  }
+  
+  try {
+    // Find the existing user account by google_id
+    const result = await pool.query<User>(
+      'SELECT * FROM users WHERE google_id = $1',
+      [OWNER_GOOGLE_ID]
+    );
     
-    // Successful authentication
-    console.log(`[Auth] OAuth callback success for user: ${req.user?.email}`);
-    console.log(`[Auth] Session ID: ${req.sessionID}`);
-    console.log(`[Auth] State: ${req.query.state}`);
-    
-    const isPopup = req.query.state === 'popup';
-    
-    if (isPopup) {
-      // For popup: send message to opener and close
-      // Include user data so iframe doesn't need to call /api/auth/me (which may fail due to third-party cookies)
-      const userData = req.user ? {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.name,
-        avatarUrl: req.user.avatar_url,
-      } : null;
-      
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>Login Complete</title></head>
-        <body>
-          <script>
-            const userData = ${JSON.stringify(userData)};
-            console.log('[Auth Popup] Sending auth-complete message', userData);
-            
-            if (window.opener) {
-              // Send message with user data
-              window.opener.postMessage({ 
-                type: 'auth-complete', 
-                success: true,
-                user: userData
-              }, '*');
-              
-              // Small delay before closing to ensure message is received
-              setTimeout(() => window.close(), 100);
-            } else {
-              // No opener, redirect to main app
-              window.location.href = '/?auth=success';
-            }
-          </script>
-          <p>Login successful! This window should close automatically.</p>
-          <p>If it doesn't, you can close it manually.</p>
-        </body>
-        </html>
-      `);
-    } else {
-      // For direct navigation: redirect as before
-      res.redirect('/?auth=success');
+    const user = result.rows[0];
+    if (!user) {
+      res.status(404).json({ error: 'User account not found' });
+      return;
     }
-  });
-});
-
-// Get current user
-router.get('/me', (req, res) => {
-  if (req.isAuthenticated() && req.user) {
+    
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login = NOW() WHERE id = $1',
+      [user.id]
+    );
+    
+    // Set session manually (no passport needed)
+    (req.session as any).userId = user.id;
+    
+    // Also set req.user for immediate use
+    (req as any).user = user;
+    
+    console.log(`[Auth] Password login success for user: ${user.email} (${user.id})`);
+    
     res.json({
       authenticated: true,
       user: {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.name,
-        avatarUrl: req.user.avatar_url,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatar_url,
       },
     });
-  } else {
+  } catch (err) {
+    console.error('[Auth] Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Get current user (checks session)
+router.get('/me', async (req: Request, res: Response) => {
+  const userId = (req.session as any)?.userId;
+  
+  if (!userId) {
+    res.json({ authenticated: false, user: null });
+    return;
+  }
+  
+  try {
+    const user = await getUserById(userId);
+    if (!user) {
+      res.json({ authenticated: false, user: null });
+      return;
+    }
+    
+    // Populate req.user for downstream middleware
+    (req as any).user = user;
+    
+    res.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatar_url,
+      },
+    });
+  } catch (err) {
+    console.error('[Auth] Me check error:', err);
     res.json({ authenticated: false, user: null });
   }
 });
 
 // Logout
-router.post('/logout', (req, res) => {
-  req.logout((err) => {
+router.post('/logout', (req: Request, res: Response) => {
+  req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ error: 'Logout failed' });
     }

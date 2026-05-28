@@ -5,7 +5,6 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import passport from 'passport';
 import { createServer } from 'http';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -21,7 +20,7 @@ import alloysRouter from './routes/alloys.js';
 import assetsRouter from './routes/assets.js';
 import migrateThumbnailsRouter from './routes/migrate-thumbnails.js';
 import { initBridgeServer, isBridgeConnected } from './bridge.js';
-import pool, { initDatabase } from './db.js';
+import pool, { initDatabase, getUserById } from './db.js';
 import { initStorage } from './storage.js';
 
 // Load environment variables
@@ -124,11 +123,27 @@ app.use(session(sessionConfig));
 
 console.log(`🔐 Session config: secure=${isProduction}, sameSite=${isProduction ? 'none' : 'lax'}`);
 
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
+// Session-based user middleware (replaces passport)
+app.use(async (req, _res, next) => {
+  const userId = (req.session as any)?.userId;
+  if (userId) {
+    try {
+      const user = await getUserById(userId);
+      if (user) {
+        (req as any).user = user;
+        (req as any).isAuthenticated = () => true;
+      } else {
+        (req as any).isAuthenticated = () => false;
+      }
+    } catch {
+      (req as any).isAuthenticated = () => false;
+    }
+  } else {
+    (req as any).isAuthenticated = () => false;
+  }
+  next();
+});
 
-// Setup Google OAuth if configured
 setupPassport();
 
 // Rate limiting for generation endpoint (prevent abuse)
