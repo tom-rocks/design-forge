@@ -270,7 +270,7 @@ function cacheFileUri(contentHash: string, apiKey: string, fileUri: string, mime
 
 // Available Gemini image generation models
 const MODELS = {
-  pro: 'gemini-3-pro-image-preview',    // Professional, up to 14 refs, 1K/2K/4K, Thinking
+  pro: 'gemini-3-pro-image',    // GA model (Nano Banana Pro) - up to 14 refs, 1K/2K/4K, Thinking
 } as const;
 
 type ModelType = keyof typeof MODELS;
